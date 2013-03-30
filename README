@@ -11,9 +11,10 @@ Usage example:
 See how the pre-provided types are defined.
 
 (define desc (bytestructure-descriptor '(vector 2 (struct (x u8) (y u8)))))
-(define bv (bytestructure descriptor ((0 1) (2 3))))
+(define bv (bytestructure desc ((0 1) (2 3))))
 bv => #vu8(0 1 2 3)
 (bytestructure-access bv desc 0 'x) => 0
 (bytestructure-access bv desc 1 'y) => 3
 (bytestructure-set! bv desc 0 'x 4)
 (bytestructure-access bv desc 0 'x) => 4
+
