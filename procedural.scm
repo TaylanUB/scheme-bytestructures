@@ -51,6 +51,12 @@
      (unless expression
        (error "Assertion not met." 'expression)))))
 
+(define-syntax alist-add!
+  (syntax-rules ()
+    ((alist-add! alist name value)
+     (set! alist
+           (alist-cons name value alist)))))
+
 ;;; Descriptor-types
 
 (define-record-type :bytestructure-descriptor-type
@@ -68,7 +74,7 @@
   (bytevector-accessor bytevector-accessor)
   (bytevector-mutator bytevector-mutator))
 
-(define bytestructure-descriptor-types (make-parameter '()))
+(define bytestructure-descriptor-types '())
 
 (define (define-bytestructure-descriptor-type name constructor predicate
           size-or-size-accessor bytevector-accessor bytevector-mutator)
@@ -79,12 +85,11 @@
               (and (integer? size-or-size-accessor)
                    (exact? size-or-size-accessor)
                    (< 0 size-or-size-accessor))))
-  (bytestructure-descriptor-types
-   (alist-cons
-    name (bytestructure-descriptor-type #f constructor predicate
-                                        size-or-size-accessor #f #f
-                                        bytevector-accessor bytevector-mutator)
-    (bytestructure-descriptor-types)))
+  (alist-add!
+   bytestructure-descriptor-types
+   name (bytestructure-descriptor-type #f constructor predicate
+                                       size-or-size-accessor #f #f
+                                       bytevector-accessor bytevector-mutator))
   *unspecified*)
 
 (define (define-bytestructure-descriptor-compound-type name constructor
@@ -94,16 +99,15 @@
   (assert (every procedure? (list constructor predicate size-accessor
                                   bytevector-constructor-helper
                                   bytevector-accessor-helper)))
-  (bytestructure-descriptor-types
-   (alist-cons
-    name (bytestructure-descriptor-type #t constructor predicate size-accessor
-                                        bytevector-constructor-helper
-                                        bytevector-accessor-helper #f #f)
-    (bytestructure-descriptor-types)))
+  (alist-add!
+   bytestructure-descriptor-types
+   name (bytestructure-descriptor-type #t constructor predicate size-accessor
+                                       bytevector-constructor-helper
+                                       bytevector-accessor-helper #f #f))
   *unspecified*)
 
 (define (bytestructure-descriptor-type-with-name name)
-  (cdr (or (assoc name (bytestructure-descriptor-types))
+  (cdr (or (assoc name bytestructure-descriptor-types)
            (error "Not a bytestructure-descriptor-type name." name))))
 
 (define (bytestructure-descriptor-find-type descriptor)
@@ -111,7 +115,7 @@
    (or (find (lambda (entry)
                (let ((type (cdr entry)))
                  ((bytestructure-descriptor-type-predicate type) descriptor)))
-             (bytestructure-descriptor-types))
+             bytestructure-descriptor-types)
        (error "Not a bytestructure-descriptor." descriptor))))
 
 ;;; Descriptors
