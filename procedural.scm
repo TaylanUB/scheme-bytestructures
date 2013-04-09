@@ -34,6 +34,8 @@
             bytestructure-descriptor?
             bytestructure-descriptor-size
             bytestructure
+            bytestructure-ref-helper
+            bytestructure-ref-helper*
             bytestructure-ref
             bytestructure-ref*
             bytestructure-set!
@@ -150,64 +152,73 @@
   (syntax-rules ()
     ((_ descriptor)
      (make-bytevector (bytestructure-descriptor-size descriptor)))
-    ((_ descriptor value ...)
+    ((_ descriptor content)
      (let ((bytevector (bytestructure descriptor)))
-       (bytestructure* descriptor bytevector 0 value ...)
+       (bytestructure* bytevector 0 descriptor content)
        bytevector))))
 
 (define-syntax bytestructure*
   (syntax-rules ()
-    ((_ descriptor bytevector offset (value ...))
+    ((_ bytevector offset descriptor (value ...))
      (let ((type (bytestructure-descriptor-find-type descriptor))
            (index 0))
        (begin 
          (let-values (((offset* descriptor*)
                        ((bytevector-constructor-helper type) descriptor index)))
-           (bytestructure* descriptor* bytevector (+ offset offset*) value))
+           (bytestructure* bytevector (+ offset offset*) descriptor* value))
          (set! index (+ 1 index)))
        ...))
-    ((_ descriptor bytevector offset value)
+    ((_ bytevector offset descriptor value)
      ((bytevector-set-fn (bytestructure-descriptor-find-type descriptor))
-      bytevector descriptor offset value))))
+      bytevector offset descriptor value))))
+
+(define-syntax bytestructure-ref-helper
+  (syntax-rules ()
+    ((_ descriptor index ...)
+     (bytestructure-ref-helper* 0 descriptor index ...))))
+
+(define-syntax bytestructure-ref-helper*
+  (syntax-rules ()
+    ((_ offset descriptor)
+     (values offset descriptor))
+    ((_ offset descriptor index indices ...)
+     (let ((type (bytestructure-descriptor-find-type descriptor)))
+       (let-values (((offset* descriptor*)
+                     ((bytevector-ref-helper type) descriptor index)))
+         (bytestructure-ref-helper* (+ offset offset*) descriptor*
+                                    indices ...))))))
 
 (define-syntax bytestructure-ref
   (syntax-rules ()
     ((_ bytevector descriptor index ...)
-     (bytestructure-ref* bytevector descriptor 0 index ...))))
+     (bytestructure-ref* bytevector 0 descriptor index ...))))
 
 (define-syntax bytestructure-ref*
   (syntax-rules ()
-    ((_ bytevector descriptor offset)
-     (let ((type (bytestructure-descriptor-find-type descriptor)))
-       (if (bytestructure-descriptor-type-compound? type)
-           (values bytevector descriptor offset)
-           ((bytevector-ref-fn type) bytevector descriptor offset))))
-    ((_ bytevector descriptor offset index indices ...)
-     (let ((type (bytestructure-descriptor-find-type descriptor)))
-       (let-values (((offset* descriptor*)
-                     ((bytevector-ref-helper type) descriptor index)))
-         (bytestructure-ref* bytevector descriptor* (+ offset offset*)
-                             indices ...))))))
+    ((_ bytevector offset descriptor index ...)
+     (let-values (((offset* descriptor*)
+                   (bytestructure-ref-helper* offset descriptor index ...)))
+       (let ((type (bytestructure-descriptor-find-type descriptor*)))
+         (if (bytestructure-descriptor-type-compound? type)
+             (values offset* descriptor*)
+             ((bytevector-ref-fn type) bytevector offset* descriptor*)))))))
 
 (define-syntax bytestructure-set!
   (syntax-rules ()
     ((_ bytevector descriptor index ... value)
-     (bytestructure-set!* bytevector descriptor 0 index ... value))))
+     (bytestructure-set!* bytevector 0 descriptor index ... value))))
 
 (define-syntax bytestructure-set!*
   (syntax-rules ()
-    ((_ bytevector descriptor offset index indices ... value)
-     (let ((type (bytestructure-descriptor-find-type descriptor)))
-       (let-values (((offset* descriptor*)
-                     ((bytevector-ref-helper type) descriptor index)))
-         (bytestructure-set!* bytevector descriptor* (+ offset offset*)
-                              indices ... value))))
-    ((_ bytevector descriptor offset value)
-     (let ((type (bytestructure-descriptor-find-type descriptor)))
-       (if (bytestructure-descriptor-type-compound? type)
-           (bytevector-copy! value 0 bytevector offset
-                             (bytevector-length value))
-           ((bytevector-set-fn type) bytevector descriptor offset value))))))
+    ((_ bytevector offset descriptor index ... value)
+     (let-values (((offset* descriptor*)
+                   (bytestructure-ref-helper* offset descriptor index ...)))
+       (let ((type (bytestructure-descriptor-find-type descriptor*)))
+         (if (bytestructure-descriptor-type-compound? type)
+             (bytevector-copy! value 0 bytevector offset
+                               (bytevector-length value))
+             ((bytevector-set-fn type)
+              bytevector offset descriptor* value)))))))
 
 
 ;;; Pre-provided types:
@@ -362,9 +373,9 @@
                 constructor
                 predicate
                 size
-                (lambda (bytevector descriptor offset)
+                (lambda (bytevector offset descriptor)
                   (ref-fn bytevector offset))
-                (lambda (bytevector descriptor offset value)
+                (lambda (bytevector offset descriptor value)
                   (set-fn bytevector offset value))))
             ...)))))
   (define-numeric-types
