@@ -146,9 +146,9 @@
   (syntax-rules ()
     ((_ descriptor)
      (make-bytevector (bytestructure-descriptor-size descriptor)))
-    ((_ descriptor (value ...))
+    ((_ descriptor value ...)
      (let ((bytevector (bytestructure descriptor)))
-       (bytestructure* descriptor bytevector 0 (value ...))
+       (bytestructure* descriptor bytevector 0 value ...)
        bytevector))))
 
 (define-syntax bytestructure*
