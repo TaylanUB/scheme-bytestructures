@@ -51,7 +51,7 @@
      (unless expression
        (error "Assertion not met." 'expression)))))
 
-;;; Types
+;;; Descriptor-types
 
 (define-record-type :bytestructure-descriptor-type
   (bytestructure-descriptor-type compound? constructor predicate size
@@ -114,7 +114,7 @@
              (bytestructure-descriptor-types))
        (error "Not a bytestructure-descriptor." descriptor))))
 
-;;; Generals
+;;; Descriptors
 
 (define (bytestructure-descriptor description)
   (cond
@@ -205,6 +205,9 @@
                              (bytevector-length value))
            ((bytevector-mutator type) bytevector descriptor offset value))))))
 
+
+;;; Pre-provided types:
+
 ;;; Vector
 
 (define-record-type :vector-descriptor
@@ -237,7 +240,7 @@
   vector-constructor-helper
   vector-accessor-helper)
 
-;;; Helpers for Structures and Unions
+;;; Helpers for Structs and Unions
 
 (define field-name car)
 (define field-content-descriptor cdr)
