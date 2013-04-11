@@ -24,13 +24,16 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
+;;; TODO: How to initialize unions?
+
 ;;; Code:
 
 (define-module (bytestructures procedural)
   #:export (
-            define-bytestructure-descriptor-type
-            define-bytestructure-descriptor-compound-type
-            bytestructure-descriptor
+            make-bytestructure-descriptor-type
+            make-bytestructure-descriptor-compound-type
+            bytestructure-descriptor-type?
+            make-bytestructure-descriptor
             bytestructure-descriptor?
             bytestructure-descriptor-size
             bytestructure
@@ -40,6 +43,10 @@
             bytestructure-ref*
             bytestructure-set!
             bytestructure-set!*
+            bsd:vector bsd:struct bsd:union
+            bsd:simple
+            float double
+            int8 uint8 int16 uint16 int32 uint32 int64 uint64
             ))
 
 (use-modules (srfi srfi-1)
@@ -53,99 +60,79 @@
      (unless expression
        (error "Assertion not met." 'expression)))))
 
-(define-syntax alist-add!
-  (syntax-rules ()
-    ((alist-add! alist name value)
-     (set! alist
-           (alist-cons name value alist)))))
-
 ;;; Descriptor-types
 
 (define-record-type :bytestructure-descriptor-type
-  (bytestructure-descriptor-type compound? constructor predicate size
-                                 bytevector-constructor-helper
-                                 bytevector-ref-helper
-                                 bytevector-ref-fn bytevector-set-fn)
+  (make-bytestructure-descriptor-type*
+   compound? constructor predicate size-or-size-accessor
+   bytevector-constructor-helper bytevector-ref-helper
+   bytevector-ref-fn bytevector-set-fn)
   bytestructure-descriptor-type?
-  (compound? bytestructure-descriptor-type-compound?)
-  (constructor bytestructure-descriptor-constructor)
-  (predicate bytestructure-descriptor-type-predicate)
-  (size bytestructure-descriptor-type-size)
+  (compound?                     bytestructure-descriptor-type-compound?)
+  (constructor                   bytestructure-descriptor-constructor)
+  (predicate                     bytestructure-descriptor-type-predicate)
+  (size-or-size-accessor         bytestructure-descriptor-type-size)
   (bytevector-constructor-helper bytevector-constructor-helper)
-  (bytevector-ref-helper bytevector-ref-helper)
-  (bytevector-ref-fn bytevector-ref-fn)
-  (bytevector-set-fn bytevector-set-fn))
+  (bytevector-ref-helper         bytevector-ref-helper)
+  (bytevector-ref-fn             bytevector-ref-fn)
+  (bytevector-set-fn             bytevector-set-fn))
 
-(define bytestructure-descriptor-types '())
-
-(define (define-bytestructure-descriptor-type name constructor predicate
-          size-or-size-accessor bytevector-ref-fn bytevector-set-fn)
-  (assert (symbol? name))
-  (assert (every procedure? (list constructor predicate bytevector-ref-fn
-                                  bytevector-set-fn)))
+(define (make-bytestructure-descriptor-type
+         constructor predicate size-or-size-accessor
+         bytevector-ref-fn bytevector-set-fn)
+  (assert (every procedure?
+                 (list constructor predicate
+                       bytevector-ref-fn bytevector-set-fn)))
   (assert (or (procedure? size-or-size-accessor)
               (and (integer? size-or-size-accessor)
                    (exact? size-or-size-accessor)
                    (< 0 size-or-size-accessor))))
-  (alist-add!
-   bytestructure-descriptor-types
-   name (bytestructure-descriptor-type #f constructor predicate
-                                       size-or-size-accessor #f #f
-                                       bytevector-ref-fn bytevector-set-fn))
-  *unspecified*)
+  (make-bytestructure-descriptor-type*
+   #f constructor predicate size-or-size-accessor
+   #f #f
+   bytevector-ref-fn bytevector-set-fn))
 
-(define (define-bytestructure-descriptor-compound-type name constructor
-          predicate size-accessor bytevector-constructor-helper
-          bytevector-ref-helper)
-  (assert (symbol? name))
-  (assert (every procedure? (list constructor predicate size-accessor
-                                  bytevector-constructor-helper
-                                  bytevector-ref-helper)))
-  (alist-add!
-   bytestructure-descriptor-types
-   name (bytestructure-descriptor-type #t constructor predicate size-accessor
-                                       bytevector-constructor-helper
-                                       bytevector-ref-helper #f #f))
-  *unspecified*)
-
-(define (bytestructure-descriptor-type-with-name name)
-  (cdr (or (assoc name bytestructure-descriptor-types)
-           (error "Not a bytestructure-descriptor-type name." name))))
-
-(define (bytestructure-descriptor-find-type descriptor)
-  (cdr
-   (or (find (lambda (entry)
-               (let ((type (cdr entry)))
-                 ((bytestructure-descriptor-type-predicate type) descriptor)))
-             bytestructure-descriptor-types)
-       (error "Not a bytestructure-descriptor." descriptor))))
+(define (make-bytestructure-descriptor-compound-type
+         constructor predicate size-accessor
+         bytevector-constructor-helper bytevector-ref-helper)
+  (assert (every procedure?
+                 (list constructor predicate size-accessor
+                       bytevector-constructor-helper bytevector-ref-helper)))
+  (make-bytestructure-descriptor-type*
+   #t constructor predicate size-accessor
+   bytevector-constructor-helper bytevector-ref-helper
+   #f #f))
 
 ;;; Descriptors
 
-(define (bytestructure-descriptor description)
+(define-record-type :bytestructure-descriptor
+  (bytestructure-descriptor type content)
+  bytestructure-descriptor?
+  (type bytestructure-descriptor-type)
+  (content bytestructure-descriptor-content))
+
+(define (make-bytestructure-descriptor description)
   (cond
-   ((symbol? description)
-    ((bytestructure-descriptor-constructor
-      (bytestructure-descriptor-type-with-name description))))
+   ((bytestructure-descriptor-type? description)
+    (bytestructure-descriptor*
+     description
+     ((bytestructure-descriptor-constructor description))))
    ((list? description)
-    (let ((name (car description))
+    (let ((type (car description))
           (contents (cdr description)))
-      (apply (bytestructure-descriptor-constructor
-              (bytestructure-descriptor-type-with-name name))
-             contents)))
+      (bytestructure-descriptor
+       type
+       (apply (bytestructure-descriptor-constructor type) contents))))
    ;; See `construct-fields' for why this is useful.
    ((bytestructure-descriptor? description)
     description)
    (else (error "Invalid bytestructure-descriptor description." description))))
 
-(define (bytestructure-descriptor? obj)
-  (not (not (bytestructure-descriptor-find-type obj))))
-
 (define (bytestructure-descriptor-size descriptor)
-  (let* ((type (bytestructure-descriptor-find-type descriptor))
-         (size (bytestructure-descriptor-type-size type)))
+  (let ((size (bytestructure-descriptor-type-size
+               (bytestructure-descriptor-type descriptor))))
     (if (procedure? size)
-        (size descriptor)
+        (size (bytestructure-descriptor-content descriptor))
         size)))
 
 (define-syntax bytestructure
@@ -160,17 +147,20 @@
 (define-syntax bytestructure*
   (syntax-rules ()
     ((_ bytevector offset descriptor (value ...))
-     (let ((type (bytestructure-descriptor-find-type descriptor))
+     (let ((type (bytestructure-descriptor-type descriptor))
+           (content (bytestructure-descriptor-content descriptor))
            (index 0))
        (begin 
          (let-values (((offset* descriptor*)
-                       ((bytevector-constructor-helper type) descriptor index)))
+                       ((bytevector-constructor-helper type) content index)))
            (bytestructure* bytevector (+ offset offset*) descriptor* value))
          (set! index (+ 1 index)))
        ...))
     ((_ bytevector offset descriptor value)
-     ((bytevector-set-fn (bytestructure-descriptor-find-type descriptor))
-      bytevector offset descriptor value))))
+     (let ((type (bytestructure-descriptor-type descriptor))
+           (content (bytestructure-descriptor-content descriptor)))
+       ((bytevector-set-fn type)
+        bytevector offset content value)))))
 
 (define-syntax bytestructure-ref-helper
   (syntax-rules ()
@@ -182,11 +172,14 @@
     ((_ offset descriptor)
      (values offset descriptor))
     ((_ offset descriptor index indices ...)
-     (let ((type (bytestructure-descriptor-find-type descriptor)))
-       (let-values (((offset* descriptor*)
-                     ((bytevector-ref-helper type) descriptor index)))
-         (bytestructure-ref-helper* (+ offset offset*) descriptor*
-                                    indices ...))))))
+     (let ((type (bytestructure-descriptor-type descriptor))
+           (content (bytestructure-descriptor-content descriptor)))
+       (if (bytestructure-descriptor-type-compound? type)
+           (let-values (((offset* descriptor*)
+                         ((bytevector-ref-helper type) content index)))
+             (bytestructure-ref-helper*
+              (+ offset offset*) descriptor* indices ...))
+           (values offset descriptor))))))
 
 (define-syntax bytestructure-ref
   (syntax-rules ()
@@ -198,10 +191,11 @@
     ((_ bytevector offset descriptor index ...)
      (let-values (((offset* descriptor*)
                    (bytestructure-ref-helper* offset descriptor index ...)))
-       (let ((type (bytestructure-descriptor-find-type descriptor*)))
+       (let ((type (bytestructure-descriptor-type descriptor*)))
          (if (bytestructure-descriptor-type-compound? type)
              (values offset* descriptor*)
-             ((bytevector-ref-fn type) bytevector offset* descriptor*)))))))
+             (let ((content (bytestructure-descriptor-content descriptor*)))
+               ((bytevector-ref-fn type) bytevector offset* content))))))))
 
 (define-syntax bytestructure-set!
   (syntax-rules ()
@@ -213,12 +207,13 @@
     ((_ bytevector offset descriptor index ... value)
      (let-values (((offset* descriptor*)
                    (bytestructure-ref-helper* offset descriptor index ...)))
-       (let ((type (bytestructure-descriptor-find-type descriptor*)))
+       (let ((type (bytestructure-descriptor-type descriptor*)))
          (if (bytestructure-descriptor-type-compound? type)
              (bytevector-copy! value 0 bytevector offset
                                (bytevector-length value))
-             ((bytevector-set-fn type)
-              bytevector offset descriptor* value)))))))
+             (let ((content (bytestructure-descriptor-content descriptor*)))
+               ((bytevector-set-fn type)
+                bytevector offset content value))))))))
 
 
 ;;; Pre-provided types:
@@ -228,13 +223,14 @@
 (define-record-type :vector-descriptor
   (vector-descriptor* length content-descriptor size)
   vector-descriptor?
-  (length vector-descriptor-length)
+  (length             vector-descriptor-length)
   (content-descriptor vector-descriptor-content-descriptor)
-  (size vector-descriptor-size))
+  (size               vector-descriptor-size))
 
 (define (vector-descriptor length content-description)
   (assert (and (integer? length) (<= 0 length)))
-  (let ((content-descriptor (bytestructure-descriptor content-description)))
+  (let ((content-descriptor
+         (make-bytestructure-descriptor content-description)))
     (vector-descriptor*
      length content-descriptor
      (* length (bytestructure-descriptor-size content-descriptor)))))
@@ -247,13 +243,10 @@
     (values (* index (bytestructure-descriptor-size content-descriptor))
             content-descriptor)))
 
-(define-bytestructure-descriptor-compound-type
-  'vector
-  vector-descriptor
-  vector-descriptor?
-  vector-descriptor-size
-  vector-constructor-helper
-  vector-ref-helper)
+(define bsd:vector
+  (make-bytestructure-descriptor-compound-type
+   vector-descriptor vector-descriptor? vector-descriptor-size
+   vector-constructor-helper vector-ref-helper))
 
 ;;; Helpers for Structs and Unions
 
@@ -267,7 +260,7 @@
                       (= 2 (length field))
                       (symbol? (car field))))
          (cons (car field)
-               (bytestructure-descriptor (cadr field))))
+               (make-bytestructure-descriptor (cadr field))))
        fields))
 
 ;;; Struct
@@ -276,7 +269,7 @@
   (struct-descriptor* fields size)
   struct-descriptor?
   (fields struct-descriptor-fields)
-  (size struct-descriptor-size))
+  (size   struct-descriptor-size))
 
 (define (struct-descriptor . fields)
   (let ((fields (construct-fields fields)))
@@ -291,16 +284,16 @@
     (let try-next ((field (car fields))
                    (fields (cdr fields))
                    (offset 0)
-                   (index index))
-      (if (= index 0)
+                   (field-count index))
+      (if (= field-count 0)
           (values offset (field-content-descriptor field))
-          (if (not (null? fields))
+          (if (null? fields)
+              (error "Struct field index out of bounds." index)
               (try-next (car fields)
                         (cdr fields)
                         (+ offset (bytestructure-descriptor-size
                                    (field-content-descriptor field)))
-                        (- index 1))
-              (error "Struct field index out of bounds." index))))))
+                        (- field-count 1)))))))
 
 (define (struct-ref-helper descriptor key)
   (let ((fields (struct-descriptor-fields descriptor)))
@@ -309,20 +302,17 @@
                    (offset 0))
       (if (eq? (field-name field) key)
           (values offset (field-content-descriptor field))
-          (if (not (null? fields))
+          (if (null? fields)
+              (error "No such struct field." key)
               (try-next (car fields)
                         (cdr fields)
                         (+ offset (bytestructure-descriptor-size
-                                   (field-content-descriptor field))))
-              (error "No such struct field." key))))))
+                                   (field-content-descriptor field)))))))))
 
-(define-bytestructure-descriptor-compound-type
-  'struct
-  struct-descriptor
-  struct-descriptor?
-  struct-descriptor-size
-  struct-constructor-helper
-  struct-ref-helper)
+(define bsd:struct
+  (make-bytestructure-descriptor-compound-type
+   struct-descriptor struct-descriptor? struct-descriptor-size
+   struct-constructor-helper struct-ref-helper))
 
 ;;; Union
 
@@ -349,63 +339,52 @@
   (values 0 (field-content-descriptor
              (field-find key (union-descriptor-fields descriptor)))))
 
-(define-bytestructure-descriptor-compound-type
-  'union
-  union-descriptor
-  union-descriptor?
-  union-descriptor-size
-  union-constructor-helper
-  union-ref-helper)
+(define bsd:union
+  (make-bytestructure-descriptor-compound-type
+   union-descriptor union-descriptor? union-descriptor-size
+   union-constructor-helper union-ref-helper))
+
+;;; "Simple" type
+
+(define-record-type :simple-descriptor
+  (simple-descriptor size ref-fn set-fn)
+  simple-descriptor?
+  (size   simple-descriptor-size)
+  (ref-fn simple-descriptor-ref-fn)
+  (set-fn simple-descriptor-set-fn))
+
+(define (simple-descriptor-ref bytevector offset descriptor)
+  ((simple-descriptor-ref-fn descriptor) bytevector offset))
+
+(define (simple-descriptor-set! bytevector offset descriptor value)
+  ((simple-descriptor-set-fn descriptor) bytevector offset value))
+
+(define bsd:simple
+  (make-bytestructure-descriptor-type
+   simple-descriptor simple-descriptor? simple-descriptor-size
+   simple-descriptor-ref simple-descriptor-set!))
 
 ;;; Numeric types
 
 (let-syntax
     ((define-numeric-types
        (syntax-rules ()
-         ((_ (name record-type constructor predicate size ref-fn set-fn) ...)
+         ((_ (name size ref-fn set-fn) ...)
           (begin
-            (begin
-              (define-record-type record-type
-                (constructor)
-                predicate)
-              (define-bytestructure-descriptor-type
-                'name
-                constructor
-                predicate
-                size
-                (lambda (bytevector offset descriptor)
-                  (ref-fn bytevector offset))
-                (lambda (bytevector offset descriptor value)
-                  (set-fn bytevector offset value))))
+            (define name
+              (make-bytestructure-descriptor
+               (list bsd:simple size ref-fn set-fn)))
             ...)))))
   (define-numeric-types
-    (float :float-descriptor float-descriptor float-descriptor? 4
-           bytevector-ieee-single-native-ref
-           bytevector-ieee-single-native-set!)
-    (double :double-descriptor double-descriptor double-descriptor? 8
-            bytevector-ieee-double-native-ref
-            bytevector-ieee-double-native-set!)
-    (int8 :int8-descriptor int8-descriptor int8-descriptor? 1
-          bytevector-s8-ref
-          bytevector-s8-set!)
-    (uint8 :uint8-descriptor uint8-descriptor uint8-descriptor? 1
-           bytevector-u8-ref
-           bytevector-u8-set!)
-    (int16 :int16-descriptor int16-descriptor int16-descriptor? 2
-           bytevector-s16-native-ref
-           bytevector-s16-native-set!)
-    (uint16 :uint16-descriptor uint16-descriptor uint16-descriptor? 2
-            bytevector-u16-native-ref
-            bytevector-u16-native-set!)
-    (int32 :int32-descriptor int32-descriptor int32-descriptor? 4
-           bytevector-s32-native-ref
-           bytevector-s32-native-set!)
-    (uint32 :uint32-descriptor uint32-descriptor uint32-descriptor? 4
-            bytevector-u32-native-ref
-            bytevector-u32-native-set!)
-    (int64 :int64-descriptor int64-descriptor int64-descriptor? 8
-           bytevector-s64-native-ref
-           bytevector-s64-native-set!)
-    (uint64 :uint64-descriptor uint64-descriptor uint64-descriptor? 8
-            bytevector-u64-native-ref
-            bytevector-u64-native-set!)))
+    (float
+     4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
+    (double
+     8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
+    (int8   1 bytevector-s8-ref bytevector-s8-set!)
+    (uint8  1 bytevector-u8-ref bytevector-u8-set!)
+    (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
+    (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
+    (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
+    (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
+    (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
+    (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!)))
