@@ -1,20 +1,38 @@
-Structured access to bytevector contents.  A "bytestructure-descriptor"
-describes a layout for the contents of a bytevector, or how the bytes are to
-be converted into a Scheme object.  Every bytestructure-descriptor is of a
-specific "bytestructure-descriptor-type" which can be either compound,
-meaning that it's a container for other descriptors (e.g. vector, struct,
-union), or not compound, meaning that it describes how to convert a sequence
-of bytes into a Scheme object (e.g. u8, u16, u32, etc.).
+Structured access to bytevector contents.
 
-Usage example:
+A "bytestructure-descriptor" describes a layout for the contents of a
+bytevector, or how the bytes are to be converted to Scheme objects.
+
+Every bytestructure-descriptor is of a specific
+"bytestructure-descriptor-type" which can be either compound, meaning
+that it's a container for other descriptors (e.g. vector, struct,
+union), or not compound, meaning that it describes how to convert a
+sequence of bytes into a Scheme object (e.g. uint8, int16, float).
+
+
+Usage examples:
 
 See how the pre-provided types are defined.
 
-(define desc (bytestructure-descriptor '(vector 2 (struct (x u8) (y u8)))))
+
+Procedural:
+
+(define desc
+  (make-bytestructure-descriptor
+    (list bsd:vector 2 (list bsd:struct `(x ,uint8) `(y ,uint8)))))
+
 (define bv (bytestructure desc ((0 1) (2 3))))
 bv => #vu8(0 1 2 3)
-(bytestructure-access bv desc 0 'x) => 0
-(bytestructure-access bv desc 1 'y) => 3
-(bytestructure-set! bv desc 0 'x 4)
-(bytestructure-access bv desc 0 'x) => 4
 
+(bytestructure-ref bv desc 0 'x) => 0
+
+(bytestructure-ref bv desc 1 'y) => 3
+
+(bytestructure-set! bv desc 0 'x 4)
+
+(bytestructure-ref bv desc 0 'x) => 4
+
+
+Syntactic:
+
+TODO
