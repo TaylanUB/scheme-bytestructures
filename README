@@ -19,7 +19,7 @@ Procedural:
 
 (define desc
   (make-bytestructure-descriptor
-    (list bsd:vector 2 (list bsd:struct `(x ,uint8) `(y ,uint8)))))
+    `(,bsd:vector 2 `(,bsd:struct `(x ,uint8) `(y ,uint8)))))
 
 (define bv (bytestructure desc ((0 1) (2 3))))
 bv => #vu8(0 1 2 3)
