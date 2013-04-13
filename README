@@ -1,13 +1,29 @@
 Structured access to bytevector contents.
 
 A "bytestructure-descriptor" describes a layout for the contents of a
-bytevector, or how the bytes are to be converted to Scheme objects.
+bytevector, or how the bytes are to be accessed and converted to
+Scheme objects.
+
+You can think of it like C's type-system.
 
 Every bytestructure-descriptor is of a specific
 "bytestructure-descriptor-type" which can be either compound, meaning
-that it's a container for other descriptors (e.g. vector, struct,
-union), or not compound, meaning that it describes how to convert a
-sequence of bytes into a Scheme object (e.g. uint8, int16, float).
+that its instances are containers for other descriptors (e.g. vector,
+struct, union), or not compound, meaning that its instances describe
+how to convert a sequence of bytes into a Scheme object (e.g. an
+"integer" type whose instances can have a specific size, endianness,
+etc.).
+
+Most of the time, the pre-provided non-compound type "simple" will
+fulfil all needs for non-compound descriptors.  Its instances are
+created with a size, bytevector-ref function, and bytevector-set
+function.  E.g. the following is the definition of uint8:
+
+;; The "simple" type is stored in the variable `bsd:simple'.
+;; ("BSD" stands for byte-structure-descriptor.)
+(define uint8
+  (make-bytestructure-descriptor
+    (list bsd:simple 1 bytevector-u8-ref bytevector-u8-set!))
 
 
 Usage examples:
@@ -19,7 +35,7 @@ Procedural:
 
 (define desc
   (make-bytestructure-descriptor
-    `(,bsd:vector 2 `(,bsd:struct `(x ,uint8) `(y ,uint8)))))
+    `(,bsd:vector 2 (,bsd:struct (x ,uint8) (y ,uint8)))))
 
 (define bv (bytestructure desc ((0 1) (2 3))))
 bv => #vu8(0 1 2 3)
