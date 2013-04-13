@@ -24,8 +24,6 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
-;;; TODO: How to initialize unions?
-
 ;;; Code:
 
 (define-module (bytestructures procedural)
@@ -106,21 +104,21 @@
 ;;; Descriptors
 
 (define-record-type :bytestructure-descriptor
-  (bytestructure-descriptor type content)
+  (make-bytestructure-descriptor* type content)
   bytestructure-descriptor?
-  (type bytestructure-descriptor-type)
+  (type    bytestructure-descriptor-type)
   (content bytestructure-descriptor-content))
 
 (define (make-bytestructure-descriptor description)
   (cond
    ((bytestructure-descriptor-type? description)
-    (bytestructure-descriptor*
+    (make-bytestructure-descriptor*
      description
      ((bytestructure-descriptor-constructor description))))
    ((list? description)
     (let ((type (car description))
           (contents (cdr description)))
-      (bytestructure-descriptor
+      (make-bytestructure-descriptor*
        type
        (apply (bytestructure-descriptor-constructor type) contents))))
    ;; See `construct-fields' for why this is useful.
@@ -320,7 +318,7 @@
   (union-descriptor* fields size)
   union-descriptor?
   (fields union-descriptor-fields)
-  (size union-descriptor-size))
+  (size   union-descriptor-size))
 
 (define (union-descriptor . fields)
   (assert (list? fields))
