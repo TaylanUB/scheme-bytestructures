@@ -386,3 +386,5 @@
     (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
     (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
     (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!)))
+
+;;; procedural.scm ends here
