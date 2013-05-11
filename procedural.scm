@@ -84,7 +84,7 @@
   (assert (or (procedure? size-or-size-accessor)
               (and (integer? size-or-size-accessor)
                    (exact? size-or-size-accessor)
-                   (< 0 size-or-size-accessor))))
+                   (<= 0 size-or-size-accessor))))
   (make-bytestructure-descriptor-type*
    #f constructor predicate size-or-size-accessor
    #f #f
