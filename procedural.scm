@@ -216,6 +216,51 @@
 
 ;;; Pre-provided types:
 
+;;; "Simple" type
+
+(define-record-type :simple-descriptor
+  (simple-descriptor size ref-fn set-fn)
+  simple-descriptor?
+  (size   simple-descriptor-size)
+  (ref-fn simple-descriptor-ref-fn)
+  (set-fn simple-descriptor-set-fn))
+
+(define (simple-descriptor-ref bytevector offset descriptor)
+  ((simple-descriptor-ref-fn descriptor) bytevector offset))
+
+(define (simple-descriptor-set! bytevector offset descriptor value)
+  ((simple-descriptor-set-fn descriptor) bytevector offset value))
+
+(define bsd:simple
+  (make-bytestructure-descriptor-type
+   simple-descriptor simple-descriptor? simple-descriptor-size
+   simple-descriptor-ref simple-descriptor-set!))
+
+;;; Numeric types
+
+(let-syntax
+    ((define-numeric-types
+       (syntax-rules ()
+         ((_ (name size ref-fn set-fn) ...)
+          (begin
+            (define name
+              (make-bytestructure-descriptor
+               (list bsd:simple size ref-fn set-fn)))
+            ...)))))
+  (define-numeric-types
+    (float
+     4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
+    (double
+     8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
+    (int8   1 bytevector-s8-ref bytevector-s8-set!)
+    (uint8  1 bytevector-u8-ref bytevector-u8-set!)
+    (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
+    (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
+    (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
+    (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
+    (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
+    (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!)))
+
 ;;; Vector
 
 (define-record-type :vector-descriptor
@@ -341,50 +386,5 @@
   (make-bytestructure-descriptor-compound-type
    union-descriptor union-descriptor? union-descriptor-size
    union-constructor-helper union-ref-helper))
-
-;;; "Simple" type
-
-(define-record-type :simple-descriptor
-  (simple-descriptor size ref-fn set-fn)
-  simple-descriptor?
-  (size   simple-descriptor-size)
-  (ref-fn simple-descriptor-ref-fn)
-  (set-fn simple-descriptor-set-fn))
-
-(define (simple-descriptor-ref bytevector offset descriptor)
-  ((simple-descriptor-ref-fn descriptor) bytevector offset))
-
-(define (simple-descriptor-set! bytevector offset descriptor value)
-  ((simple-descriptor-set-fn descriptor) bytevector offset value))
-
-(define bsd:simple
-  (make-bytestructure-descriptor-type
-   simple-descriptor simple-descriptor? simple-descriptor-size
-   simple-descriptor-ref simple-descriptor-set!))
-
-;;; Numeric types
-
-(let-syntax
-    ((define-numeric-types
-       (syntax-rules ()
-         ((_ (name size ref-fn set-fn) ...)
-          (begin
-            (define name
-              (make-bytestructure-descriptor
-               (list bsd:simple size ref-fn set-fn)))
-            ...)))))
-  (define-numeric-types
-    (float
-     4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
-    (double
-     8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
-    (int8   1 bytevector-s8-ref bytevector-s8-set!)
-    (uint8  1 bytevector-u8-ref bytevector-u8-set!)
-    (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
-    (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
-    (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
-    (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
-    (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
-    (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!)))
 
 ;;; procedural.scm ends here
