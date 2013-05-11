@@ -1,10 +1,10 @@
 Structured access to bytevector contents.
 
 A "bytestructure-descriptor" describes a layout for the contents of a
-bytevector, or how the bytes are to be accessed and converted to
+bytevector, or how the bytes are to be accessed and converted into
 Scheme objects.
 
-You can think of it like C's type-system.
+You can think of it like C's weak typing/type-casting system.
 
 Every bytestructure-descriptor is of a specific
 "bytestructure-descriptor-type" which can be either compound, meaning
