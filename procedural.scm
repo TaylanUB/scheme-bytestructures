@@ -207,11 +207,11 @@
                    (bytestructure-ref-helper* offset descriptor index ...)))
        (let ((type (bytestructure-descriptor-type descriptor*)))
          (if (bytestructure-descriptor-type-compound? type)
-             (bytevector-copy! value 0 bytevector offset
+             (bytevector-copy! value 0 bytevector offset*
                                (bytevector-length value))
              (let ((content (bytestructure-descriptor-content descriptor*)))
                ((bytevector-set-fn type)
-                bytevector offset content value))))))))
+                bytevector offset* content value))))))))
 
 
 ;;; Pre-provided types:
