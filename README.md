@@ -175,6 +175,18 @@ E.g.:
 
     (bytestructure-set! bv my-struct y 2 42) ;; my_struct.y[2] = 42
 
+A "ref-helper" exists which, although part of the internals, could be
+useful to user code and so is exported from the module as well.  It's
+like the referencing syntax, but takes no bytevector, and returns two
+values; an offset, and a descriptor for continuing the referencing
+from whatever point the provided indices ended:
+
+    (bytestructure-ref-helper uint8-v3-v5 2)
+    ===> 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.
+
+    (bytestructure-ref-helper uint8-v3-v5 2 1)
+    ===> 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
+
 
 Creating new types
 ------------------
