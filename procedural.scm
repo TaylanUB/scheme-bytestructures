@@ -172,12 +172,10 @@
     ((_ offset descriptor index indices ...)
      (let ((type (bytestructure-descriptor-type descriptor))
            (content (bytestructure-descriptor-content descriptor)))
-       (if (bytestructure-descriptor-type-compound? type)
-           (let-values (((offset* descriptor*)
-                         ((bytevector-ref-helper type) content index)))
-             (bytestructure-ref-helper*
-              (+ offset offset*) descriptor* indices ...))
-           (values offset descriptor))))))
+       (let-values (((offset* descriptor*)
+                     ((bytevector-ref-helper type) content index)))
+         (bytestructure-ref-helper*
+          (+ offset offset*) descriptor* indices ...))))))
 
 (define-syntax bytestructure-ref
   (syntax-rules ()
