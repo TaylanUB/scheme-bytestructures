@@ -65,7 +65,7 @@ The "simple" type
 Most of the time, the pre-provided non-compound type "simple" will
 fulfil all needs for non-compound descriptors.  Its instances are
 created with a size, bytevector-ref function, and bytevector-set
-function.  E.g. the following is the definition of uint8:
+function.  E.g. the following is the definition of `uint8`:
 
     (define uint8
       (make-bytestructure-descriptor
@@ -85,13 +85,13 @@ struct, union
 We've already covered the vector type in the first section.
 
 Given the `uint8-v3` from the vector examples, here's a struct with a
-uint8 and a uint8-v3:
+`uint8` and a `uint8-v3`:
 
     (define my-struct
       (make-bytestructure-descriptor
         `(,bsd:struct (x ,uint8) (y ,uint8-v3))))
 
-Or without using the intermediate uint8-v5 descriptor:
+Or without using the intermediate `uint8-v3` descriptor:
 
     (define my-struct
       (make-bytestructure-descriptor
@@ -108,20 +108,20 @@ the syntax `bytestructure` can be used to create a new bytevector with
 the right size for a descriptor, and optionally initialized with
 values.
 
-Using the uint8-v5 type from the previous section, we could:
+Using the `uint8-v3` descriptor from the previous section, we could:
 
-    (define bv (bytestructure uint8-v5))
+    (define bv (bytestructure uint8-v3))
 
 which is equivalent to
 
-    (define bv (make-bytevector 5))
+    (define bv (make-bytevector 3))
 
-because the size of uint8-v5 is 5.
+because the size of a `uint8-v3` is 3.
 
 The syntax for the initialization values depends on the descriptors.
 For vectors it is very obvious:
 
-    (define bv (bytestructure uint8-v5 (0 1 2 3 4)))
+    (define bv (bytestructure uint8-v3 (0 1 2 3 4)))
 
 For structs, it is like in C, meaning it looks like a vector because
 the field names are omitted and their order determines which value
@@ -147,7 +147,7 @@ reflecting their structure:
 
     (define my-struct
       (make-bytestructure-descriptor
-        `(,bsd:struct (x ,uint8) (y (,bsd:vector 5 ,uint8)))))
+        `(,bsd:struct (x ,uint8) (y (,bsd:vector 3 ,uint8)))))
 
     (define bv (bytestructure my-struct (0 (0 1 2 3 4))))
 
