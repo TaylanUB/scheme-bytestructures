@@ -22,10 +22,10 @@ Creating bytestructure descriptors
 The function `make-bytestructure-descriptor` takes one argument, the
 "bytestructure description," which may be one of the following:
 
-1. A `bytestructure-descriptor-type` object; this will call the
+1. A "bytestructure descriptor type" object; this will call the
 constructor for that type with no arguments.
 
-2. A list whose first element is a bytestructure-descriptor-type; this
+2. A list whose first element is a bytestructure descriptor type; this
 will apply the constructor for that type to the rest of the list.
 
 3. A bytestructure descriptor; this will return the same bytestructure
@@ -41,18 +41,18 @@ above helps in this situation.  E.g. consider the following example:
     (define uint8-v3
       (make-bytestructure-descriptor (list bsd:vector 3 uint8)))
 
-The `bsd:vector' variable holds the compound bytestructure descriptor
+The `bsd:vector` variable holds the compound bytestructure descriptor
 type "vector."  The constructor for this type takes a length and the
 description for the type of which we want a vector.  We provided the
-existing `uint8' bytestructure descriptor, so we get a descriptor for
-uint8 vectors of length 3.  In C terminology, a uint8_t[3].  The
-following creates a uint8_t[3][5] descriptor:
+existing `uint8` bytestructure descriptor, so we get a descriptor for
+uint8 vectors of length 3.  In C terminology, a `uint8_t[3]`.  The
+following creates a `uint8_t[3][5]` descriptor:
 
     (define uint8-v3-v5
       (make-bytestructure-descriptor
         `(,bsd:vector 5 (,bsd:vector 3 ,uint8))))
 
-As does the following, using our previous `uint8-v3':
+As does the following, using our previous `uint8-v3`:
 
     (define uint8-v3-v5
       (make-bytestructure-descriptor
@@ -84,7 +84,7 @@ struct, union
 
 We've already covered the vector type in the first section.
 
-Given the `uint8-v3' from the vector examples, here's a struct with a
+Given the `uint8-v3` from the vector examples, here's a struct with a
 uint8 and a uint8-v3:
 
     (define my-struct
