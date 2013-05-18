@@ -19,10 +19,10 @@ size, endianness, etc.).
 Creating bytestructure descriptors
 ----------------------------------
 
-The function `make-bytestructure-descriptor' takes one argument, the
+The function `make-bytestructure-descriptor` takes one argument, the
 "bytestructure description," which may be one of the following:
 
-1. A `bytestructure-descriptor-type' object; this will call the
+1. A `bytestructure-descriptor-type` object; this will call the
 constructor for that type with no arguments.
 
 2. A list whose first element is a bytestructure-descriptor-type; this
@@ -35,7 +35,7 @@ passed instead.
 
 A simple strategy that can be used by constructors of compound
 bytestructure descriptor types is to recursively call
-`make-bytestructure-descriptor' on some of their arguments.  Rule 3
+`make-bytestructure-descriptor` on some of their arguments.  Rule 3
 above helps in this situation.  E.g. consider the following example:
 
     (define uint8-v3
@@ -104,7 +104,7 @@ Creating and initializing bytevectors
 -------------------------------------
 
 Bytestructures can of course be used with any existing bytevector, but
-the syntax `bytestructure' can be used to create a new bytevector with
+the syntax `bytestructure` can be used to create a new bytevector with
 the right size for a descriptor, and optionally initialized with
 values.
 
@@ -161,7 +161,7 @@ Setting and getting values is fairly straightforward:
 
     (bytestructure-ref bytevector descriptor index ...)
 
-For example, using the `my-struct' from above:
+For example, using the `my-struct` from above:
 
     (bytestructure-ref bv my-struct y 2) ;; my_struct.y[2]
 
@@ -194,17 +194,17 @@ implementation for the numeric types just uses the "simple" type.)
      bytevector-ref-fn bytevector-set-fn)
 
 This will return a descriptor-type object which can be used with
-`make-bytestructure-descriptor' as explained in the first section.
+`make-bytestructure-descriptor` as explained in the first section.
 The constructor is the one already mentioned, the predicate must
 identify instances of the descriptor type, the size-or-size-accessor
 must be either a non-negative exact integer, or a unary function that
 will return the size of a specific instance of the type (think of our
 "integer" type example).
 
-The `bytevector-ref-fn' must be a ternary function that takes a
+The `bytevector-ref-fn` must be a ternary function that takes a
 bytevector, an offset, and a descriptor of this type; and returns a
 value, according to that descriptor and residing at that offset in the
-bytevector.  The `bytevector-set-fn' is similar but takes an
+bytevector.  The `bytevector-set-fn` is similar but takes an
 additional value argument, whose binary representation it should fill
 into the bytevector at that offset.
 
@@ -221,11 +221,11 @@ New compound types are created as following:
 The size cannot be a constant this time, since it cannot possibly be
 known in advance; it depends on whatever descriptor(s) the compound
 one will hold, and should calculate this correctly.  It can use
-`bytestructure-descriptor-size' for this; for example the
+`bytestructure-descriptor-size` for this; for example the
 size-accessor of the vector type simply multiplies the length of the
 vector with the size of the contained descriptor.
 
-The `bytevector-ref-helper' must be a binary function that takes a
+The `bytevector-ref-helper` must be a binary function that takes a
 descriptor of this type, and an "index" object; it must return two
 values: the byte-offset for this index, and the descriptor contained
 at its position.  For example the ref helper of the vector type
@@ -237,7 +237,7 @@ descriptors it skips until it comes to the field with the requested
 index (a symbol), and returns the accumulated offset and the
 descriptor of the field with the requested index.
 
-The `bytevector-constructor-helper' is similar to the ref helper, but
+The `bytevector-constructor-helper` is similar to the ref helper, but
 the index it takes is always positional (non-negative exact integer).
 The constructor helper for the struct type, for example, simply skips
 over that many fields, instead of seeking for the correct field.  This
