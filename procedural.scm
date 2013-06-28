@@ -133,6 +133,8 @@
         (size (bytestructure-descriptor-content descriptor))
         size)))
 
+;;; Bytestructures
+
 (define-syntax bytestructure
   (syntax-rules ()
     ((_ descriptor)
