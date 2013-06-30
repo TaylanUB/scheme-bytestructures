@@ -24,6 +24,8 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
+;;; Version: 1.0
+
 ;;; Code:
 
 (define-module (bytestructures procedural)
