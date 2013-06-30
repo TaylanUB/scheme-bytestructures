@@ -76,10 +76,10 @@
         (= 0 (bytestructure-descriptor-content desc))
         (= 1 (bytestructure-descriptor-size desc))
         (let ((bv (bytestructure desc 0)))
-          (= 0 (bytestructure-ref bv desc 0)))
+          (= 0 (bytestructure-ref bv desc)))
         (let ((bv (bytestructure desc)))
-          (bytestructure-set! bv desc 0 1)
-          (= 1 (bytestructure-ref bv desc 0)))))
+          (bytestructure-set! bv desc 1)
+          (= 1 (bytestructure-ref bv desc)))))
 
 (let* ((desc-type
         (make-bytestructure-descriptor-compound-type
@@ -106,10 +106,10 @@
         ((test* (type test-value) ...)
          (test "numeric types"
                (begin (let ((bv (bytestructure type test-value)))
-                        (= test-value (bytestructure-ref bv type 0)))
+                        (= test-value (bytestructure-ref bv type)))
                       (let ((bv (bytestructure type)))
-                        (bytestructure-set! bv type 0 test-value)
-                        (= test-value (bytestructure-ref bv type 0))))
+                        (bytestructure-set! bv type test-value)
+                        (= test-value (bytestructure-ref bv type))))
                ...)))))
   (let* ((bv (make-bytevector 64 1))
          (test-float (bytevector-ieee-single-native-ref bv 0))
