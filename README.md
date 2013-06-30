@@ -15,7 +15,7 @@ instances describe how to convert a sequence of bytes into a Scheme
 object (e.g. an "integer" type whose instances can have a specific
 size, endianness, etc.).
 
-
+
 Creating bytestructure descriptors
 ----------------------------------
 
@@ -58,7 +58,7 @@ As does the following, using our previous `uint8-v3`:
       (make-bytestructure-descriptor
         `(,bsd:vector 5 ,uint8-v3)))
 
-
+
 The "simple" type
 -----------------
 
@@ -75,7 +75,7 @@ function.  E.g. the following is the definition of `uint8`:
 All the usual numeric types are readily shipped with the module:
 float, double, (u)int(8,16,32,64)
 
-
+
 Compound types
 --------------
 
@@ -99,7 +99,7 @@ Or without using the intermediate `uint8-v3` descriptor:
 
 Union definitions look exactly the same as struct definitions.
 
-
+
 Creating and initializing bytevectors
 -------------------------------------
 
@@ -153,7 +153,7 @@ reflecting their structure:
 
 The nesting must be correct and cannot be flattened like in C.
 
-
+
 Mutating and accessing
 ----------------------
 
@@ -187,7 +187,7 @@ from whatever point the provided indices ended:
     (bytestructure-ref-helper uint8-v3-v5 2 1)
     ===> 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
 
-
+
 Creating new types
 ------------------
 
