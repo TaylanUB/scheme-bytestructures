@@ -163,9 +163,9 @@ Setting and getting values is fairly straightforward:
 
 For example, using the `my-struct` from above:
 
-    (bytestructure-ref bv my-struct y 2) ;; my_struct.y[2]
+    (bytestructure-ref bv my-struct 'y 2) ;; my_struct.y[2]
 
-(The field-name "y" is also called an "index" in our terminology.)
+(The field-name `y` is also called an "index" in our terminology.)
 
 Setting values is analogous:
 
@@ -173,7 +173,7 @@ Setting values is analogous:
 
 E.g.:
 
-    (bytestructure-set! bv my-struct y 2 42) ;; my_struct.y[2] = 42
+    (bytestructure-set! bv my-struct 'y 2 42) ;; my_struct.y[2] = 42
 
 A "ref-helper" exists which, although part of the internals, could be
 useful to user code and so is exported from the module as well.  It's
