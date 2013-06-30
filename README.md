@@ -100,28 +100,46 @@ Or without using the intermediate `uint8-v3` descriptor:
 Union definitions look exactly the same as struct definitions.
 
 
-Creating and initializing bytevectors
--------------------------------------
+The bytestructure data-type
+---------------------------
 
-Bytestructures can of course be used with any existing bytevector, but
-the syntax `bytestructure` can be used to create a new bytevector with
-the right size for a descriptor, and optionally initialized with
-values.
+Any bytestructure descriptor can be used with any bytevector to work
+on the vector momentarily with accordance to the structure described
+by the given descriptor, but in the usual case a bytevector will be
+dedicated to a certain structure, so it is most convenient to be able
+to bundle a descriptor onto a bytevector and not be required to
+provide it explicitly at each access into the bytevector.  Similarly,
+a section of a bytevector starting from a certain offset might be
+dedicated to the structure, so being able to bundle this offset too is
+also useful:
+
+    (define bs (make-bytestructure bytevector offset descriptor))
+    (bytestructure? bs)           ===> #t
+    (bytestructure-bytevector bs) ===> bytevector
+    (bytestructure-offset bs)     ===> offset
+    (bytestructure-descriptor bs) ===> descriptor
+
+
+Creating and initializing bytestructures conveniently
+-----------------------------------------------------
+
+The syntax `bytestructure` can be used to create a bytestructure with
+a new bytevector of the right size for its descriptor, and optionally
+initialize it with values.  The offset of the created bytestructure
+will be 0.
 
 Using the `uint8-v3` descriptor from the previous section, we could:
 
-    (define bv (bytestructure uint8-v3))
+    (define bs (bytestructure uint8-v3))
 
 which is equivalent to
 
-    (define bv (make-bytevector 3))
-
-because the size of a `uint8-v3` is 3.
+    (define bs (make-bytestructure (make-bytevector 3) 0 uint8-v3))
 
 The syntax for the initialization values depends on the descriptors.
 For vectors it is very obvious:
 
-    (define bv (bytestructure uint8-v3 (0 1 2 3 4)))
+    (define bs (bytestructure uint8-v3 (0 1 2 3 4)))
 
 For structs, it is like in C, meaning it looks like a vector because
 the field names are omitted and their order determines which value
@@ -129,18 +147,18 @@ belongs to which field.
 
     (let ((my-struct (make-bytestructure-descriptor
                        `(,bsd:struct (x ,uint8) (y ,uint8)))))
-      (define bv (bytestructure my-struct (0 1)))) ;; x = 0, y = 1
+      (define bs (bytestructure my-struct (0 1)))) ;; x = 0, y = 1
 
 The implementation of unions has unintentionally led to the ability of
 setting a value for a certain field by providing any value (which will
 subsequently be overwritten) to all preceding fields, and not
 providing any more values.  For good style, the fields to be
-overwritten should probably all use 0.
+overwritten should probably all use 0, or #f.
 
     (let ((my-union
            (make-bytestructure-descriptor
              `(,bsd:union (x ,uint8) (y ,uint16) (z ,uint32))))
-      (define bv (bytestructure my-union (0 42))))) ;; uint16 wins
+      (define bs (bytestructure my-union (0 42))))) ;; uint16 wins
 
 The initialization of the compound types can be done recursively,
 reflecting their structure:
@@ -149,9 +167,16 @@ reflecting their structure:
       (make-bytestructure-descriptor
         `(,bsd:struct (x ,uint8) (y (,bsd:vector 3 ,uint8)))))
 
-    (define bv (bytestructure my-struct (0 (0 1 2 3 4))))
+    (define bs (bytestructure my-struct (0 (0 1 2 3 4))))
 
 The nesting must be correct and cannot be flattened like in C.
+
+The syntax `bytestructure*` can be used to fill a bytevector with
+values as when initializing a bytestructure.  The second argument to
+the syntax provides an initial offset into the bytevector, where the
+structure will start:
+
+    (bytestructure* bytevector offset descriptor contents)
 
 
 Mutating and accessing
@@ -159,27 +184,31 @@ Mutating and accessing
 
 Setting and getting values is fairly straightforward:
 
-    (bytestructure-ref bytevector descriptor index ...)
+    (bytestructure-set! bytestructure index ... value)
+    (bytestructure-ref bytestructure index ...)
 
 For example, using the `my-struct` from above:
 
-    (bytestructure-ref bv my-struct 'y 2) ;; my_struct.y[2]
+    (define bs (bytestructure my-struct)) ;; my_struct_t bs = {0};
+    (bytestructure-set! bs 'y 2 42)       ;; bs.y[2] = 42
+    (bytestructure-ref bs 'y 2)           ;; bs.y[2]
 
 (The field-name `y` is also called an "index" in our terminology.)
 
-Setting values is analogous:
+The syntaxes `bytestructure-set!*` and `bytestructure-ref*` are
+similar, but instead of a bytestructure, they take a raw bytevector,
+an initial offset indicating where the structure starts in the
+bytevector, and a bytestructure descriptor.
 
-    (bytestructure-set! bytevector descriptor index ... value)
-
-E.g.:
-
-    (bytestructure-set! bv my-struct 'y 2 42) ;; my_struct.y[2] = 42
+    (bytestructure-set!* bytevector offset descriptor index ... value)
+    (bytestructure-ref* bytevector offset descriptor index ...)
 
 A "ref-helper" exists which, although part of the internals, could be
 useful to user code and so is exported from the module as well.  It's
-like the referencing syntax, but takes no bytevector, and returns two
-values; an offset, and a descriptor for continuing the referencing
-from whatever point the provided indices ended:
+like the referencing syntax, but takes only a descriptor instead of a
+bytestructure, and returns two values: an offset, and a descriptor for
+continuing the referencing from whatever point the provided indices
+ended:
 
     (bytestructure-ref-helper uint8-v3-v5 2)
     ===> 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.

@@ -24,7 +24,7 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
-;;; Version: 1.0
+;;; Version: 1.1.-1
 
 ;;; Code:
 
@@ -36,7 +36,10 @@
             make-bytestructure-descriptor
             bytestructure-descriptor?
             bytestructure-descriptor-size
+            make-bytestructure
             bytestructure
+            bytestructure-descriptor
+            bytestructure-bytevector
             bytestructure-ref-helper
             bytestructure-ref-helper*
             bytestructure-ref
@@ -137,14 +140,25 @@
 
 ;;; Bytestructures
 
+(define-record-type :bytestructure
+  (make-bytestructure bytevector offset descriptor)
+  bytestructure?
+  (bytevector bytestructure-bytevector)
+  (offset bytestructure-offset)
+  (descriptor bytestructure-descriptor))
+
 (define-syntax bytestructure
   (syntax-rules ()
     ((_ descriptor)
-     (make-bytevector (bytestructure-descriptor-size descriptor)))
+     (make-bytestructure
+      (make-bytevector (bytestructure-descriptor-size descriptor))
+      0
+      descriptor))
     ((_ descriptor content)
-     (let ((bytevector (bytestructure descriptor)))
+     (let ((bytevector
+            (make-bytevector (bytestructure-descriptor-size descriptor))))
        (bytestructure* bytevector 0 descriptor content)
-       bytevector))))
+       (make-bytestructure bytevector 0 descriptor)))))
 
 (define-syntax bytestructure*
   (syntax-rules ()
@@ -183,8 +197,11 @@
 
 (define-syntax bytestructure-ref
   (syntax-rules ()
-    ((_ bytevector descriptor index ...)
-     (bytestructure-ref* bytevector 0 descriptor index ...))))
+    ((_ bytestructure index ...)
+     (let ((bytevector (bytestructure-bytevector bytestructure))
+           (offset (bytestructure-offset bytestructure))
+           (descriptor (bytestructure-descriptor bytestructure)))
+       (bytestructure-ref* bytevector offset descriptor index ...)))))
 
 (define-syntax bytestructure-ref*
   (syntax-rules ()
@@ -199,8 +216,11 @@
 
 (define-syntax bytestructure-set!
   (syntax-rules ()
-    ((_ bytevector descriptor index ... value)
-     (bytestructure-set!* bytevector 0 descriptor index ... value))))
+    ((_ bytestructure index ... value)
+     (let ((bytevector (bytestructure-bytevector bytestructure))
+           (offset (bytestructure-offset bytestructure))
+           (descriptor (bytestructure-descriptor bytestructure)))
+       (bytestructure-set!* bytevector offset descriptor index ... value)))))
 
 (define-syntax bytestructure-set!*
   (syntax-rules ()
