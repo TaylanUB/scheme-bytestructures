@@ -49,10 +49,8 @@
             bytestructure-ref*
             bytestructure-set!
             bytestructure-set!*
-            bsd:vector bsd:struct bsd:union
-            bsd:simple
-            float double
-            int8 uint8 int16 uint16 int32 uint32 int64 uint64
+            bsd:simple bsd:vector bsd:struct bsd:union
+            float double int8 uint8 int16 uint16 int32 uint32 int64 uint64
             ))
 
 (use-modules (srfi srfi-1)
