@@ -60,6 +60,18 @@
           (eq? bv-constructor-helper (bytevector-constructor-helper desc-type))
           (eq? bv-ref-helper (bytevector-ref-helper desc-type)))))
 
+(let ((desc-type
+       (make-bytestructure-descriptor-type
+        (lambda () 0) 1
+        (lambda (bv offset desc) 0)
+        (lambda (bv offset desc val) *unspecified*))))
+  (test "an argumentless bytestructure descriptor constructor"
+        (bytestructure-descriptor? (make-bytestructure-descriptor desc-type))))
+
+(test "a wrong argument to `make-bytestructure-descriptor'"
+      (not (false-if-exception
+            (make-bytestructure-descriptor 'error))))
+
 (let* ((desc-type
         (make-bytestructure-descriptor-type
          (lambda (x) (cons 'test x)) 3
@@ -128,7 +140,7 @@
            (uint64 18446744073709551615))))
 
 (let ((desc (make-bytestructure-descriptor `(,bsd:vector 2 ,uint16))))
-  (test "vector" 
+  (test "vector"
         (let ((bs (bytestructure desc)))
           (= 4 (bytevector-length (bytestructure-bytevector bs))))
         (let ((bs (bytestructure desc (42 65535))))
@@ -152,7 +164,12 @@
           (bytestructure-set! bs 'x 42)
           (bytestructure-set! bs 'y 65535)
           (and (= (bytestructure-ref bs 'x) 42)
-               (= (bytestructure-ref bs 'y) 65535)))))
+               (= (bytestructure-ref bs 'y) 65535)))
+        (not (false-if-exception
+              (bytestructure desc (0 1 2))))
+        (let ((bs (bytestructure desc)))
+          (not (false-if-exception
+                (bytestructure-ref bs 'z))))))
 
 (let ((desc (make-bytestructure-descriptor
              `(,bsd:union (x ,int8) (y ,uint8)))))
@@ -165,4 +182,7 @@
         (let ((bs (bytestructure desc)))
           (bytestructure-set! bs 'y 255)
           (and (= (bytestructure-ref bs 'x) -1)
-               (= (bytestructure-ref bs 'y) 255)))))
+               (= (bytestructure-ref bs 'y) 255)))
+        (let ((bs (bytestructure desc)))
+          (not (false-if-exception
+                (bytestructure-ref bs 'z))))))
