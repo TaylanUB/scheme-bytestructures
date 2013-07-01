@@ -37,9 +37,11 @@
             bytestructure-descriptor?
             bytestructure-descriptor-size
             make-bytestructure
-            bytestructure
-            bytestructure-descriptor
             bytestructure-bytevector
+            bytestructure-offset
+            bytestructure-descriptor
+            bytestructure
+            bytestructure*
             bytestructure-ref-helper
             bytestructure-ref-helper*
             bytestructure-ref
