@@ -82,7 +82,12 @@ Compound types
 The module comes with the three canonical compound types: vector,
 struct, union
 
-We've already covered the vector type in the first section.
+We've already covered the vector type in the first section.  But one
+more thing to note about them is that like in C, they do *not* do
+bounds-checking on indices; an off-bounds index will either raise an
+error due to an off-bounds bytevector index, or attempt to decode
+whatever bytes are found at the relevant place in the bytevector,
+which might just result in a valid value without raising an error.
 
 Given the `uint8-v3` from the vector examples, here's a struct with a
 `uint8` and a `uint8-v3`:
