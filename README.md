@@ -63,7 +63,7 @@ The "simple" type
 -----------------
 
 Most of the time, the pre-provided non-compound type "simple" will
-fulfil all needs for non-compound descriptors.  Its instances are
+fulfill all needs for non-compound descriptors.  Its instances are
 created with a size, bytevector-ref function, and bytevector-set
 function.  E.g. the following is the definition of `uint8`:
 
@@ -145,20 +145,22 @@ For structs, it is like in C, meaning it looks like a vector because
 the field names are omitted and their order determines which value
 belongs to which field.
 
-    (let ((my-struct (make-bytestructure-descriptor
-                       `(,bsd:struct (x ,uint8) (y ,uint8)))))
-      (define bs (bytestructure my-struct (0 1)))) ;; x = 0, y = 1
+    (define my-struct (make-bytestructure-descriptor
+                        `(,bsd:struct (x ,uint8) (y ,uint8))))
+
+    (define bs (bytestructure my-struct (0 1))) ;; x = 0, y = 1
 
 The implementation of unions has unintentionally led to the ability of
 setting a value for a certain field by providing any value (which will
 subsequently be overwritten) to all preceding fields, and not
 providing any more values.  For good style, the fields to be
-overwritten should probably all use 0, or #f.
+overwritten should probably all use 0, `#f`, or similar when possible.
 
-    (let ((my-union
-           (make-bytestructure-descriptor
-             `(,bsd:union (x ,uint8) (y ,uint16) (z ,uint32))))
-      (define bs (bytestructure my-union (0 42))))) ;; uint16 wins
+    (define my-union
+      (make-bytestructure-descriptor
+        `(,bsd:union (x ,uint8) (y ,uint16) (z ,uint32))))
+
+    (define bs (bytestructure my-union (0 42))) ;; uint16 wins
 
 The initialization of the compound types can be done recursively,
 reflecting their structure:
@@ -189,9 +191,9 @@ Setting and getting values is fairly straightforward:
 
 For example, using the `my-struct` from above:
 
-    (define bs (bytestructure my-struct)) ;; my_struct_t bs = {0};
-    (bytestructure-set! bs 'y 2 42)       ;; bs.y[2] = 42
-    (bytestructure-ref bs 'y 2)           ;; bs.y[2]
+    (define bs (bytestructure my-struct)) ;; my_struct_t *bs = {0};
+    (bytestructure-set! bs 'y 2 42)       ;; bs->y[2] = 42
+    (bytestructure-ref bs 'y 2)           ;; bs->y[2]
 
 (The field-name `y` is also called an "index" in our terminology.)
 
@@ -231,16 +233,15 @@ a size, signedness, endianness, etc.. (Note however that the default
 implementation for the numeric types just uses the "simple" type.)
 
     (make-bytestructure-descriptor-type
-     constructor predicate size-or-size-accessor
+     constructor size-or-size-accessor
      bytevector-ref-fn bytevector-set-fn)
 
 This will return a descriptor-type object which can be used with
 `make-bytestructure-descriptor` as explained in the first section.
-The constructor is the one already mentioned, the predicate must
-identify instances of the descriptor type, the size-or-size-accessor
-must be either a non-negative exact integer, or a unary function that
-will return the size of a specific instance of the type (think of our
-"integer" type example).
+The constructor is the one already mentioned, the
+size-or-size-accessor must be either a non-negative exact integer, or
+a unary function that will return the size of a specific instance of
+the type (think of our "integer" type example).
 
 The `bytevector-ref-fn` must be a ternary function that takes a
 bytevector, an offset, and a descriptor of this type; and returns a
@@ -256,7 +257,7 @@ and set functions of the descriptor instance.
 New compound types are created as following:
 
     (make-bytestructure-descriptor-compound-type
-     constructor predicate size-accessor
+     constructor size-accessor
      bytevector-constructor-helper bytevector-ref-helper)
 
 The size cannot be a constant this time, since it cannot possibly be
