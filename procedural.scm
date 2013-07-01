@@ -67,13 +67,12 @@
 
 (define-record-type :bytestructure-descriptor-type
   (make-bytestructure-descriptor-type*
-   compound? constructor predicate size-or-size-accessor
+   compound? constructor size-or-size-accessor
    bytevector-constructor-helper bytevector-ref-helper
    bytevector-ref-fn bytevector-set-fn)
   bytestructure-descriptor-type?
   (compound?                     bytestructure-descriptor-type-compound?)
   (constructor                   bytestructure-descriptor-constructor)
-  (predicate                     bytestructure-descriptor-type-predicate)
   (size-or-size-accessor         bytestructure-descriptor-type-size)
   (bytevector-constructor-helper bytevector-constructor-helper)
   (bytevector-ref-helper         bytevector-ref-helper)
@@ -81,28 +80,27 @@
   (bytevector-set-fn             bytevector-set-fn))
 
 (define (make-bytestructure-descriptor-type
-         constructor predicate size-or-size-accessor
+         constructor size-or-size-accessor
          bytevector-ref-fn bytevector-set-fn)
   (assert (every procedure?
-                 (list constructor predicate
-                       bytevector-ref-fn bytevector-set-fn)))
+                 (list constructor bytevector-ref-fn bytevector-set-fn)))
   (assert (or (procedure? size-or-size-accessor)
               (and (integer? size-or-size-accessor)
                    (exact? size-or-size-accessor)
                    (<= 0 size-or-size-accessor))))
   (make-bytestructure-descriptor-type*
-   #f constructor predicate size-or-size-accessor
+   #f constructor size-or-size-accessor
    #f #f
    bytevector-ref-fn bytevector-set-fn))
 
 (define (make-bytestructure-descriptor-compound-type
-         constructor predicate size-accessor
+         constructor size-accessor
          bytevector-constructor-helper bytevector-ref-helper)
   (assert (every procedure?
-                 (list constructor predicate size-accessor
+                 (list constructor size-accessor
                        bytevector-constructor-helper bytevector-ref-helper)))
   (make-bytestructure-descriptor-type*
-   #t constructor predicate size-accessor
+   #t constructor size-accessor
    bytevector-constructor-helper bytevector-ref-helper
    #f #f))
 
@@ -255,7 +253,7 @@
 
 (define bsd:simple
   (make-bytestructure-descriptor-type
-   simple-descriptor simple-descriptor? simple-descriptor-size
+   simple-descriptor simple-descriptor-size
    simple-descriptor-ref simple-descriptor-set!))
 
 ;;; Numeric types
@@ -310,7 +308,7 @@
 
 (define bsd:vector
   (make-bytestructure-descriptor-compound-type
-   vector-descriptor vector-descriptor? vector-descriptor-size
+   vector-descriptor vector-descriptor-size
    vector-constructor-helper vector-ref-helper))
 
 ;;; Helpers for Structs and Unions
@@ -376,7 +374,7 @@
 
 (define bsd:struct
   (make-bytestructure-descriptor-compound-type
-   struct-descriptor struct-descriptor? struct-descriptor-size
+   struct-descriptor struct-descriptor-size
    struct-constructor-helper struct-ref-helper))
 
 ;;; Union
@@ -406,7 +404,7 @@
 
 (define bsd:union
   (make-bytestructure-descriptor-compound-type
-   union-descriptor union-descriptor? union-descriptor-size
+   union-descriptor union-descriptor-size
    union-constructor-helper union-ref-helper))
 
 ;;; procedural.scm ends here

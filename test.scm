@@ -21,7 +21,6 @@
               ...)))))
   (df bytestructure-descriptor-type-compound?
       bytestructure-descriptor-constructor
-      bytestructure-descriptor-type-predicate
       bytestructure-descriptor-type-size
       bytevector-constructor-helper
       bytevector-ref-helper
@@ -33,7 +32,6 @@
 ;;; Sanity-check for internals
 
 (let ((constructor (lambda () #f))
-      (predicate (lambda () #f))
       (size 0)
       (size-accessor (lambda () #f))
       (bv-constructor-helper (lambda () #f))
@@ -42,58 +40,62 @@
       (bv-set-fn (lambda () #f)))
   (let ((desc-type
          (make-bytestructure-descriptor-type
-          constructor predicate size bv-ref-fn bv-set-fn)))
+          constructor size bv-ref-fn bv-set-fn)))
     (test "non-compound descriptor type"
           (bytestructure-descriptor-type? desc-type)
           (not (bytestructure-descriptor-type-compound? desc-type))
           (eq? constructor (bytestructure-descriptor-constructor desc-type))
-          (eq? predicate (bytestructure-descriptor-type-predicate desc-type))
           (eqv? size (bytestructure-descriptor-type-size desc-type))
           (eq? bv-ref-fn (bytevector-ref-fn desc-type))
           (eq? bv-set-fn (bytevector-set-fn desc-type))))
   (let ((desc-type
          (make-bytestructure-descriptor-compound-type
-          constructor predicate size-accessor
+          constructor size-accessor
           bv-constructor-helper bv-ref-helper)))
     (test "compound descriptor type"
           (bytestructure-descriptor-type? desc-type)
           (bytestructure-descriptor-type-compound? desc-type)
           (eq? constructor (bytestructure-descriptor-constructor desc-type))
-          (eq? predicate (bytestructure-descriptor-type-predicate desc-type))
           (eq? size-accessor (bytestructure-descriptor-type-size desc-type))
           (eq? bv-constructor-helper (bytevector-constructor-helper desc-type))
           (eq? bv-ref-helper (bytevector-ref-helper desc-type)))))
 
 (let* ((desc-type
         (make-bytestructure-descriptor-type
-         (lambda () 0) (lambda (desc) (= desc 0)) 1
-         (lambda (bv offset desc) (bytevector-u8-ref bv offset))
-         (lambda (bv offset desc val) (bytevector-u8-set! bv offset val))))
-       (desc (make-bytestructure-descriptor desc-type)))
+         (lambda (x) (cons 'test x)) 3
+         (lambda (bv offset desc)
+           (+ (cdr desc) (bytevector-u8-ref bv offset)))
+         (lambda (bv offset desc val)
+           (bytevector-u8-set! bv offset (+ (cdr desc) val)))))
+       (desc (make-bytestructure-descriptor (list desc-type 5))))
   (test "an instance of a braindead bytestructure descriptor type"
         (bytestructure-descriptor? desc)
         (eq? desc-type (bytestructure-descriptor-type desc))
-        (= 0 (bytestructure-descriptor-content desc))
-        (= 1 (bytestructure-descriptor-size desc))
+        (= 5 (cdr (bytestructure-descriptor-content desc)))
+        (= 3 (bytestructure-descriptor-size desc))
+        (let ((bs (bytestructure desc)))
+          (= 3 (bytevector-length (bytestructure-bytevector bs))))
         (let ((bs (bytestructure desc 0)))
-          (= 0 (bytestructure-ref bs)))
+          (= 10 (bytestructure-ref bs)))
         (let ((bs (bytestructure desc)))
           (bytestructure-set! bs 1)
-          (= 1 (bytestructure-ref bs)))))
+          (= 11 (bytestructure-ref bs)))))
 
 (let* ((desc-type
         (make-bytestructure-descriptor-compound-type
-         (lambda () 0) (lambda (desc) (= desc 0)) (lambda (desc) 1)
-         (lambda (desc idx) (values 0 uint8))
-         (lambda (desc idx) (values 0 uint8))))
-       (desc (make-bytestructure-descriptor desc-type)))
+         (lambda (x) (cons 'test x)) (lambda (desc) (cadr desc))
+         (lambda (desc idx) (values idx (cddr desc)))
+         (lambda (desc idx) (values idx (cddr desc)))))
+       (desc (make-bytestructure-descriptor (list desc-type (cons 3 uint8)))))
   (test "an instance of a braindead bytestructure descriptor compound type"
         (bytestructure-descriptor? desc)
         (eq? desc-type (bytestructure-descriptor-type desc))
-        (= 0 (bytestructure-descriptor-content desc))
-        (= 1 (bytestructure-descriptor-size desc))
-        (let ((bs (bytestructure desc (0))))
-          (= 0 (bytestructure-ref bs 0)))
+        (eq? uint8 (cddr (bytestructure-descriptor-content desc)))
+        (= 3 (bytestructure-descriptor-size desc))
+        (let ((bs (bytestructure desc)))
+          (= 3 (bytevector-length (bytestructure-bytevector bs))))
+        (let ((bs (bytestructure desc (0 1 2))))
+          (= 1 (bytestructure-ref bs 1)))
         (let ((bs (bytestructure desc)))
           (bytestructure-set! bs 0 1)
           (= 1 (bytestructure-ref bs 0)))))
