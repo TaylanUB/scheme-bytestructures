@@ -387,7 +387,6 @@
   (size   union-descriptor-size))
 
 (define (union-descriptor . fields)
-  (assert (list? fields))
   (let ((fields (construct-fields fields)))
     (union-descriptor*
      fields (apply max (map (lambda (field)
