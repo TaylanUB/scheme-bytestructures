@@ -282,11 +282,11 @@ an initial offset into the bytevector, and a bytestructure descriptor.
 
 The `bytestructure-ref-helper` and `bytestructure-ref-helper*`
 syntaxes are equivalent to `bytestructure-ref` and
-`bytestructure-ref*`, respectively, except that they always return
-three values; a bytevector, an offset, and a bytestructure descriptor;
-instead of a bytestructure encapsulating these (in the case of a
-non-exhaustive index list) or the ultimate value of the referencing
-(in the case of an exhaustive index list).
+`bytestructure-ref*`, except that they always return three values; a
+bytevector, an offset, and a bytestructure descriptor; instead of a
+bytestructure encapsulating these (in the case of a non-exhaustive
+index list) or the ultimate value of the referencing (in the case of
+an exhaustive index list).
 
     (bytestructure-ref-helper bs 'y 1)
     ===> (bytestructure-bytevector bs), 5, uint8-v3
