@@ -74,23 +74,20 @@
 (define-record-type :bytestructure-descriptor-type
   (%make-bytestructure-descriptor-type
    constructor size-or-size-accessor
-   bytevector-constructor-helper bytevector-ref-helper
-   bytevector-ref-proc bytevector-set-proc)
+   constructor-helper ref-helper
+   ref-proc set-proc)
   bytestructure-descriptor-type?
-  (constructor                   bytestructure-descriptor-constructor)
-  (size-or-size-accessor         bytestructure-descriptor-type-size)
-  (bytevector-constructor-helper bytevector-constructor-helper)
-  (bytevector-ref-helper         bytevector-ref-helper)
-  (bytevector-ref-proc           bytevector-ref-proc)
-  (bytevector-set-proc           bytevector-set-proc))
+  (constructor           bytestructure-descriptor-constructor)
+  (size-or-size-accessor bytestructure-descriptor-type-size)
+  (constructor-helper    bytevector-constructor-helper)
+  (ref-helper            bytevector-ref-helper)
+  (ref-proc              bytevector-ref-proc)
+  (set-proc              bytevector-set-proc))
 
 (define (make-bytestructure-descriptor-type
-         constructor size-or-size-accessor
-         bytevector-ref-proc bytevector-set-proc)
+         constructor size-or-size-accessor ref-proc set-proc)
   (%make-bytestructure-descriptor-type
-   constructor size-or-size-accessor
-   #f #f
-   bytevector-ref-proc bytevector-set-proc))
+   constructor size-or-size-accessor #f #f ref-proc set-proc))
 
 (define make-bytestructure-descriptor-compound-type
   %make-bytestructure-descriptor-type)
