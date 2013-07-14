@@ -90,7 +90,11 @@
    constructor size-or-size-accessor #f #f ref-proc set-proc))
 
 (define make-bytestructure-descriptor-compound-type
-  %make-bytestructure-descriptor-type)
+  (case-lambda
+    ((constructor size-or-size-accessor constructor-helper ref-helper)
+     (%make-bytestructure-descriptor-type
+      constructor size-or-size-accessor constructor-helper ref-helper #f #f))
+    (args (apply %make-bytestructure-descriptor-type args))))
 
 
 ;;; Descriptors
@@ -379,8 +383,7 @@
 (define bs:vector
   (make-bytestructure-descriptor-compound-type
    make-vector vector-size
-   vector-ref-helper vector-ref-helper
-   #f #f))
+   vector-ref-helper vector-ref-helper))
 
 
 ;;; Helpers for Structs and Unions
@@ -448,8 +451,7 @@
 (define bs:struct
   (make-bytestructure-descriptor-compound-type
    make-struct struct-size
-   struct-constructor-helper struct-ref-helper
-   #f #f))
+   struct-constructor-helper struct-ref-helper))
 
 
 ;;; Union
@@ -483,8 +485,7 @@
 (define bs:union
   (make-bytestructure-descriptor-compound-type
    make-union union-size
-   union-constructor-helper union-ref-helper
-   #f #f))
+   union-constructor-helper union-ref-helper))
 
 
 ;;; Pointer
