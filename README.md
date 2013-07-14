@@ -73,7 +73,7 @@ procedure.  E.g. the following is the definition of `uint8`:
         (list bs:simple 1 bytevector-u8-ref bytevector-u8-set!)))
 
 All the usual numeric types are readily provided by the module:
-float, double, \[u\]int(8,16,32,64)\[le,be\]
+float\[-le,-be\], double\[-le,-be\], \[u\]int(8,16,32,64)\[le,be\]
 
 Also native-sized ones: \[unsigned-\](short,int,long), size_t,
 ssize_t, ptrdiff_t
