@@ -2,7 +2,23 @@
 
 (use-modules (bytestructures procedural)
              (ice-9 format)
-             (rnrs bytevectors))
+             (rnrs bytevectors)
+             (srfi srfi-11))
+
+(let-syntax
+    ((df (syntax-rules ()
+           ((df fn ...)
+            (begin
+              (define fn (@@ (bytestructures procedural) fn))
+              ...)))))
+  (df bytestructure-descriptor-constructor
+      bytestructure-descriptor-type-size
+      bytevector-constructor-helper
+      bytevector-ref-helper
+      bytevector-ref-proc
+      bytevector-set-proc
+      bytestructure-descriptor-type
+      bytestructure-descriptor-content))
 
 (define-syntax test
   (syntax-rules ()
@@ -13,81 +29,133 @@
        ...))))
 
 (define (main)
+  (descriptor-types)
+  (descriptors)
+  (bytestructures)
+  (builtin-types))
 
-  (let-syntax
-      ((df (syntax-rules ()
-             ((df fn ...)
-              (begin
-                (define fn (@@ (bytestructures procedural) fn))
-                ...)))))
-    (df bytestructure-descriptor-type-compound?
-        bytestructure-descriptor-constructor
-        bytestructure-descriptor-type-size
-        bytevector-constructor-helper
-        bytevector-ref-helper
-        bytevector-ref-fn
-        bytevector-set-fn
-        bytestructure-descriptor-type
-        bytestructure-descriptor-content))
+
+;;; Descriptor types
 
-;;; Sanity-check for internals
+(define (descriptor-types)
+  (type)
+  (compound-type))
 
+(define (type)
   (let ((constructor (lambda () #f))
-        (size 0)
+        (size (lambda () #f))
+        (size-accessor (lambda () #f))
+        (bv-ref-proc (lambda () #f))
+        (bv-set-proc (lambda () #f)))
+    (let ((desc-type
+           (make-bytestructure-descriptor-type
+            constructor size bv-ref-proc bv-set-proc)))
+      (test "descriptor type"
+            (bytestructure-descriptor-type? desc-type)
+            (eq? constructor (bytestructure-descriptor-constructor desc-type))
+            (eqv? size (bytestructure-descriptor-type-size desc-type))
+            (eq? bv-ref-proc (bytevector-ref-proc desc-type))
+            (eq? bv-set-proc (bytevector-set-proc desc-type))))))
+
+(define (compound-type)
+  (let ((constructor (lambda () #f))
+        (size (lambda () #f))
         (size-accessor (lambda () #f))
         (bv-constructor-helper (lambda () #f))
         (bv-ref-helper (lambda () #f))
-        (bv-ref-fn (lambda () #f))
-        (bv-set-fn (lambda () #f)))
-    (let ((desc-type
-           (make-bytestructure-descriptor-type
-            constructor size bv-ref-fn bv-set-fn)))
-      (test "non-compound descriptor type"
-            (bytestructure-descriptor-type? desc-type)
-            (not (bytestructure-descriptor-type-compound? desc-type))
-            (eq? constructor (bytestructure-descriptor-constructor desc-type))
-            (eqv? size (bytestructure-descriptor-type-size desc-type))
-            (eq? bv-ref-fn (bytevector-ref-fn desc-type))
-            (eq? bv-set-fn (bytevector-set-fn desc-type))))
+        (bv-ref-proc (lambda () #f))
+        (bv-set-proc (lambda () #f)))
     (let ((desc-type
            (make-bytestructure-descriptor-compound-type
             constructor size-accessor
-            bv-constructor-helper bv-ref-helper)))
+            bv-constructor-helper bv-ref-helper
+            bv-ref-proc bv-set-proc)))
       (test "compound descriptor type"
             (bytestructure-descriptor-type? desc-type)
-            (bytestructure-descriptor-type-compound? desc-type)
             (eq? constructor (bytestructure-descriptor-constructor desc-type))
             (eq? size-accessor (bytestructure-descriptor-type-size desc-type))
             (eq? bv-constructor-helper
                  (bytevector-constructor-helper desc-type))
-            (eq? bv-ref-helper (bytevector-ref-helper desc-type)))))
+            (eq? bv-ref-helper (bytevector-ref-helper desc-type))
+            (eq? bv-ref-proc (bytevector-ref-proc desc-type))
+            (eq? bv-set-proc (bytevector-set-proc desc-type))))))
 
-  (let ((desc-type
-         (make-bytestructure-descriptor-type
-          (lambda () 0) 1
-          (lambda (bv offset desc) 0)
-          (lambda (bv offset desc val) *unspecified*))))
-    (test "an argumentless bytestructure descriptor constructor"
-          (bytestructure-descriptor?
-           (make-bytestructure-descriptor desc-type))))
+
+;;; Descriptors
 
-  (test "a wrong argument to `make-bytestructure-descriptor'"
+(define (descriptors)
+  (wrong-argument-to-constructor)
+  (argumentless-constructor)
+  (constructor-with-arguments))
+
+(define (wrong-argument-to-constructor)
+  (test "wrong argument to `make-bytestructure-descriptor'"
         (not (false-if-exception
-              (make-bytestructure-descriptor 'error))))
+              (make-bytestructure-descriptor 'error)))))
 
+(define (argumentless-constructor)
   (let* ((desc-type
           (make-bytestructure-descriptor-type
-           (lambda (x) (cons 'test x)) 3
-           (lambda (bv offset desc)
-             (+ (cdr desc) (bytevector-u8-ref bv offset)))
-           (lambda (bv offset desc val)
-             (bytevector-u8-set! bv offset (+ (cdr desc) val)))))
-         (desc (make-bytestructure-descriptor (list desc-type 5))))
-    (test "an instance of a braindead bytestructure descriptor type"
+           (lambda () 0) 1
+           (lambda (bv offs desc) 0)
+           (lambda (bv offs desc val) *unspecified*)))
+         (desc (make-bytestructure-descriptor desc-type)))
+    (test "argumentless descriptor constructor"
           (bytestructure-descriptor? desc)
           (eq? desc-type (bytestructure-descriptor-type desc))
-          (= 5 (cdr (bytestructure-descriptor-content desc)))
-          (= 3 (bytestructure-descriptor-size desc))
+          (= 0 (bytestructure-descriptor-content desc))
+          (= 1 (bytestructure-descriptor-size #f #f desc)))))
+
+(define (constructor-with-arguments)
+  (let* ((desc-type
+          (make-bytestructure-descriptor-type
+           (lambda (x) x) 1
+           (lambda (bv offs desc) 0)
+           (lambda (bv offs desc val) *unspecified*)))
+         (desc (make-bytestructure-descriptor (list desc-type 'test))))
+    (test "descriptor constructor with arguments"
+          (bytestructure-descriptor? desc)
+          (eq? desc-type (bytestructure-descriptor-type desc))
+          (eq? 'test (bytestructure-descriptor-content desc))
+          (= 1 (bytestructure-descriptor-size #f #f desc)))))
+
+
+;;; Bytestructures
+
+(define (bytestructures)
+  (anonymous-descriptor)
+  (descriptor-instance)
+  (compound-descriptor-instance))
+
+(define (anonymous-descriptor)
+  (let ((desc-type
+         (make-bytestructure-descriptor-type
+          (lambda (x) x) 3
+          (lambda (bv offs desc)
+            (+ desc (bytevector-u8-ref bv offs)))
+          (lambda (bv offs desc val)
+            (bytevector-u8-set! bv offs (+ desc val))))))
+    (test "anonymous descriptor"
+          (let ((bs (bytestructure (list desc-type 5))))
+            (bytestructure? bs))
+          (let ((bs (bytestructure (list desc-type 5))))
+            (= 3 (bytevector-length (bytestructure-bytevector bs))))
+          (let ((bs (bytestructure (list desc-type 5) 0)))
+            (= 10 (bytestructure-ref bs)))
+          (let ((bs (bytestructure (list desc-type 5))))
+            (bytestructure-set! bs 1)
+            (= 11 (bytestructure-ref bs))))))
+
+(define (descriptor-instance)
+  (let* ((desc-type
+          (make-bytestructure-descriptor-type
+           (lambda (x) x) 3
+           (lambda (bv offs desc)
+             (+ desc (bytevector-u8-ref bv offs)))
+           (lambda (bv offs desc val)
+             (bytevector-u8-set! bv offs (+ desc val)))))
+         (desc (make-bytestructure-descriptor (list desc-type 5))))
+    (test "descriptor instance"
           (let ((bs (bytestructure desc)))
             (bytestructure? bs))
           (let ((bs (bytestructure desc)))
@@ -96,31 +164,46 @@
             (= 10 (bytestructure-ref bs)))
           (let ((bs (bytestructure desc)))
             (bytestructure-set! bs 1)
-            (= 11 (bytestructure-ref bs)))))
+            (= 11 (bytestructure-ref bs))))))
 
+(define (compound-descriptor-instance)
   (let* ((desc-type
           (make-bytestructure-descriptor-compound-type
-           (lambda (x) (cons 'test x)) (lambda (desc) (cadr desc))
-           (lambda (desc idx) (values idx (cddr desc)))
-           (lambda (desc idx) (values idx (cddr desc)))))
-         (desc (make-bytestructure-descriptor (list desc-type (cons 3 uint8)))))
-    (test "an instance of a braindead bytestructure descriptor compound type"
-          (bytestructure-descriptor? desc)
-          (eq? desc-type (bytestructure-descriptor-type desc))
-          (eq? uint8 (cddr (bytestructure-descriptor-content desc)))
-          (= 3 (bytestructure-descriptor-size desc))
+           (lambda (size desc) (cons size desc))
+           (lambda (bv offs desc) (car desc))
+           (lambda (bv offs desc idx) (values bv idx (cdr desc)))
+           (lambda (bv offs desc idx) (values bv idx (cdr desc)))
+           #f #f))
+         (desc (make-bytestructure-descriptor `(,desc-type 3 ,uint8))))
+    (test "compound descriptor instance"
           (let ((bs (bytestructure desc)))
             (bytestructure? bs))
           (let ((bs (bytestructure desc)))
             (= 3 (bytevector-length (bytestructure-bytevector bs))))
-          (let ((bs (bytestructure desc (0 1 2))))
+          (let ((bs (bytestructure desc '(0 1 2))))
             (= 1 (bytestructure-ref bs 1)))
           (let ((bs (bytestructure desc)))
             (bytestructure-set! bs 0 1)
-            (= 1 (bytestructure-ref bs 0)))))
+            (= 1 (bytestructure-ref bs 0)))
+          (let ((bs (bytestructure desc #vu8(0 1 2))))
+            (= 2 (bytestructure-ref bs 2)))
+          (let ((bs (bytestructure desc #vu8(0 1 2))))
+            (bytestructure-set! bs #vu8(3 4 5))
+            (= 5 (bytestructure-ref bs 2)))
+          (let ((bs (bytestructure desc)))
+            (equal? (bytestructure-ref bs) bs)))))
 
-;;; External API
+
+;;; Built-in types
 
+(define (builtin-types)
+  (numeric-types)
+  (vector-type)
+  (struct-type)
+  (union-type)
+  (pointer-type))
+
+(define (numeric-types)
   (let-syntax
       ((test*
         (syntax-rules ()
@@ -144,29 +227,50 @@
              (int32 2147483647)
              (uint32 4294967295)
              (int64 9223372036854775807)
-             (uint64 18446744073709551615))))
+             (uint64 18446744073709551615)
+             (int16le 32767)
+             (uint16le 65535)
+             (int32le 2147483647)
+             (uint32le 4294967295)
+             (int64le 9223372036854775807)
+             (uint64le 18446744073709551615)
+             (int16be 32767)
+             (uint16be 65535)
+             (int32be 2147483647)
+             (uint32be 4294967295)
+             (int64be 9223372036854775807)
+             (uint64be 18446744073709551615)
+             (short 32767)
+             (unsigned-short 65535)
+             (int 2147483647)
+             (unsigned-int 4294967295)
+             (long 9223372036854775807)
+             (unsigned-long 18446744073709551615)
+             ))))
 
-  (let ((desc (make-bytestructure-descriptor `(,bsd:vector 2 ,uint16))))
+(define (vector-type)
+  (let ((desc (make-bytestructure-descriptor `(,bs:vector 2 ,uint16))))
     (test "vector"
-          (= 4 (bytestructure-descriptor-size desc))
+          (= 4 (bytestructure-descriptor-size #f #f desc))
           (let ((bs (bytestructure desc)))
             (= 4 (bytevector-length (bytestructure-bytevector bs))))
-          (let ((bs (bytestructure desc (42 65535))))
+          (let ((bs (bytestructure desc '(42 65535))))
             (and (= (bytestructure-ref bs 0) 42)
                  (= (bytestructure-ref bs 1) 65535)))
           (let ((bs (bytestructure desc)))
             (bytestructure-set! bs 0 42)
             (bytestructure-set! bs 1 65535)
             (and (= (bytestructure-ref bs 0) 42)
-                 (= (bytestructure-ref bs 1) 65535)))))
+                 (= (bytestructure-ref bs 1) 65535))))))
 
+(define (struct-type)
   (let ((desc (make-bytestructure-descriptor
-               `(,bsd:struct (x ,uint16) (y ,uint16)))))
+               `(,bs:struct (x ,uint16) (y ,uint16)))))
     (test "struct"
-          (= 4 (bytestructure-descriptor-size desc))
+          (= 4 (bytestructure-descriptor-size #f #f desc))
           (let ((bs (bytestructure desc)))
             (= 4 (bytevector-length (bytestructure-bytevector bs))))
-          (let ((bs (bytestructure desc (42 65535))))
+          (let ((bs (bytestructure desc '(42 65535))))
             (and (= (bytestructure-ref bs 'x) 42)
                  (= (bytestructure-ref bs 'y) 65535)))
           (let ((bs (bytestructure desc)))
@@ -175,18 +279,19 @@
             (and (= (bytestructure-ref bs 'x) 42)
                  (= (bytestructure-ref bs 'y) 65535)))
           (not (false-if-exception
-                (bytestructure desc (0 1 2))))
+                (bytestructure desc '(0 1 2))))
           (let ((bs (bytestructure desc)))
             (not (false-if-exception
-                  (bytestructure-ref bs 'z))))))
+                  (bytestructure-ref bs 'z)))))))
 
+(define (union-type)
   (let ((desc (make-bytestructure-descriptor
-               `(,bsd:union (x ,int8) (y ,uint8)))))
+               `(,bs:union (x ,int8) (y ,uint8)))))
     (test "union"
-          (= 1 (bytestructure-descriptor-size desc))
+          (= 1 (bytestructure-descriptor-size #f #f desc))
           (let ((bs (bytestructure desc)))
             (= 1 (bytevector-length (bytestructure-bytevector bs))))
-          (let ((bs (bytestructure desc (0 255))))
+          (let ((bs (bytestructure desc '(0 255))))
             (and (= (bytestructure-ref bs 'x) -1)
                  (= (bytestructure-ref bs 'y) 255)))
           (let ((bs (bytestructure desc)))
@@ -195,6 +300,37 @@
                  (= (bytestructure-ref bs 'y) 255)))
           (let ((bs (bytestructure desc)))
             (not (false-if-exception
-                  (bytestructure-ref bs 'z))))))
+                  (bytestructure-ref bs 'z)))))))
 
-  )
+(define sizeof (@ (system foreign) sizeof))
+
+(define (pointer-type)
+  (let ((desc (make-bytestructure-descriptor
+               `(,bs:pointer (,bs:vector 2 ,uint8)))))
+    (test "pointer"
+          (= (sizeof '*) (bytestructure-descriptor-size #f #f desc))
+          (let ((bs (bytestructure desc)))
+            (= (sizeof '*) (bytevector-length (bytestructure-bytevector bs))))
+          (let ((bs (bytestructure desc #vu8(0 42))))
+            (and (equal? (bytestructure-ref bs) #vu8(0 42))
+                 (= (bytestructure-ref bs '* 1) 42)
+                 (= (bytestructure-ref bs 1) 42)))
+          (let ((bs (bytestructure desc '(#vu8(0 42)))))
+            (= (bytestructure-ref bs 1) 42))
+          (let ((bs (bytestructure desc '((0 42)))))
+            (= (bytestructure-ref bs 1) 42))
+          (not (false-if-exception (bytestructure desc '(0 1))))
+          (let ((bs (bytestructure desc)))
+            (bytestructure-set! bs #vu8(0 42))
+            (= (bytestructure-ref bs 1) 42))
+          (let ((bs (bytestructure desc)))
+            (bytestructure-set! bs '* #vu8(0 42))
+            (= (bytestructure-ref bs 1) 42))
+          (let ((bs (bytestructure desc)))
+            (bytestructure-set! bs '* 1 42)
+            (= (bytestructure-ref bs 1) 42))
+          (let ((bs (bytestructure desc)))
+            (bytestructure-set! bs 1 42)
+            (= (bytestructure-ref bs 1) 42)))))
+
+;;; test.scm ends here
