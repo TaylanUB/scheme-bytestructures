@@ -119,7 +119,7 @@
        (apply (bytestructure-descriptor-constructor type) contents))))
    ((bytestructure-descriptor? description)
     description)
-   (else (error "Invalid bytestructure-descriptor description." description))))
+   (else (error "Invalid bytestructure-descriptor description:" description))))
 
 (define bytestructure-descriptor-size
   (case-lambda
@@ -423,7 +423,7 @@
              (offset offset)
              (field-count index))
       (if (null? fields)
-          (error "Struct field index out of bounds." index)
+          (error "Struct field index out of bounds:" index)
           (let ((field (car fields)))
             (if (= field-count 0)
                 (values bytevector offset (field-content field))
@@ -437,7 +437,7 @@
     (let lp ((fields fields)
              (offset offset))
       (if (null? fields)
-          (error "No such struct field." key)
+          (error "No such struct field:" key)
           (let ((field (car fields)))
             (if (eq? (field-name field) key)
                 (values bytevector offset (field-content field))
