@@ -388,11 +388,9 @@ index (a symbol), and returns the accumulated offset and the
 descriptor of the field at which it arrived.
 
 Note that while the ref-helper receives contents of a descriptor, it
-is expected to return an actual descriptor; as a special-case, if it
-returns the same object it received, then it is taken to mean the
-descriptor to which that content object belongs; this is to satisfy
-possible use-cases where a ref-helper wants to recurse on the same
-descriptor.
+is expected to return an actual descriptor.  This means it cannot just
+return the same object to induce recursion on the same descriptor.
+This limitation is unlikely to ever cause problems.
 
 The `bytevector-ref-proc` must be a ternary procedure that takes a
 bytevector, an offset, and the descriptor contents; returning a

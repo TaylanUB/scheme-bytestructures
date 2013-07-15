@@ -155,11 +155,8 @@
        (let-values (((bytevector* offset* descriptor*)
                      ((bytevector-ref-helper type)
                       bytevector offset content index)))
-         (let ((descriptor* (if (eq? descriptor* content)
-                                descriptor
-                                descriptor*)))
-           (bytestructure-ref-helper*
-            bytevector* offset* descriptor* indices ...)))))))
+         (bytestructure-ref-helper*
+          bytevector* offset* descriptor* indices ...))))))
 
 (define-syntax bytestructure-ref
   (syntax-rules ()
