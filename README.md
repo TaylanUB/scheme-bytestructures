@@ -244,8 +244,8 @@ For example, given
 
 we can
 
-    (bytestructure-ref bs 'y 2)           ;; bs->y[2]
-    (bytestructure-set! bs 'y 2 42)       ;; bs->y[2] = 42;
+    (bytestructure-ref bs 'y 2)     ;; bs->y[2]
+    (bytestructure-set! bs 'y 2 42) ;; bs->y[2] = 42;
 
 (The field-name `y` is also called an "index" in our terminology.)
 
