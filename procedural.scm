@@ -32,7 +32,6 @@
 (define-module (bytestructures procedural)
   #:export (
             make-bytestructure-descriptor-type
-            make-bytestructure-descriptor-compound-type
             bytestructure-descriptor-type?
             make-bytestructure-descriptor
             bytestructure-descriptor?
@@ -43,7 +42,6 @@
             bytestructure-offset
             bytestructure-descriptor
             bytestructure
-            bytestructure-fill!
             bytestructure-ref-helper
             bytestructure-ref-helper*
             bytestructure-ref
@@ -72,29 +70,15 @@
 ;;; Descriptor-types
 
 (define-record-type :bytestructure-descriptor-type
-  (%make-bytestructure-descriptor-type
+  (make-bytestructure-descriptor-type
    constructor size-or-size-accessor
-   constructor-helper ref-helper
-   ref-proc set-proc)
+   ref-helper ref-proc set-proc)
   bytestructure-descriptor-type?
   (constructor           bytestructure-descriptor-constructor)
   (size-or-size-accessor bytestructure-descriptor-type-size)
-  (constructor-helper    bytevector-constructor-helper)
   (ref-helper            bytevector-ref-helper)
   (ref-proc              bytevector-ref-proc)
   (set-proc              bytevector-set-proc))
-
-(define (make-bytestructure-descriptor-type
-         constructor size-or-size-accessor ref-proc set-proc)
-  (%make-bytestructure-descriptor-type
-   constructor size-or-size-accessor #f #f ref-proc set-proc))
-
-(define make-bytestructure-descriptor-compound-type
-  (case-lambda
-    ((constructor size-or-size-accessor constructor-helper ref-helper)
-     (%make-bytestructure-descriptor-type
-      constructor size-or-size-accessor constructor-helper ref-helper #f #f))
-    (args (apply %make-bytestructure-descriptor-type args))))
 
 
 ;;; Descriptors
@@ -150,24 +134,8 @@
          (bytevector (make-bytevector
                       (bytestructure-descriptor-size descriptor))))
     (when init?
-      (bytestructure-fill! bytevector 0 descriptor values))
+      (bytestructure-primitive-set! bytevector 0 descriptor values))
     (make-bytestructure bytevector 0 descriptor)))
-
-(define (bytestructure-fill! bytevector offset descriptor values)
-  (cond
-   ((pair? values)
-    (let ((type (bytestructure-descriptor-type descriptor))
-          (content (bytestructure-descriptor-content descriptor)))
-      (let lp ((index 0)
-               (values values))
-        (unless (null? values)
-          (let-values (((bytevector* offset* descriptor*)
-                        ((bytevector-constructor-helper type)
-                         bytevector offset content index)))
-            (bytestructure-fill! bytevector* offset* descriptor* (car values)))
-          (lp (+ 1 index) (cdr values))))))
-   (else
-    (bytestructure-primitive-set! bytevector offset descriptor values))))
 
 (define-syntax bytestructure-ref-helper
   (syntax-rules ()
@@ -237,9 +205,11 @@
     (if set-proc
         (let ((content (bytestructure-descriptor-content descriptor)))
           (set-proc bytevector offset content value))
-        (bytevector-copy! value 0 bytevector offset
-                          (bytestructure-descriptor-size
-                           bytevector offset descriptor)))))
+        (if (bytevector? value)
+            (bytevector-copy! value 0 bytevector offset
+                              (bytestructure-descriptor-size
+                               bytevector offset descriptor))
+            (error "Failed to write:" value)))))
 
 
 ;;; "Simple" type
@@ -263,7 +233,7 @@
 (define bs:simple
   (make-bytestructure-descriptor-type
    make-simple simple-size
-   simple-ref simple-set!))
+   #f simple-ref simple-set!))
 
 
 ;;; Numeric types
@@ -380,10 +350,25 @@
                          bytevector offset content)))
             content)))
 
+(define (vector-set! bytevector offset vector values)
+  (cond
+   ((list? values)
+    (let* ((content (vector-content vector))
+           (content-size (bytestructure-descriptor-size content)))
+      (let lp ((values values)
+               (offset offset))
+        (unless (null? values)
+          (bytestructure-set!* bytevector offset content (car values))
+          (lp (cdr values) (+ offset content-size))))))
+   ((bytevector? values)
+    (bytevector-copy! values 0 bytevector offset (%vector-size vector)))
+   (else
+    (error "Vector type failed to write:" values))))
+
 (define bs:vector
-  (make-bytestructure-descriptor-compound-type
+  (make-bytestructure-descriptor-type
    make-vector vector-size
-   vector-ref-helper vector-ref-helper))
+   vector-ref-helper #f vector-set!))
 
 
 ;;; Helpers for Structs and Unions
@@ -417,21 +402,6 @@
 (define (struct-size bytevector offset struct)
   (%struct-size struct))
 
-(define (struct-constructor-helper bytevector offset struct index)
-  (let ((fields (struct-fields struct)))
-    (let lp ((fields fields)
-             (offset offset)
-             (field-count index))
-      (if (null? fields)
-          (error "Struct field index out of bounds:" index)
-          (let ((field (car fields)))
-            (if (= field-count 0)
-                (values bytevector offset (field-content field))
-                (lp (cdr fields)
-                    (+ offset (bytestructure-descriptor-size
-                               (field-content field)))
-                    (- field-count 1))))))))
-
 (define (struct-ref-helper bytevector offset struct key)
   (let ((fields (struct-fields struct)))
     (let lp ((fields fields)
@@ -448,10 +418,31 @@
                         offset
                         (field-content field))))))))))
 
+(define (struct-set! bytevector offset struct values)
+  (cond
+   ((list? values)
+    (let lp ((values values)
+             (fields (struct-fields struct))
+             (offset offset)
+             (index 0))
+      (unless (null? values)
+        (if (null? fields)
+            (error "Struct field index out of bounds:" index)
+            (let ((content (field-content (car fields))))
+              (bytestructure-set!* bytevector offset content (car values))
+              (lp (cdr values)
+                  (cdr fields)
+                  (+ offset (bytestructure-descriptor-size content))
+                  (+ 1 index)))))))
+   ((bytevector? values)
+    (bytevector-copy! values 0 bytevector offset (%struct-size struct)))
+   (else
+    (error "Struct type failed to write:" values))))
+
 (define bs:struct
-  (make-bytestructure-descriptor-compound-type
+  (make-bytestructure-descriptor-type
    make-struct struct-size
-   struct-constructor-helper struct-ref-helper))
+   struct-ref-helper #f struct-set!))
 
 
 ;;; Union
@@ -472,20 +463,26 @@
 (define (union-size bytevector offset union)
   (%union-size union))
 
-(define (union-constructor-helper bytevector offset union index)
-  (values bytevector
-          offset
-          (field-content (list-ref (union-fields union) index))))
-
 (define (union-ref-helper bytevector offset union key)
   (values bytevector
           offset
           (field-content (field-find key (union-fields union)))))
 
+(define (union-set! bytevector offset union values)
+  (cond
+   ((and (list? values) (= 2 (length values)))
+    (let-values (((bytevector* offset* descriptor)
+                  (union-ref-helper bytevector offset union (car values))))
+      (bytestructure-set!* bytevector* offset* descriptor (cadr values))))
+   ((bytevector? values)
+    (bytevector-copy! values 0 bytevector offset (%union-size union)))
+   (else
+    (error "Union type failed to write:" values))))
+
 (define bs:union
-  (make-bytestructure-descriptor-compound-type
+  (make-bytestructure-descriptor-type
    make-union union-size
-   union-constructor-helper union-ref-helper))
+   union-ref-helper #f union-set!))
 
 
 ;;; Pointer
@@ -497,15 +494,6 @@
 
 (define (make-pointer content-description)
   (%make-pointer (make-bytestructure-descriptor content-description)))
-
-(define (pointer-constructor-helper bytevector offset pointer index)
-  (if (not (zero? index))
-      (error "Pointer can only hold one value.")
-      (let* ((content (pointer-content pointer))
-             (content-size (bytestructure-descriptor-size content)))
-        (let ((bytevector* (make-bytevector content-size)))
-          (pointer-set-bv! bytevector offset pointer bytevector*)
-          (values bytevector* 0 content)))))
 
 (define (pointer-ref-helper bytevector offset pointer index)
   (let ((content (pointer-content pointer)))
@@ -539,15 +527,24 @@
         (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
 
 (define (pointer-set-bv! bytevector offset pointer value)
-  (bytevector-address-set!
-   bytevector offset (ffi:pointer-address (if (bytevector? value)
-                                              (ffi:bytevector->pointer value)
-                                              value))))
+  (cond
+   ((and (pair? value) (null? (cdr value)))
+    (let ((bytevector* (pointer-ref-bv bytevector offset pointer))
+          (content (pointer-content pointer)))
+      (bytestructure-set!* bytevector* 0 content (car value))))
+   (else
+    (bytevector-address-set!
+     bytevector
+     offset
+     (ffi:pointer-address
+      (cond
+       ((ffi:pointer? value) value)
+       ((bytevector? value) (ffi:bytevector->pointer value))
+       (else (error "Pointer type failed to write:" value))))))))
 
 (define bs:pointer
-  (make-bytestructure-descriptor-compound-type
+  (make-bytestructure-descriptor-type
    make-pointer (ffi:sizeof '*)
-   pointer-constructor-helper pointer-ref-helper
-   pointer-ref-bv pointer-set-bv!))
+   pointer-ref-helper pointer-ref-bv pointer-set-bv!))
 
 ;;; procedural.scm ends here

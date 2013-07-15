@@ -7,19 +7,18 @@ aimed at any `(rnrs bytevectors)` implementation, and the code-base
 keeps implementation-specific features to a minimum except for the
 FFI-heavy parts.*
 
-A "bytestructure descriptor" describes a layout for the contents of a
-bytevector, or how the bytes are to be accessed and converted into
+A "bytestructure descriptor" describes a logic for the contents of a
+bytevector, or how its bytes are to be accessed and converted into
 Scheme objects.
 
 You can think of it like C's weak typing/type-casting system.
 
-Every bytestructure descriptor is of a certain type, which can be
-either compound, meaning that its instances can contain other
-descriptors (e.g. a vector type whose instances describe vectors of a
-certain length and contained type), or not compound, meaning that its
-instances only describe how to convert a sequence of bytes into a
-Scheme object (e.g. an "integer" type whose instances can have a
-specific size, endianness, etc.).
+Every bytestructure descriptor if of a certain type, which can define
+what it means to index through it (e.g. a vector type that calculates
+an offset by multiplying a given index with the size of the type of
+the vector instance), and what it means to reference it or assign to
+it (e.g. an "integer" type that encodes and decodes byte-sequences as
+numbers of a specific size, endianness, etc.).
 
 
 Creating bytestructure descriptors
@@ -39,16 +38,17 @@ bytestructure descriptor as is.  This is so that in places where a
 bytestructure description is expected, an existing bytestructure
 descriptor can be passed instead.
 
-A simple strategy that can be used by constructors of compound
-bytestructure descriptor types is to recursively call
-`make-bytestructure-descriptor` on some of their arguments.  Rule 3
-above helps in this situation.  E.g. consider the following example:
+A simple strategy that can be used by constructors of "compound"
+bytestructure descriptor types (those who contain other descriptors,
+e.g. vector) is to recursively call `make-bytestructure-descriptor` on
+some of their arguments.  Rule 3 above helps in this situation.
+E.g. consider the following example:
 
     (define uint8-v3
       (make-bytestructure-descriptor (list bs:vector 3 uint8)))
 
-The `bs:vector` variable holds the compound bytestructure descriptor
-type "vector."  The constructor for this type takes a length and the
+The `bs:vector` variable holds the bytestructure descriptor type
+"vector."  The constructor for this type takes a length and the
 description for the type of which we want a vector.  We provided the
 existing `uint8` bytestructure descriptor, so we get a descriptor for
 uint8 vectors of length 3.  In C terminology, a `uint8_t[3]`.  The
@@ -64,12 +64,18 @@ As does the following, using our previous `uint8-v3`:
       (make-bytestructure-descriptor
         `(,bs:vector 5 ,uint8-v3)))
 
+The size of the structure described a bytestructure descriptor can be
+acquired with `bytestructure-descriptor-size`.  Some complicated
+descriptors might have dynamic size though, in which case this
+procedure cannot be used.
+
 
 The "simple" type
 -----------------
 
-The module comes with the non-compound type "simple," which can
-fulfill all needs of non-compound descriptors.  Its instances are
+The module comes with the type "simple," which can fulfill all needs
+of "non-compound" descriptors -- those whose sole purpose is to
+convert between Scheme objects and byte-sequences.  Its instances are
 created with a size, bytevector-ref procedure, and bytevector-set
 procedure.  E.g. the following is the definition of `uint8`:
 
@@ -81,8 +87,8 @@ procedure.  E.g. the following is the definition of `uint8`:
 All the usual numeric types are readily provided by the module:
 float\[-le,-be\], double\[-le,-be\], \[u\]int(8,16,32,64)\[le,be\]
 
-Also native-sized ones: \[unsigned-\](short,int,long), size_t,
-ssize_t, ptrdiff_t
+Also native-sized ones, derived from Guile's FFI module:
+\[unsigned-\](short,int,long), size_t, ssize_t, ptrdiff_t
 
 
 Compound types
@@ -125,6 +131,8 @@ The pointer type is "magical" in that it only uses the underlying
 bytevector to store a pointer to another bytevector, which holds said
 pointed-to substructure.
 
+*The pointer makes heavy use of Guile's FFI functionality.*
+
 
 The bytestructure data-type
 ---------------------------
@@ -165,37 +173,41 @@ is equivalent to
                  (make-bytestructure-descriptor
                    `(,bs:vector 3 ,int16))))
 
-The format for the initialization values, which are the optional
-second argument to `bytestructure`, depends on the descriptors in
-play.  For vectors, it is a list of the contained values:
+Providing the optional second argument to `bytestructure` will invoke
+the setter procedure of the descriptor type.  While this procedure is
+mainly intended for descriptors of atomic types to implement
+conversion from Scheme objects to byte-sequences, compound types can
+use it to provide convenient content initialization.
+
+Vectors accept a list of elements to be written:
 
     (define bs (bytestructure uint8-v3 '(0 1 2)))
 
-For structs, it is like in C, meaning it looks like a vector because
-the field names are omitted and their order determines which value
-belongs to which field.
+Structs, like in C, also accept a sequential list of elements:
 
     (define a-simple-struct (make-bytestructure-descriptor
                               `(,bs:struct (x ,uint8) (y ,uint8))))
 
     (define bs (bytestructure a-simple-struct '(0 1))) ;; x = 0, y = 1
 
-The implementation of unions has unintentionally led to the ability of
-setting a value for a certain field by providing any value (which will
-subsequently be overwritten) to all preceding fields, and not
-providing any more values.  For good style, the fields to be
-overwritten should probably all use 0, `#f`, or similar when possible.
+Unions take a two-element list, whose first element is a field-name,
+and the second element the value:
 
     (define a-simple-union
       (make-bytestructure-descriptor
         `(,bs:union (x ,uint8) (y ,uint16) (z ,uint32))))
 
-    (define bs (bytestructure a-simple-union '(0 42))) ;; uint16 wins
+    (define bs (bytestructure a-simple-union '(y 42)))
 
-Pointers take either directly a bytevector (whose pointer will be
-used), or directly a pointer, or a one-element list containing the
-values for the pointer destination (this will automatically allocate a
-bytevector and use its pointer):
+Vectors, structs, and unions also accept a bytevector, from which they
+will copy as many bytes as their size:
+
+    (define bs (bytestructure a-simple-struct #vu8(0 1)))
+
+Pointers take either a bytevector (whose pointer will be used), a
+pointer (which must point to a bytevector), or a one-element list
+containing the values for the pointer destination (this will
+automatically allocate a bytevector and use its pointer):
 
     (define bs (bytestructure `(,bs:pointer ,uint8) #vu8(42)))
 
@@ -212,18 +224,6 @@ reflecting their structure:
 
     (define bs (bytestructure `(,bs:pointer ,my-struct)
                               '((0 (0 1 2)))))
-
-The nesting must be correct and cannot be flattened like in C.
-
-The procedure `bytestructure-fill!` can be used to fill a bytevector
-with values as when using `bytestructure`.  The second argument
-provides an initial offset into the bytevector, where the structure
-will start:
-
-    (bytestructure-fill! bytevector offset descriptor contents)
-
-The third argument must be a bytestructure descriptor; it cannot be a
-bytestructure description.
 
 
 Accessing and mutating
@@ -257,17 +257,20 @@ Both forms are syntax, not procedures, because an arbitrary-length
 argument list would require heap allocation, which is undesirable for
 the ubiquitous accessing and mutating operations.
 
-For both syntaxes, if the given indices don't exhaust the nested
-descriptors of the bytestructure, i.e. following the indices still
-leaves us on a compound descriptor, then either the compound
-descriptor on which we arrived can provide a custom action, or a
-default action is taken: when referencing, a bytestructure is returned
-which encapsulates the bytevector, offset, and descriptor at which we
-arrived, such that referencing or setting could continue from that
-point by using that bytestructure; when setting, the value is expected
-to be a bytevector, and as many bytes as the size of the descriptor at
-which we arrived are copied from it into the target bytestructure's
-bytevector, starting at the offset at which we had arrived.
+Note that `bytestructure-set!` invokes the same "setter procedure"
+mentioned in the section "Creating and initializing bytestructures
+conveniently."
+
+When a descriptor does not provide a referencing or setting procedure,
+a default action is taken: when referencing, a bytestructure is
+returned which encapsulates the bytevector, offset, and descriptor at
+which we arrived, such that referencing or setting could continue from
+that point by using that bytestructure; when setting, the value is
+expected to be a bytevector, and as many bytes as the size of the
+descriptor at which we arrived are copied from it into the target
+bytestructure's bytevector, starting at the offset at which we had
+arrived (this is the same behavior which vectors, structs, and unions
+provide for a bytevector argument).
 
 In other words:
 
@@ -288,10 +291,12 @@ In other words:
                              (+ 2 (bytestructure-offset bs))
                              uint8-v3))
 
-The pointer type defines a custom action: when referencing, it returns
-the bytevector to which it points; when setting, if it is given a
-bytevector, it will use the pointer of that bytevector, otherwise it
-expects directly a pointer; it will write the address of the pointer.
+The pointer type behaves different: when referencing, it returns the
+bytevector to which it points; when setting, as mentioned in the
+section "Creating and initializing bytestructures conveniently," if it
+is given a bytevector, it will use the pointer of that bytevector,
+otherwise it expects directly a pointer; it will write the address of
+the pointer.
 
 The syntaxes `bytestructure-ref*` and `bytestructure-set!*` are
 equivalent to `bytestructure-ref` and `bytestructure-set`, except that
@@ -336,19 +341,9 @@ good style should probably use `#f`:
 Creating new types
 ------------------
 
-For non-compound descriptors, the "simple" type can fulfill all
-use-cases; since a size, and a pair of "bytes to scheme object" and
-"scheme object to bytes" conversion procedures is absolutely
-everything that's needed to describe any kind of binary object.
-However, sometimes it might be convenient, make sense, or be otherwise
-useful to have a separate type of non-compound descriptor, like for
-example an "integer" type whose instances can be created with a size,
-signedness, endianness, etc. (Note however that the default
-implementation for the numeric types just uses the "simple" type.)
-
     (make-bytestructure-descriptor-type
       constructor size-or-size-accessor
-      bytevector-ref-proc bytevector-set-proc)
+      ref-helper bytevector-ref-proc bytevector-set-proc)
 
 This will return a descriptor-type object which can be used with
 `make-bytestructure-descriptor` as explained in the section "Creating
@@ -368,8 +363,36 @@ arguments if the descriptor will be used in situations where the size
 is requested independently of a bytevector.  Specifically, the vector,
 struct, and union types calculate their sizes at creation time to save
 work, thus they cannot contain dynamic-sized descriptors; the pointer
-type, too, cannot hold dynamic-sized descriptors, because creating a
+type, too, cannot hold dynamic-sized descriptors, because getting a
 bytevector from a pointer requires the size to be declared beforehand.
+
+The size-accessor procedure of a compound type can use
+`bytestructure-descriptor-size` to acquire the size of other
+descriptors it holds.  This procedure takes either only a
+bytestructure descriptor (for when to calculating the size statically,
+typically in the constructor-helper), or a bytevector, offset so-far,
+and descriptor (for when requesting the size of a potentially
+dynamic-sized type).
+
+The `ref-helper` must be a four-argument procedure that takes a
+bytevector, an offset so-far, the contents of the descriptor, and an
+"index" object; it returns three values: the same or a different
+bytevector, and a new offset and descriptor as determined by the
+index.  For example the ref-helper of the vector type multiplies the
+size of its contained descriptor with the index and adds the resulting
+value to the offset so-far, and always returns its one contained
+descriptor.  The ref-helper of the struct type, on the other hand,
+must iterate through its fields, adding to the offset the sizes of the
+descriptors it skips until it comes to the field with the requested
+index (a symbol), and returns the accumulated offset and the
+descriptor of the field at which it arrived.
+
+Note that while the ref-helper receives contents of a descriptor, it
+is expected to return an actual descriptor; as a special-case, if it
+returns the same object it received, then it is taken to mean the
+descriptor to which that content object belongs; this is to satisfy
+possible use-cases where a ref-helper wants to recurse on the same
+descriptor.
 
 The `bytevector-ref-proc` must be a ternary procedure that takes a
 bytevector, an offset, and the descriptor contents; returning a
@@ -385,53 +408,5 @@ The ref and set procedures of the "simple" type, for example, pass on
 said arguments in the same order --excluding the descriptor contents--
 to the ref and set procedures of the descriptor instance.
 
-New compound types are created as follows:
-
-    (make-bytestructure-descriptor-compound-type
-      constructor size-or-size-accessor
-      bytevector-constructor-helper bytevector-ref-helper
-      bytevector-ref-proc bytevector-set-proc)
-
-The `constructor` and `size-or-size-accessor` are just as before.
-Note that the size is less likely to be a constant this time, since it
-will usually depend on whatever descriptor(s) the compound one will
-hold.  It can use `bytestructure-descriptor-size` on its contained
-descriptors to calculate the size; this procedure takes either only a
-bytestructure descriptor (for when trying to calculate the size
-statically, typically in the constructor-helper; see below), or a
-bytevector, offset so-far, and descriptor (for when requesting the
-size of a potentially dynamic-sized type); for example the
-size-accessor of the vector type simply multiplies the length of the
-vector with the size of the contained descriptor.
-
-The `bytevector-ref-helper` must be a four-argument procedure that
-takes a bytevector, an offset so-far, the contents of the descriptor,
-and an "index" object; it returns three values: the same or a
-different bytevector, and a new offset and descriptor as determined by
-the index.  For example the ref-helper of the vector type multiplies
-the size of its contained descriptor with the index and adds the
-resulting value to the offset so-far, and always returns its one
-contained descriptor.  The ref-helper of the struct type, on the other
-hand, must iterate through its fields, adding to the offset the sizes
-of the descriptors it skips until it comes to the field with the
-requested index (a symbol), and returns the accumulated offset and the
-descriptor of the field at which it arrived.
-
-Note that while the ref-helper receives contents of a descriptor, it
-is expected to return an actual descriptor; as a special-case, if it
-returns the same object it received, then it is taken to mean the
-descriptor to which that content object belongs; this is to satisfy
-possible use-cases where a ref-helper wants to recurse on the same
-descriptor.
-
-The `bytevector-constructor-helper` is similar to the ref-helper, but
-the index it takes is always positional (non-negative exact integer).
-The constructor helper for the struct type, for example, simply skips
-over that many fields, instead of seeking for the correct field.  This
-is why initializing structs works the way it does (see relevant
-section).
-
-The last two arguments are the same as before; they define the custom
-behavior for non-exhaustive index lists mentioned in section
-"Accessing and mutating."  They may be `#f` to indicate default
-behavior (see again said section).
+The ref and set procedures may be `#f`, specifying default behavior
+(see "Accessing and mutating").
