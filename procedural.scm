@@ -152,11 +152,13 @@
     ((_ bytevector offset descriptor index indices ...)
      (let ((type (bytestructure-descriptor-type descriptor))
            (content (bytestructure-descriptor-content descriptor)))
-       (let-values (((bytevector* offset* descriptor*)
-                     ((bytevector-ref-helper type)
-                      bytevector offset content index)))
-         (bytestructure-ref-helper*
-          bytevector* offset* descriptor* indices ...))))))
+       (let ((ref-helper (bytevector-ref-helper type)))
+         (if ref-helper
+             (let-values (((bytevector* offset* descriptor*)
+                           (ref-helper bytevector offset content index)))
+               (bytestructure-ref-helper*
+                bytevector* offset* descriptor* indices ...))
+             (error "Cannot index through this descriptor:" descriptor)))))))
 
 (define-syntax bytestructure-ref
   (syntax-rules ()

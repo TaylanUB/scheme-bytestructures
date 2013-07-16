@@ -408,7 +408,9 @@ descriptor of the field at which it arrived.
 Note that while the ref-helper receives contents of a descriptor, it
 is expected to return an actual descriptor.  This means it cannot just
 return the same object to induce recursion on the same descriptor.
-This limitation is unlikely to cause problems.
+
+The ref-helper may be `#f` to indicate that it doesn't make sense to
+use an index with a descriptor type.
 
 The `bytevector-ref-proc` must be a ternary procedure that takes a
 bytevector, an offset, and the descriptor contents; returning a

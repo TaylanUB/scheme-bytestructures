@@ -96,6 +96,7 @@
   (anonymous-descriptor)
   (descriptor-instance)
   (descriptor-instance-with-default-ref-set)
+  (ref-error)
   (write-error))
 
 (define (anonymous-descriptor)
@@ -154,6 +155,15 @@
             (= 1 (bytestructure-ref bs 1)))
           (let ((bs (bytestructure desc)))
             (equal? (bytestructure-ref bs) bs)))))
+
+(define (ref-error)
+  (let* ((desc-type
+          (make-bytestructure-descriptor-type
+           (lambda () 0) 0 #f #f #f))
+         (desc (make-bytestructure-descriptor desc-type)))
+    (test "ref error"
+          (let ((bs (bytestructure desc)))
+            (not (false-if-exception (bytestructure-ref bs 'error)))))))
 
 (define (write-error)
   (let* ((desc-type
