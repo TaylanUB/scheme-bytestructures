@@ -15,26 +15,39 @@ also offer "views" on raw bytes.
 
 Every descriptor is of a certain type.  Going on with the C analogy,
 if a descriptor is a type, then a descriptor type would be a
-type-type, or meta-type; the C programming language does not have an
-explicit concept for this, although it supports arrays, structs,
-unions, functions, and pointers, all of which are not stand-alone
-types, but such meta-types that construct derived types.  
+type-type, or meta-type; the C programming language does not give
+control over these, although the array, struct, union, function, and
+pointer "types" it supports are all not stand-alone types, but indeed
+such meta-types that construct derived types.  (E.g. a variable never
+has type "array," it has a type "array of <type>" for an underlying
+type <type>, called its element type.)
 
 In our system, both descriptors and descriptor types are first-class
 objects; a descriptor type can define how descriptors of that type are
-created, how their size is calculated, what it means to use indices
-with them, what it means to reference a value with them, and what it
-means to assign a value with them.  For example, descriptors of the
-vector type are created with a length and an element descriptor, their
-size is calculated by multiplying the length with the size of the
-element descriptor, and one can use non-negative exact integer indices
-on them, which results in an offset (calculated by multiplying the
-index with the size of the element descriptor), and the element
-descriptor, such that indexing or referencing or setting a value can
-continue from there.  As another example, instances of a hypothetical
-"integer" type could be created with a specific size, endianness, and
-signedness, thus offering a way to encode and decode numeric values
-into binary and back.
+created, how their size (or rather, the size of the structure they
+describe) is calculated, what it means to use indices with them, what
+it means to reference a value with them, and what it means to assign a
+value with them.
+
+For example, descriptors of the vector type are created with a length,
+and an element descriptor; their size is calculated by multiplying the
+length with the size of the element descriptor; and one can use
+non-negative exact integer indices on them, which results in an offset
+(calculated by multiplying the index with the size of the element
+descriptor), and the element descriptor, such that indexing or
+referencing or setting a value can continue from there; referencing or
+assigning a value directly as a vector does not make much sense,
+although the vector type also defines a certain assignment semantics
+as a convenience manner, which can be used to mutate multiple elements
+of the vector at once, or replace its whole contents with another.
+
+As another example, instances of a hypothetical "number" type could be
+created with a specific size, endianness, etc., and their referencing
+and assignment semantics would be to encode and decode numeric values
+to and from byte-sequences as specified by said properties.  In this
+case, in contrast to the vector type, indexing semantics would be left
+out, since instances of this descriptor type would work with singular
+objects.
 
 
 Creating bytestructure descriptors
@@ -78,9 +91,8 @@ As does the following, using our previous `uint8-v3`:
       (make-bytestructure-descriptor
         `(,bs:vector 5 ,uint8-v3)))
 
-The size of a descriptor, or rather, the size of the described
-structure, is asked via `bytestructure-descriptor-size`.  Some
-descriptors might have dynamic sizes though, in which case the
+The size of a descriptor is asked via `bytestructure-descriptor-size`.
+Some descriptors might have dynamic sizes though, in which case the
 procedure cannot be used on solely the descriptor; it must be given a
 bytevector, an offset indicating where the described structure starts
 in the bytevector, and then the descriptor.
@@ -228,7 +240,7 @@ automatically allocate a bytevector and use its pointer):
     (define bs (bytestructure `(,bs:pointer ,uint8) #vu8(42)))
 
     (define bs (bytestructure `(,bs:pointer ,uint8) '(42)))
-    
+
 The initialization of the compound types can be done recursively,
 reflecting their structure, since the assignment procedures are
 implemented such that they again use the underlying descriptor's
