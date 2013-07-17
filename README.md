@@ -19,8 +19,8 @@ type-type, or meta-type; the C programming language does not give
 control over these, although the array, struct, union, function, and
 pointer "types" it supports are all not stand-alone types, but indeed
 such meta-types that construct derived types.  (E.g. a variable never
-has type "array," it has a type "array of <type>" for an underlying
-type <type>, called its element type.)
+has type "array," it has a type "array of \<type\>" for an underlying
+type \<type\>, called its element type.)
 
 In our system, both descriptors and descriptor types are first-class
 objects; a descriptor type can define how descriptors of that type are
