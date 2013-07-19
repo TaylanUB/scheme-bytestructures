@@ -24,7 +24,7 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
-;;; Version: 1.2.1.-1
+;;; Version: 1.2.1
 
 
 ;;; Code:

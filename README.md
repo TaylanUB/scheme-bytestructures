@@ -252,8 +252,8 @@ bytevector (whose pointer will be used):
 
     (define bs (bytestructure `(,bs:pointer ,uint8) bv))
 
-__* Having an address written into a bytevector does not protect it
-    from garbage collection. *__
+_**Having an address written into a bytevector does not protect it
+from garbage collection.**_
 
 The initialization of the compound types can be done recursively,
 reflecting their structure, since the assignment procedures are
