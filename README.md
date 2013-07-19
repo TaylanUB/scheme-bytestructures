@@ -157,7 +157,10 @@ substructure:
 
 The pointer type only uses the underlying bytevector to store a
 pointer to another bytevector, which holds said pointed-to
-substructure.
+substructure.  Note that this makes your Scheme program memory-unsafe!
+If no references are left to a bytevector whose address has been saved
+in a bytestructure, then references into the bytestructure which go
+through the pointer might try to access invalid memory addresses.
 
 *The pointer makes heavy use of Guile's FFI functionality.*
 
@@ -232,14 +235,15 @@ will copy as many bytes as their size:
 
     (define bs (bytestructure a-simple-struct #vu8(0 1)))
 
-Pointers take either a bytevector (whose pointer will be used), a
-pointer (which must point to a bytevector), or a one-element list
-containing the values for the pointer destination (this will
-automatically allocate a bytevector and use its pointer):
+Pointer descriptors take either a bytevector (whose pointer will be
+used), or a pointer:
 
-    (define bs (bytestructure `(,bs:pointer ,uint8) #vu8(42)))
+    (define bs (bytestructure `(,bs:pointer ,uint8) my-bv))
 
-    (define bs (bytestructure `(,bs:pointer ,uint8) '(42)))
+    (define bs (bytestructure `(,bs:pointer ,uint8) some-pointer))
+
+**Note that having an address written into a bytevector does not
+  protect it from garbage-collection!**
 
 The initialization of the compound types can be done recursively,
 reflecting their structure, since the assignment procedures are
@@ -280,8 +284,8 @@ we can
 (The field-name `y` is also called an "index" in our terminology.)
 
 The pointer type accepts the index `*` to induce dereferencing; if any
-other index is given, it implicitly dereferences and re-uses that
-index for its contained descriptor.
+other index is given, it implicitly dereferences and re-uses the index
+for its contained descriptor.
 
 Both forms are syntax, not procedures, because an arbitrary-length
 argument list would require heap allocation, which is undesirable for
@@ -289,7 +293,17 @@ the ubiquitous accessing and mutating operations.
 
 Note that `bytestructure-set!` invokes the same assignment procedure
 mentioned in the section "Creating and initializing bytestructures
-conveniently."
+conveniently" on its last argument, which matches the second argument
+to the `bytestructure` syntax, so the same types of arguments are
+accepted:
+
+    (bytestructure-set! bs '(0 (1 2 3))) ;; Re-fill the whole struct.
+
+The pointer type accepts an additional type of argument not mentioned
+in the section about initialization: a one-element list whose contents
+are passed to the underlying bytestructure's assignment procedure.
+This usage is only valid if the pointer is already pointing to a valid
+bytevector, so using it at initialization does not make sense.
 
 When a descriptor does not provide a referencing or assignment
 procedure, a default action is taken: when referencing, a
@@ -299,8 +313,8 @@ could continue from that point by using that bytestructure; when
 setting, the value is expected to be a bytevector, and as many bytes
 as the size of the descriptor at which we arrived are copied from it
 into the target bytestructure's bytevector, starting at the offset at
-which we had arrived (this is the same behavior which vectors,
-structs, and unions provide for a bytevector argument).
+which we had arrived.  This is the same behavior which vectors,
+structs, and unions provide for a bytevector argument.
 
 In other words:
 
@@ -323,10 +337,9 @@ In other words:
 
 The pointer type behaves differently: when referencing, it returns the
 bytevector to which it points; when setting, as mentioned in the
-section "Creating and initializing bytestructures conveniently," if it
-is given a bytevector, it will use the pointer of that bytevector,
-otherwise it expects directly a pointer; it will write the address of
-the pointer.
+section about initialization, if it is given a bytevector, it will use
+the pointer of that bytevector, otherwise it expects directly a
+pointer; it will write the address of the pointer.
 
 The syntaxes `bytestructure-ref*` and `bytestructure-set!*` are
 equivalent to `bytestructure-ref` and `bytestructure-set!`, except

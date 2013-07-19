@@ -24,7 +24,7 @@
 ;; can be defined at run-time, but performance is sub-optimal, because the
 ;; bytevector-offset to access a field is calculated at run-time.
 
-;;; Version: 1.2
+;;; Version: 1.2.1.-1
 
 
 ;;; Code:
@@ -516,14 +516,13 @@
     ((8) bytevector-u64-native-set!)))
 
 (define (pointer-ref-bv bytevector offset pointer)
-  (let ((address (bytevector-address-ref bytevector offset))
-        (content-size (bytestructure-descriptor-size
-                       (pointer-content pointer))))
+  (let ((address (bytevector-address-ref bytevector offset)))
     (if (zero? address)
-        (let ((bv (make-bytevector content-size)))
-          (pointer-set-bv! bytevector offset pointer bv)
-          bv)
-        (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
+        (error "Tried to dereference null-pointer.")
+        (let ((content-size (bytestructure-descriptor-size
+                             (pointer-content pointer))))
+          (ffi:pointer->bytevector (ffi:make-pointer address)
+                                   content-size)))))
 
 (define (pointer-set-bv! bytevector offset pointer value)
   (cond
