@@ -51,9 +51,9 @@
             bytestructure-pointer
             bs:simple bs:vector bs:struct bs:union bs:pointer
             float double int8 uint8 int16 uint16 int32 uint32 int64 uint64
-            float-le double-le
+            floatle doublele
             int16le uint16le int32le uint32le int64le uint64le
-            float-be double-be
+            floatbe doublebe
             int16be uint16be int32be uint32be int64be uint64be
             short unsigned-short int unsigned-int long unsigned-long
             size_t ssize_t ptrdiff_t
@@ -312,10 +312,10 @@
               (be-name native-name size ref-proc set-proc (endianness big)))
             ...)))))
   (define-with-endianness*
-    (float-le float-be
-              float 4 bytevector-ieee-single-ref bytevector-ieee-single-set!)
-    (double-le double-be
-               double 8 bytevector-ieee-double-ref bytevector-ieee-double-set!)
+    (floatle floatbe
+             float 4 bytevector-ieee-single-ref bytevector-ieee-single-set!)
+    (doublele doublebe
+              double 8 bytevector-ieee-double-ref bytevector-ieee-double-set!)
     (int16le  int16be  int16  2 bytevector-s16-ref bytevector-s16-set!)
     (uint16le uint16be uint16 2 bytevector-u16-ref bytevector-u16-set!)
     (int32le  int32be  int32  4 bytevector-s32-ref bytevector-s32-set!)

@@ -33,7 +33,8 @@
   (descriptor-type)
   (descriptors)
   (bytestructures)
-  (builtin-types))
+  (builtin-types)
+  *unspecified*)
 
 
 ;;; Descriptor types
@@ -211,16 +212,16 @@
              (uint32 4294967295)
              (int64 9223372036854775807)
              (uint64 18446744073709551615)
-             (float-le test-float)
-             (double-le test-double)
+             (floatle test-float)
+             (doublele test-double)
              (int16le 32767)
              (uint16le 65535)
              (int32le 2147483647)
              (uint32le 4294967295)
              (int64le 9223372036854775807)
              (uint64le 18446744073709551615)
-             (float-be test-float)
-             (double-be test-double)
+             (floatbe test-float)
+             (doublebe test-double)
              (int16be 32767)
              (uint16be 65535)
              (int32be 2147483647)
