@@ -1,0 +1,7 @@
+- Bit-level access ?  (E.g. TCP packets have single-bit flag fields.)
+  Possible with (rnrs arithmetic bitwise), but I don't think we will
+  ever support bitwise offsets into bytevectors, so descriptors will
+  still have to "govern" whole byte-regions.
+
+- A utility that reads C header files and spits out descriptors, in
+  either object or source form, probably source.
