@@ -24,6 +24,7 @@
 ;; fixed-size, fixed-layout objects to binary and back; the constructor takes
 ;; only a size, a bytevector-ref procedure, and a bytevector-set procedure.
 
+
 ;;; Code:
 
 (define-module (bytestructures simple)
