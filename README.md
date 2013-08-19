@@ -411,8 +411,23 @@ This will return a descriptor type object which can be used with
 bytestructure descriptors."  Explanation of the arguments follows.
 
 The `constructor` is the one mentioned in the section "Creating
-bytestructure descriptors"; it should return an object holding the
-contents, or payload, for this descriptor instance.
+bytestructure descriptors"; it handles the arguments used to create a
+descriptor instance of this type, and should return an object holding
+the contents, or payload, for said descriptor instance.
+
+A common strategy that can be utilized by a type's constructor,
+usually in types that hold other descriptors (e.g. vector), is to call
+`make-bytestructure-descriptor` on an argument to allow it to be an
+existing bytestructure descriptor, or a description for an anonymous
+descriptor.
+
+Another useful strategy, as for example utilized by the pointer type,
+is to allow a promise in place of the above mentioned bytestructure
+descriptor or description argument, and not force the promise during
+creation but only during use of the descriptor instance.  This way
+users can provide a variable that has been bound but its value not
+defined yet (e.g. via `letrec`), and will shortly after be defined to
+be another (or the same) descriptor, thus creating cyclic descriptors.
 
 The `size-or-size-accessor` must either be a non-negative exact
 integer, or a ternary procedure taking a bytevector, an offset, and
