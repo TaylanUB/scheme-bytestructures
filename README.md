@@ -174,6 +174,18 @@ through the pointer might try to access invalid memory addresses.
 
 *The pointer makes heavy use of Guile's FFI functionality.*
 
+As an additional feature, the pointer type accepts a promise for the
+description of the pointed-to substructure.  The promise must evaluate
+to a normal bytestructure description when forced, as accepted by
+`make-bytestructure-descriptor'.  This helps when creating cyclic
+structures:
+
+    (define linked-uint8-list
+      (make-bytestructure-descriptor
+        `(,bs:pointer ,(delay `(,bs:struct
+                                (head ,uint8)
+                                (tail ,linked-uint8-list))))))
+
 
 The bytestructure data-type
 ---------------------------

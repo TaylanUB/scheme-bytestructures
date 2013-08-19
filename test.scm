@@ -339,6 +339,38 @@
             (let ((bs (bytestructure desc bv)))
               (bytestructure-set! bs 1 42)
               (= (bytestructure-ref bs 1) 42)))
+      bv))                              ;Protect from GC.
+  (letrec* ((desc (make-bytestructure-descriptor
+                   `(,bs:pointer ,(delay `(,bs:vector 2 ,uint8*)))))
+            (uint8* uint8))
+    (let ((bv #vu8(0 42)))
+      (test "pointer with promise content"
+            (= (ffi:sizeof '*) (bytestructure-descriptor-size #f #f desc))
+            (let ((bs (bytestructure desc)))
+              (= (ffi:sizeof '*)
+                 (bytevector-length (bytestructure-bytevector bs))))
+            (let ((bs (bytestructure desc (ffi:bytevector->pointer bv))))
+              (and (equal? (bytestructure-ref bs) #vu8(0 42))
+                   (= (bytestructure-ref bs '* 1) 42)
+                   (= (bytestructure-ref bs 1) 42)))
+            (let ((bs (bytestructure desc bv)))
+              (= (bytestructure-ref bs 1) 42))
+            (let ((bs (bytestructure desc)))
+              (bytestructure-set! bs bv)
+              (= (bytestructure-ref bs 1) 42))
+            (let ((bs (bytestructure desc)))
+              (bytestructure-set! bs (ffi:bytevector->pointer bv))
+              (= (bytestructure-ref bs 1) 42))
+            (let ((bs (bytestructure desc)))
+              (bytestructure-set! bs (ffi:bytevector->pointer bv))
+              (bytestructure-set! bs '((0 42)))
+              (and (= (bytestructure-ref bs 1) 42)))
+            (let ((bs (bytestructure desc bv)))
+              (bytestructure-set! bs '* 1 42)
+              (= (bytestructure-ref bs 1) 42))
+            (let ((bs (bytestructure desc bv)))
+              (bytestructure-set! bs 1 42)
+              (= (bytestructure-ref bs 1) 42)))
       bv)))                             ;Protect from GC.
 
 ;;; test.scm ends here

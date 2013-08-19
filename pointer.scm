@@ -37,10 +37,17 @@
 (define-record-type :pointer
   (%make-pointer content)
   pointer?
-  (content pointer-content))
+  (content %pointer-content))
+
+(define (pointer-content pointer)
+  (let ((content (%pointer-content pointer)))
+    (if (promise? content) (force content) content)))
 
 (define (make-pointer content-description)
-  (%make-pointer (make-bytestructure-descriptor content-description)))
+  (%make-pointer
+   (if (promise? content-description)
+       (delay (make-bytestructure-descriptor (force content-description)))
+       (make-bytestructure-descriptor content-description))))
 
 (define (pointer-ref-helper bytevector offset pointer index)
   (let ((content (pointer-content pointer)))
