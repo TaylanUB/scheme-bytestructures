@@ -1,8 +1,8 @@
 ;;; numeric-native.scm --- Native numeric types, via Guile's FFI module.
 
-;; Copyright (C) 2013  Taylan Ulrich B.
+;; Copyright (C) 2013  Taylan Ulrich Bayırlı/Kammer
 
-;; Author: Taylan Ulrich B. <taylanbayirli@gmail.com>
+;; Author: Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;; Keywords: ffi struct bytevector bytestructure numeric native
 
 ;; This program is free software; you can redistribute it and/or modify
