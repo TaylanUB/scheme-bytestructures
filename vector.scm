@@ -33,7 +33,7 @@
              (srfi srfi-9)
              (rnrs bytevectors))
 
-(define-record-type :vector
+(define-record-type <vector>
   (%make-vector length content size)
   vector?
   (length  vector-length)

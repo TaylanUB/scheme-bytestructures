@@ -43,7 +43,7 @@
                (make-bytestructure-descriptor (cadr field))))
        fields))
 
-(define-record-type :struct
+(define-record-type <struct>
   (%make-struct fields size)
   struct?
   (fields struct-fields)

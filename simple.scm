@@ -33,7 +33,7 @@
 (use-modules (bytestructures base)
              (srfi srfi-9))
 
-(define-record-type :simple
+(define-record-type <simple>
   (make-simple size ref-proc set-proc)
   simple?
   (size     %simple-size)

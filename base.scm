@@ -56,7 +56,7 @@
 
 ;;; Descriptor-types
 
-(define-record-type :bytestructure-descriptor-type
+(define-record-type <bytestructure-descriptor-type>
   (make-bytestructure-descriptor-type
    constructor size-or-size-accessor
    ref-helper ref-proc set-proc)
@@ -70,7 +70,7 @@
 
 ;;; Descriptors
 
-(define-record-type :bytestructure-descriptor
+(define-record-type <bytestructure-descriptor>
   (%make-bytestructure-descriptor type content)
   bytestructure-descriptor?
   (type    bytestructure-descriptor-type)
@@ -106,7 +106,7 @@
 
 ;;; Bytestructures
 
-(define-record-type :bytestructure
+(define-record-type <bytestructure>
   (make-bytestructure bytevector offset descriptor)
   bytestructure?
   (bytevector bytestructure-bytevector)

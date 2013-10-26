@@ -44,7 +44,7 @@
                (make-bytestructure-descriptor (cadr field))))
        fields))
 
-(define-record-type :union
+(define-record-type <union>
   (%make-union fields size)
   union?
   (fields union-fields)

@@ -34,7 +34,7 @@
              (rnrs bytevectors)
              ((system foreign) #:renamer (symbol-prefix-proc 'ffi:)))
 
-(define-record-type :pointer
+(define-record-type <pointer>
   (%make-pointer content)
   pointer?
   (content %pointer-content))
