@@ -54,16 +54,15 @@
    bytestructure-ref*
    bytestructure-set!
    bytestructure-set!*
-   bytestructure-pointer
-            
+
    bs:simple bs:vector bs:struct bs:union bs:pointer
-            
+
    float double int8 uint8 int16 uint16 int32 uint32 int64 uint64
    floatle doublele
    int16le uint16le int32le uint32le int64le uint64le
    floatbe doublebe
    int16be uint16be int32be uint32be int64be uint64be
-            
+
    short unsigned-short int unsigned-int long unsigned-long
    size_t ssize_t ptrdiff_t
    ))

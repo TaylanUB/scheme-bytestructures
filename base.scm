@@ -46,7 +46,6 @@
    bytestructure-ref*
    bytestructure-set!
    bytestructure-set!*
-   bytestructure-pointer
    ))
 
 (use-modules (srfi srfi-9)
