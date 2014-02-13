@@ -29,12 +29,17 @@
          (error (format #f "Test ~s failed:" name) 'expression))
        ...))))
 
+(define (protect-from-gc obj)
+  ;; An arbitrary trivial no-op that can't be optimized out.
+  (with-output-to-file *null-device*
+    (lambda ()
+      (display (eq? #f obj)))))
+
 (define (main)
   (descriptor-type)
   (descriptors)
   (bytestructures)
-  (builtin-types)
-  *unspecified*)
+  (builtin-types))
 
 
 ;;; Descriptor types
@@ -339,7 +344,7 @@
             (let ((bs (bytestructure desc bv)))
               (bytestructure-set! bs 1 42)
               (= (bytestructure-ref bs 1) 42)))
-      bv))                              ;Protect from GC.
+      (protect-from-gc bv)))
   (letrec* ((desc (make-bytestructure-descriptor
                    `(,bs:pointer ,(delay `(,bs:vector 2 ,uint8*)))))
             (uint8* uint8))
@@ -371,6 +376,6 @@
             (let ((bs (bytestructure desc bv)))
               (bytestructure-set! bs 1 42)
               (= (bytestructure-ref bs 1) 42)))
-      bv)))                             ;Protect from GC.
+      (protect-from-gc bv))))
 
 ;;; test.scm ends here
