@@ -37,9 +37,9 @@ non-negative exact integer indices on them, which results in an offset
 descriptor), and the element descriptor, such that referencing or
 assigning a value can continue from there; referencing or assigning a
 value directly as a vector does not make much sense, although the
-vector type also defines a certain assignment semantics as a
-convenience manner, which can be used to mutate multiple elements of
-the vector at once, or replace its whole contents with another.
+vector type also defines a certain convenient assignment semantics,
+which can be used to mutate multiple elements of the vector at once,
+or replace its whole contents with another.
 
 As another example, instances of a hypothetical "number" type could be
 created with a specific size, endianness, etc., and their referencing
@@ -487,3 +487,69 @@ to the ref and set procedures of the descriptor instance.
 
 The ref and set procedures may be `#f`, specifying default behavior
 (see section "Accessing and mutating").
+
+
+Performance
+===========
+
+When descriptors are statically apparent, an aggressively constant
+propagating and partial evaluating optimizer would be able to turn
+bytestructure references into direct bytevector references, which,
+through further optimization, could even end up identical to the
+results of hand-written C code.  That is the most optimal outcome,
+whereas the opposite is that even offset calculation happens at
+run-time, let alone type and bound checks being removed.  In Guile
+2.0, the latter is the case (and additionally, record types are not as
+efficient as they could be), so using a bytestructure reference will
+be slower, by orders of magnitude, than a direct bytevector reference,
+which itself is not optimized against type and bounds checks.
+
+Nevertheless, the offset calculation at least avoids the consing of
+rest-argument lists, so no heap allocation happens, which will make
+speed predictable, although offset calculation takes linear time with
+regard to the depth of a structure and, for structs and unions, the
+positions of referenced fields.
+
+When possible, the performance issues can be alleviated, without
+relying on automatic optimization, by hoisting offset calculations to
+outside of speed-critical sections, only leaving bare bytevector
+references at bottlenecks.  This way a big part of the convenience
+offered by the framework can still be used.
+
+Following are some figures from Guile 2.0.9.208 on a 2.0 GHz Core2Duo.
+
+Plain bytevector reference, for comparison:
+
+    > (define times (iota 1000000)) ;A million
+    > (define bv (make-bytevector 1))
+    > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
+    > ,time (for-each ref times)
+    ;; 0.118494s real time
+
+Equivalent bytestructure reference:
+
+    > (define bs (bytestructure `(,bs:vector 1 ,uint8)))
+    > (define-inlinable (ref x) (bytestructure-ref bs 0))
+    > ,time (for-each ref times)
+    ;; 1.910772s real time
+
+Showcasing the effect of a deeper structure:
+
+    > (define bs (bytestructure `(,bs:vector 1
+                                   (,bs:vector 1
+                                     (,bs:vector 1 ,uint8)))))
+    > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
+    > ,time (for-each ref times)
+    ;; 3.629692s real time
+
+Showcasing the effect of referencing latter fields of a struct:
+
+    > (define bs (bytestructure `(,bs:struct (x ,uint8)
+                                             (y ,uint8)
+                                             (z ,uint8))))
+    > (define-inlinable (ref x) (bytestructure-ref bs 'x))
+    > ,time (for-each ref times)
+    ;; 1.670132s real time
+    > (define-inlinable (ref x) (bytestructure-ref bs 'z))
+    > ,time (for-each ref times)
+    ;; 3.233029s real time
