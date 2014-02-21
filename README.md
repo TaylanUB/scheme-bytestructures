@@ -512,9 +512,9 @@ positions of referenced fields.
 
 When possible, the performance issues can be alleviated, without
 relying on automatic optimization, by hoisting offset calculations to
-outside of speed-critical sections, only leaving bare bytevector
-references at bottlenecks.  This way a big part of the convenience
-offered by the framework can still be used.
+outside of speed-critical sections by using the ref-helper forms, only
+leaving bare bytevector references at bottlenecks.  This way a big
+part of the convenience offered by the framework can still be used.
 
 Following are some figures from Guile 2.0.9.208 on a 2.0 GHz Core2Duo.
 
