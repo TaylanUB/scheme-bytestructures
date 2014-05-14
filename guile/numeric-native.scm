@@ -26,42 +26,39 @@
 
 ;;; Code:
 
-(define-module (bytestructures numeric-native)
+(define-module (bytestructures guile numeric-native)
+  #:version (1 3 1)
   #:export
   (
    short unsigned-short int unsigned-int long unsigned-long
    size_t ssize_t ptrdiff_t
    ))
 
-(use-modules (bytestructures numeric)
+(use-modules (bytestructures r6 numeric)
              ((system foreign) #:select (sizeof)))
 
-(let-syntax ((define-signed-native-synonyms
-               (syntax-rules ()
-                 ((_ name ...)
-                  (begin
-                    (define name
-                      (case (sizeof (@ (system foreign) name))
-                        ((1) int8)
-                        ((2) int16)
-                        ((4) int32)
-                        ((8) int64)))
-                    ...)))))
-  (define-signed-native-synonyms
-    short int long ssize_t ptrdiff_t))
+(define-syntax define-native-synonyms
+  (syntax-rules ()
+    ((_ (signed ...) (unsigned ...))
+     (begin
+       (define signed
+         (case (sizeof (@ (system foreign) signed))
+           ((1) int8)
+           ((2) int16)
+           ((4) int32)
+           ((8) int64)))
+       ...)
+     (begin
+       (define unsigned
+         (case (sizeof (@ (system foreign) unsigned))
+           ((1) uint8)
+           ((2) uint16)
+           ((4) uint32)
+           ((8) uint64)))
+       ...))))
 
-(let-syntax ((define-unsigned-native-synonyms
-               (syntax-rules ()
-                 ((_ name ...)
-                  (begin
-                    (define name
-                      (case (sizeof (@ (system foreign) name))
-                        ((1) uint8)
-                        ((2) uint16)
-                        ((4) uint32)
-                        ((8) uint64)))
-                    ...)))))
-  (define-unsigned-native-synonyms
-    unsigned-short unsigned-int unsigned-long size_t))
+(define-native-synonyms
+  (short int long ssize_t ptrdiff_t)
+  (unsigned-short unsigned-int unsigned-long size_t))
 
 ;;; numeric-native.scm ends here

@@ -26,10 +26,11 @@
 
 ;;; Code:
 
-(define-module (bytestructures pointer)
+(define-module (bytestructures guile pointer)
+  #:version (1 3 1)
   #:export (bs:pointer))
 
-(use-modules (bytestructures base)
+(use-modules (bytestructures r7 base)
              (srfi srfi-9)
              (rnrs bytevectors)
              ((system foreign) #:renamer (symbol-prefix-proc 'ffi:)))

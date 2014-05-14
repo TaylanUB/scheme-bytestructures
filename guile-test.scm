@@ -1,6 +1,6 @@
-(define-module (bytestructures test))
+(define-module (bytestructures guile-test))
 
-(use-modules (bytestructures standard)
+(use-modules (bytestructures guile standard)
              (ice-9 format)
              (rnrs bytevectors)
              (srfi srfi-11)
@@ -11,7 +11,7 @@
     ((df (syntax-rules ()
            ((df fn ...)
             (begin
-              (define fn (@@ (bytestructures base) fn))
+              (define fn (@@ (bytestructures r6 base) fn))
               ...)))))
   (df bytestructure-descriptor-constructor
       bytestructure-descriptor-type-size
@@ -159,7 +159,7 @@
            #f))
          (desc (make-bytestructure-descriptor `(,desc-type 3 ,uint8))))
     (test "descriptor instance"
-          (let ((bs (bytestructure desc #vu8(0 1 2))))
+          (let ((bs (bytestructure desc #u8(0 1 2))))
             (= 1 (bytestructure-ref bs 1)))
           (let ((bs (bytestructure desc)))
             (equal? (bytestructure-ref bs) bs)))))
@@ -250,7 +250,7 @@
           (let ((bs (bytestructure desc '(42 65535))))
             (and (= (bytestructure-ref bs 0) 42)
                  (= (bytestructure-ref bs 1) 65535)))
-          (let ((bs (bytestructure desc #vu8(0 0 255 255))))
+          (let ((bs (bytestructure desc #u8(0 0 255 255))))
             (and (= (bytestructure-ref bs 0) 0)
                  (= (bytestructure-ref bs 1) 65535)))
           (let ((bs (bytestructure desc)))
@@ -272,7 +272,7 @@
           (let ((bs (bytestructure desc '(42 65535))))
             (and (= (bytestructure-ref bs 'x) 42)
                  (= (bytestructure-ref bs 'y) 65535)))
-          (let ((bs (bytestructure desc #vu8(0 0 255 255))))
+          (let ((bs (bytestructure desc #u8(0 0 255 255))))
             (and (= (bytestructure-ref bs 'x) 0)
                  (= (bytestructure-ref bs 'y) 65535)))
           (let ((bs (bytestructure desc)))
@@ -299,7 +299,7 @@
           (let ((bs (bytestructure desc '(y 255))))
             (and (= (bytestructure-ref bs 'x) -1)
                  (= (bytestructure-ref bs 'y) 255)))
-          (let ((bs (bytestructure desc #vu8(255))))
+          (let ((bs (bytestructure desc #u8(255))))
             (and (= (bytestructure-ref bs 'x) -1)
                  (= (bytestructure-ref bs 'y) 255)))
           (let ((bs (bytestructure desc)))
@@ -316,14 +316,14 @@
 (define (pointer-type)
   (let ((desc (make-bytestructure-descriptor
                `(,bs:pointer (,bs:vector 2 ,uint8)))))
-    (let ((bv #vu8(0 42)))
+    (let ((bv #u8(0 42)))
       (test "pointer"
             (= (ffi:sizeof '*) (bytestructure-descriptor-size #f #f desc))
             (let ((bs (bytestructure desc)))
               (= (ffi:sizeof '*)
                  (bytevector-length (bytestructure-bytevector bs))))
             (let ((bs (bytestructure desc (ffi:bytevector->pointer bv))))
-              (and (equal? (bytestructure-ref bs) #vu8(0 42))
+              (and (equal? (bytestructure-ref bs) #u8(0 42))
                    (= (bytestructure-ref bs '* 1) 42)
                    (= (bytestructure-ref bs 1) 42)))
             (let ((bs (bytestructure desc bv)))
@@ -348,14 +348,14 @@
   (letrec* ((desc (make-bytestructure-descriptor
                    `(,bs:pointer ,(delay `(,bs:vector 2 ,uint8*)))))
             (uint8* uint8))
-    (let ((bv #vu8(0 42)))
+    (let ((bv #u8(0 42)))
       (test "pointer with promise content"
             (= (ffi:sizeof '*) (bytestructure-descriptor-size #f #f desc))
             (let ((bs (bytestructure desc)))
               (= (ffi:sizeof '*)
                  (bytevector-length (bytestructure-bytevector bs))))
             (let ((bs (bytestructure desc (ffi:bytevector->pointer bv))))
-              (and (equal? (bytestructure-ref bs) #vu8(0 42))
+              (and (equal? (bytestructure-ref bs) #u8(0 42))
                    (= (bytestructure-ref bs '* 1) 42)
                    (= (bytestructure-ref bs 1) 42)))
             (let ((bs (bytestructure desc bv)))

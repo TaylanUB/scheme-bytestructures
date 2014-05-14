@@ -26,13 +26,6 @@
 
 ;;; Code:
 
-(define-module (bytestructures vector)
-  #:export (bs:vector))
-
-(use-modules (bytestructures base)
-             (srfi srfi-9)
-             (rnrs bytevectors))
-
 (define-record-type <vector>
   (%make-vector length content size)
   vector?

@@ -1,0 +1,5 @@
+(define-library (bytestructures r7 vector)
+  (import (scheme base)
+          (bytestructures r7 base))
+  (include-library-declarations "vector.exports.scm")
+  (include "vector.body.scm"))

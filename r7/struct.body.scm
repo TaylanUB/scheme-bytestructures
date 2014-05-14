@@ -26,13 +26,6 @@
 
 ;;; Code:
 
-(define-module (bytestructures struct)
-  #:export (bs:struct))
-
-(use-modules (bytestructures base)
-             (srfi srfi-9)
-             (rnrs bytevectors))
-
 (define field-name car)
 (define field-content cdr)
 (define field-find assq)

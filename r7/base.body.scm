@@ -26,33 +26,6 @@
 
 ;;; Code:
 
-(define-module (bytestructures base)
-  #:export
-  (
-   make-bytestructure-descriptor-type
-   bytestructure-descriptor-type?
-   make-bytestructure-descriptor
-   bytestructure-descriptor?
-   bytestructure-descriptor-size
-   make-bytestructure
-   bytestructure?
-   bytestructure-bytevector
-   bytestructure-offset
-   bytestructure-descriptor
-   bytestructure
-   bytestructure-ref-helper
-   bytestructure-ref-helper*
-   bytestructure-ref
-   bytestructure-ref*
-   bytestructure-set!
-   bytestructure-set!*
-   ))
-
-(use-modules (srfi srfi-9)
-             (srfi srfi-11)
-             (rnrs bytevectors))
-
-
 ;;; Descriptor-types
 
 (define-record-type <bytestructure-descriptor-type>

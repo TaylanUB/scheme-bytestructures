@@ -27,12 +27,6 @@
 
 ;;; Code:
 
-(define-module (bytestructures simple)
-  #:export (bs:simple))
-
-(use-modules (bytestructures base)
-             (srfi srfi-9))
-
 (define-record-type <simple>
   (make-simple size ref-proc set-proc)
   simple?

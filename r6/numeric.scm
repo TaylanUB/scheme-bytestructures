@@ -23,70 +23,72 @@
 ;; This module defines descriptors for numeric types of specific size, and
 ;; native or specific endianness, as made possible by the bytevector referencing
 ;; and assigning procedures in the (rnrs bytevectors) module.
+;;
+;; The uint8 type is in (bytestructures r7 uint8) so it's left out here.
 
 
 ;;; Code:
 
-(define-module (bytestructures numeric)
-  #:export
-  (
-   float double int8 uint8 int16 uint16 int32 uint32 int64 uint64
-   floatle doublele
+(library (bytestructures r6 numeric (1 3 1))
+  (export
+   int8 int16 uint16 int32 uint32 int64 uint64
    int16le uint16le int32le uint32le int64le uint64le
-   floatbe doublebe
    int16be uint16be int32be uint32be int64be uint64be
-   ))
+   float double floatle doublele floatbe doublebe
+   )
+  (import
+   (rnrs base (6))
+   (rnrs bytevectors (6))
+   (bytestructures r7 base)
+   (bytestructures r7 simple))
 
-(use-modules (bytestructures base)
-             (bytestructures simple)
-             (rnrs bytevectors))
+  (define-syntax define-numeric-types
+    (syntax-rules ()
+      ((_ (name size ref-proc set-proc) ...)
+       (begin
+         (define name
+           (make-bytestructure-descriptor
+            (list bs:simple size ref-proc set-proc)))
+         ...))))
 
-(let-syntax ((define-numeric-types
-               (syntax-rules ()
-                 ((_ (name size ref-proc set-proc) ...)
-                  (begin
-                    (define name
-                      (make-bytestructure-descriptor
-                       (list bs:simple size ref-proc set-proc)))
-                    ...)))))
   (define-numeric-types
     (float
      4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
     (double
      8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
     (int8   1 bytevector-s8-ref bytevector-s8-set!)
-    (uint8  1 bytevector-u8-ref bytevector-u8-set!)
     (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
     (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
     (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
     (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
     (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
-    (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!)))
+    (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
 
-(letrec-syntax
-    ((define-with-endianness
-       (syntax-rules ()
-         ((_ (name native-name size ref-proc set-proc endianness) ...)
-          (begin
-            (define name
-              (if (equal? endianness native-endianness)
-                  native-name
-                  (make-bytestructure-descriptor
-                   (list bs:simple size
-                         (lambda (bytevector index)
-                           (ref-proc bytevector index endianness))
-                         (lambda (bytevector index value)
-                           (set-proc
-                            bytevector index value endianness))))))
-            ...))))
-     (define-with-endianness*
-       (syntax-rules ()
-         ((_ (le-name be-name native-name size ref-proc set-proc) ...)
-          (begin
-            (define-with-endianness
-              (le-name native-name size ref-proc set-proc (endianness little))
-              (be-name native-name size ref-proc set-proc (endianness big)))
-            ...)))))
+  (define-syntax define-with-endianness
+    (syntax-rules ()
+      ((_ (name native-name size ref-proc set-proc endianness) ...)
+       (begin
+         (define name
+           (if (equal? endianness native-endianness)
+               native-name
+               (make-bytestructure-descriptor
+                (list bs:simple size
+                      (lambda (bytevector index)
+                        (ref-proc bytevector index endianness))
+                      (lambda (bytevector index value)
+                        (set-proc
+                         bytevector index value endianness))))))
+         ...))))
+
+  (define-syntax define-with-endianness*
+    (syntax-rules ()
+      ((_ (le-name be-name native-name size ref-proc set-proc) ...)
+       (begin
+         (define-with-endianness
+           (le-name native-name size ref-proc set-proc (endianness little))
+           (be-name native-name size ref-proc set-proc (endianness big)))
+         ...))))
+
   (define-with-endianness*
     (floatle floatbe
              float 4 bytevector-ieee-single-ref bytevector-ieee-single-set!)
@@ -97,6 +99,7 @@
     (int32le  int32be  int32  4 bytevector-s32-ref bytevector-s32-set!)
     (uint32le uint32be uint32 4 bytevector-u32-ref bytevector-u32-set!)
     (int64le  int64be  int64  8 bytevector-s64-ref bytevector-s64-set!)
-    (uint64le uint64be uint64 8 bytevector-u64-ref bytevector-u64-set!)))
+    (uint64le uint64be uint64 8 bytevector-u64-ref bytevector-u64-set!))
+  )
 
 ;;; numeric.scm ends here

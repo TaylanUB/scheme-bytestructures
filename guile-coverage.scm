@@ -9,7 +9,7 @@
   (call-with-values
       (lambda () ((@ (system vm coverage) with-code-coverage)
              ((@ (system vm vm) the-vm))
-             (@@ (bytestructures test) main)))
+             (@@ (bytestructures guile test) main)))
     (lambda (data . values)
       (let* ((file (tmpnam))
              (port (open-file file "w")))

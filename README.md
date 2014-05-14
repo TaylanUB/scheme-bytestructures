@@ -1,11 +1,10 @@
+*This library's core is written in R7RS, with extensions for R6RS and
+Guile.  It assumes that R6RS's (rnrs bytevectors) API works on R7RS
+bytevectors as well, which should be the case for any sane Scheme
+implementation supporting R7RS and R6RS.*
+
 Structured access to bytevector contents
 ========================================
-
-*This module is written with Guile Scheme in mind, specifically with
-regard to the FFI integration; the basic idea behind it however is
-aimed at any `(rnrs bytevectors)` implementation, and the code-base
-keeps implementation-specific features to a minimum except for the
-FFI-heavy parts.*
 
 A "bytestructure descriptor" describes a structure for the contents of
 a bytevector, or how its bytes are to be accessed and converted into
@@ -116,25 +115,27 @@ of "non-compound" descriptors -- those whose sole purpose is to
 convert between Scheme objects and byte-sequences.  Its instances are
 created with a constant size, a bytevector-ref procedure, and a
 bytevector-set procedure.  E.g. the following is the definition of
-`uint8`:
+`uint8`, in r7/uint8.scm:
 
     (define uint8
       (make-bytestructure-descriptor
-        ;; The 1 is the size, in bytes.
         (list bs:simple 1 bytevector-u8-ref bytevector-u8-set!)))
 
-All the usual numeric types are readily provided by the module:
+(The 1 is the size, in bytes.)
+
+If your Scheme implementation supports (rnrs bytevectors) from R6RS,
+you can import r6/numeric.scm to get all the usual numeric types:
 float\[le,be\], double\[le,be\], \[u\]int(8,16,32,64)\[le,be\]
 
-Also native-sized ones, derived from Guile's FFI module:
+On Guile you can import guile/numeric-native.scm to get the following:
 \[unsigned-\](short,int,long), `size_t`, `ssize_t`, `ptrdiff_t`
 
 
 Compound types
 --------------
 
-The module comes with the four usual compound types: vector, struct,
-union, and pointer.
+The module comes with vector, struct, and union types for R7RS, and a
+pointer type for Guile.
 
 We've already covered the vector type.  One more thing to note about
 them is that they don't do bounds-checking; an off-bounds index will
@@ -171,8 +172,6 @@ substructure.  Note that this makes your Scheme program memory-unsafe!
 If no references are left to a bytevector whose address has been saved
 in a bytestructure, then references into the bytestructure which go
 through the pointer might try to access invalid memory addresses.
-
-*The pointer makes heavy use of Guile's FFI functionality.*
 
 As an additional feature, the pointer type accepts a promise for the
 description of the pointed-to substructure.  The promise must evaluate
@@ -255,7 +254,7 @@ and the second element the value:
 Vectors, structs, and unions also accept a bytevector, from which they
 will copy as many bytes as their size:
 
-    (define bs (bytestructure a-simple-struct #vu8(0 1)))
+    (define bs (bytestructure a-simple-struct #u8(0 1)))
 
 Pointers take either a pointer object (from the FFI module), or a
 bytevector (whose pointer will be used):
@@ -349,9 +348,9 @@ In other words, given our previous `bs` with descriptor `my-struct`:
          descriptor: uint8-v3
          ;; Offset is plus 2 because a uint16 was skipped.
 
-    (bytestructure-set! bs 'y #vu8(...))
+    (bytestructure-set! bs 'y #u8(...))
     ;; Equivalent to:
-         (bytevector-copy! #vu8(...) 0
+         (bytevector-copy! #u8(...) 0
                            (bytestructure-bytevector bs)
                            (+ 2 (bytestructure-offset bs))
                            (bytestructure-descriptor-size
