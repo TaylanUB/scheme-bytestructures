@@ -5,3 +5,9 @@
 
 - A utility that reads C header files and spits out descriptors, in
   either object or source form, probably source.
+
+- If ever needed, provide some unique object that a ref-helper can
+  return in place of the descriptor it needs to return, to say
+  "recurse on the same descriptor."  (Since it only receives
+  the *contents* of a descriptor, it can't just return the same object
+  to do this.)
