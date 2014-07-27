@@ -7,11 +7,11 @@ aimed at any `(rnrs bytevectors)` implementation, and the code-base
 keeps implementation-specific features to a minimum except for the
 FFI-heavy parts.*
 
-A "bytestructure descriptor" describes a logic for the contents of a
-bytevector, or how its bytes are to be accessed and converted into
-Scheme objects.  It is analogous to a "type" in the weak typing and
-type-casting system of the C programming language, since those types
-also offer "views" on raw bytes.
+A "bytestructure descriptor" describes a structure for the contents of
+a bytevector, or how its bytes are to be accessed and converted into
+Scheme objects.  It is analogous to a "type" in the barely abstracted
+typing and type casting system of the C programming language, since
+those types also offer mere "views" on raw bytes.
 
 Every descriptor is of a certain type.  Going on with the C analogy,
 if a descriptor is a type, then a descriptor type would be a
@@ -93,16 +93,16 @@ As does the following, using our previous `uint8-v3`:
 
 The size of a descriptor is returned via the procedure
 `bytestructure-descriptor-size`.  Some descriptors might have dynamic
-sizes though, in which case this procedure cannot be used on solely
-the descriptor; it must be given a bytevector, an offset indicating
-where the described structure starts in the bytevector, and then the
+sizes, in which case this procedure cannot be used on solely the
+descriptor; it must be given a bytevector, an offset indicating where
+the described structure starts in the bytevector, and then the
 descriptor.
 
     (bytestructure-descriptor-size uint8-v3-v5)
     => 15, because it's 3×5 8-bit integers in total.
 
     (bytestructure-descriptor-size crazy-descriptor)
-    => error
+    ;;; error
 
     (bytestructure-descriptor-size bv offset crazy-descriptor)
     => whatever
@@ -264,8 +264,8 @@ bytevector (whose pointer will be used):
 
     (define bs (bytestructure `(,bs:pointer ,uint8) bv))
 
-_**Having an address written into a bytevector does not protect it
-from garbage collection.**_
+_**On Guile, having an address written into a bytevector does not
+protect it from garbage collection.**_
 
 The initialization of the compound types can be done recursively,
 reflecting their structure, since the assignment procedures are
@@ -359,22 +359,20 @@ In other words, given our previous `bs` with descriptor `my-struct`:
                              (+ 2 (bytestructure-offset bs))
                              uint8-v3))
 
-The syntaxes `bytestructure-ref*` and `bytestructure-set!*` are
-equivalent to `bytestructure-ref` and `bytestructure-set!`, except
-that in the position of the bytestructure argument, they instead
-directly take the values it encapsulates as separate arguments: a
-bytevector, an initial offset into the bytevector, and a bytestructure
-descriptor.
+The syntaxes `bytestructure-ref*` and `bytestructure-set!*` are like
+`bytestructure-ref` and `bytestructure-set!`, except that in the
+position of the bytestructure argument, they instead directly take the
+values it encapsulates as separate arguments: a bytevector, an initial
+offset into the bytevector, and a bytestructure descriptor.
 
     (bytestructure-ref* bytevector offset descriptor index ...)
     (bytestructure-set!* bytevector offset descriptor index ... value)
 
 The `bytestructure-ref-helper` and `bytestructure-ref-helper*`
-syntaxes are equivalent to `bytestructure-ref` and
-`bytestructure-ref*`, except that they always return three values; a
-bytevector, an offset, and a bytestructure descriptor; instead of a
-bytestructure encapsulating these or the ultimate value of the
-referencing.
+syntaxes are like `bytestructure-ref` and `bytestructure-ref*`, except
+that they always return three values; a bytevector, an offset, and a
+bytestructure descriptor; instead of a bytestructure encapsulating
+these or the ultimate value of the referencing.
 
     (bytestructure-ref-helper bs 'y 1)
     => (bytestructure-bytevector bs), 3, uint8-v3
@@ -408,12 +406,17 @@ Creating new types
 
 This will return a descriptor type object which can be used with
 `make-bytestructure-descriptor` as explained in the section "Creating
-bytestructure descriptors."  Explanation of the arguments follows.
+bytestructure descriptors."
 
 The `constructor` is the one mentioned in the section "Creating
 bytestructure descriptors"; it handles the arguments used to create a
-descriptor instance of this type, and should return an object holding
-the contents, or payload, for said descriptor instance.
+descriptor instance of this type, and should return the "content" for
+this instance (NOT a descriptor; just the content; this is an internal
+field of a descriptor which the framework will populate for you).
+This "content" object can be anything; it's private to your descriptor
+type and will be passed to the other procedures you provided so they
+know what to do.  For example the vector type uses a record that holds
+a length and an element descriptor.
 
 A common strategy that can be utilized by a type's constructor,
 usually in types that hold other descriptors (e.g. vector), is to call
@@ -431,37 +434,48 @@ be another (or the same) descriptor, thus creating cyclic descriptors.
 
 The `size-or-size-accessor` must either be a non-negative exact
 integer, or a ternary procedure taking a bytevector, an offset, and
-the descriptor contents; returning the size of the instance with this
-content.  The bytevector and offset are given to satisfy possible
-use-cases where the size of a structure is dynamic, depending on parts
-of its bytes; the procedure should expect to receive `#f` for these
-arguments if the descriptor will be used in situations where the size
-is requested independently of a bytevector.  Specifically, the vector,
+your descriptor contents, returning the size of the instance as
+described by the contents.
+
+The bytevector and offset are given to satisfy possible use-cases
+where the size of a structure is dynamic, depending on parts of its
+bytes; the procedure should expect to receive `#f` for these arguments
+if the descriptor will be used in situations where the size is
+requested independently of a bytevector.  Specifically, the vector,
 struct, and union types calculate their sizes at creation time to save
 work, thus they cannot contain dynamic-sized descriptors; the pointer
 type, too, cannot hold dynamic-sized descriptors, because getting a
-bytevector from a pointer requires the size to be declared beforehand.
+bytevector from a pointer requires the size to be declared beforehand
+in Guile (i.e. there are no "open ended" bytevectors with no bounds
+checking like in C).
 
 The size-accessor procedure of a compound type can use
 `bytestructure-descriptor-size` to acquire the size of other
 descriptors it holds.  This procedure takes either only a
-bytestructure descriptor (for when to calculating the size statically,
-typically in the constructor), or a bytevector, offset, and descriptor
-(for when requesting the size of a descriptor with a possibly dynamic
-size).
+bytestructure descriptor (when calculating the size statically), or a
+bytevector, offset, and descriptor (for when requesting the size of a
+descriptor with a possibly dynamic size).
+
+In descriptor types that don't allow dynamic size, a small performance
+hack is to calculate the size of the structure in the constructor and
+put it into the contents object so the size-accessor doesn't have to
+recalculate it every time and instead just take it out from the given
+contents object.
 
 The `ref-helper` must be a four-argument procedure that takes a
 bytevector, an offset, the contents of the descriptor, and an "index"
 object; it returns three values: the same or a different bytevector,
-and a new offset and descriptor as determined by the index.  For
-example the ref-helper of the vector type multiplies the size of its
-contained descriptor with the index and adds the resulting value to
-the old offset, and always returns its one contained descriptor.  The
-ref-helper of the struct type, on the other hand, must iterate through
-its fields, adding to the offset the sizes of the descriptors it skips
-until it comes to the field with the requested index (a symbol), and
-returns the accumulated offset and the descriptor of the field at
-which it arrived.
+and a new offset and descriptor as determined by the index.
+
+For example the ref-helper of the vector type multiplies the size of
+the element descriptor (as received through the "contents" object)
+with the index and adds the resulting value to the old offset, and
+always returns the element descriptor and the same bytevector that was
+given (which may just be #f).  The ref-helper of the struct type, on
+the other hand, must iterate through its fields, adding to the offset
+the sizes of the descriptors it skips until it comes to the field with
+the requested index (a symbol), and returns the accumulated offset and
+the descriptor of the field at which it arrived.
 
 Note that while the ref-helper receives contents of a descriptor, it
 is expected to return an actual descriptor.  This means it cannot
@@ -469,12 +483,12 @@ return the same object to induce recursion on the same descriptor.
 
 The ref-helper may be `#f` to indicate that it doesn't make sense to
 use an index with a descriptor type.  In that case, an error will be
-signaled if the user attempts this.
+raised when the user attempts this.
 
 The `bytevector-ref-proc` must be a ternary procedure that takes a
-bytevector, an offset, and the descriptor contents; returning a
-decoded value, as specified by the descriptor contents, residing at
-the given offset in the bytevector.
+bytevector, an offset, and the descriptor contents, and returns a
+decoded value as specified by the descriptor contents residing at the
+given offset in the bytevector.
 
 The `bytevector-set-proc` is similar, but takes an additional value
 argument, whose encoded representation it should fill into the
@@ -482,7 +496,7 @@ bytevector, at the given offset and as specified by the descriptor
 contents.
 
 The ref and set procedures of the "simple" type, for example, pass on
-said arguments in the same order --excluding the descriptor contents--
+said arguments in the same order, excluding the descriptor contents,
 to the ref and set procedures of the descriptor instance.
 
 The ref and set procedures may be `#f`, specifying default behavior
