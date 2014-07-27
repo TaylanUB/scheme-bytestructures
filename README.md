@@ -530,7 +530,7 @@ outside of speed-critical sections by using the ref-helper forms, only
 leaving bare bytevector references at bottlenecks.  This way a big
 part of the convenience offered by the framework can still be used.
 
-Following are some figures from Guile 2.0.9.208 on a 2.0 GHz Core2Duo.
+Following are some figures from Guile 2.0.11.
 
 Plain bytevector reference, for comparison:
 
@@ -538,14 +538,14 @@ Plain bytevector reference, for comparison:
     > (define bv (make-bytevector 1))
     > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
     > ,time (for-each ref times)
-    ;; 0.118494s real time
+    ;; 0.157073s real time
 
 Equivalent bytestructure reference:
 
     > (define bs (bytestructure `(,bs:vector 1 ,uint8)))
     > (define-inlinable (ref x) (bytestructure-ref bs 0))
     > ,time (for-each ref times)
-    ;; 1.910772s real time
+    ;; 2.495025s real time
 
 Showcasing the effect of a deeper structure:
 
@@ -554,7 +554,7 @@ Showcasing the effect of a deeper structure:
                                      (,bs:vector 1 ,uint8)))))
     > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
     > ,time (for-each ref times)
-    ;; 3.629692s real time
+    ;; 4.667697s real time
 
 Showcasing the effect of referencing latter fields of a struct:
 
@@ -563,7 +563,7 @@ Showcasing the effect of referencing latter fields of a struct:
                                              (z ,uint8))))
     > (define-inlinable (ref x) (bytestructure-ref bs 'x))
     > ,time (for-each ref times)
-    ;; 1.670132s real time
+    ;; 2.152634s real time
     > (define-inlinable (ref x) (bytestructure-ref bs 'z))
     > ,time (for-each ref times)
-    ;; 3.233029s real time
+    ;; 4.001873s real time
