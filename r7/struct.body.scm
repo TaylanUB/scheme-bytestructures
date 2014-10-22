@@ -68,10 +68,17 @@
                         offset
                         (field-content field))))))))))
 
+(define (alist? list)
+  (or (null? list)
+      (and (pair? list)
+           (pair? (car list))
+           (symbol? (caar list))
+           (alist? (cdr list)))))
+
 (define (struct-set! bytevector offset struct values)
   (cond
-   ((list? values)
-    (let lp ((values values)
+   ((vector? values)
+    (let lp ((values (vector->list values))
              (fields (struct-fields struct))
              (offset offset)
              (index 0))
@@ -84,6 +91,15 @@
                   (cdr fields)
                   (+ offset (bytestructure-descriptor-size content))
                   (+ 1 index)))))))
+   ((alist? values)
+    (for-each
+     (lambda (pair)
+       (let ((key (car pair))
+             (value (cdr pair)))
+         (let-values (((bytevector offset descriptor)
+                       (struct-ref-helper bytevector offset struct key)))
+           (bytestructure-set!* bytevector offset descriptor value))))
+     values))
    ((bytevector? values)
     (bytevector-copy! values 0 bytevector offset (%struct-size struct)))
    (else
