@@ -164,7 +164,7 @@
         (let ((content (bytestructure-descriptor-content descriptor)))
           (set-proc bytevector offset content value))
         (if (bytevector? value)
-            (bytevector-copy! value 0 bytevector offset
+            (bytevector-copy! bytevector offset value 0
                               (bytestructure-descriptor-size
                                bytevector offset descriptor))
             (error "Failed to write:" value)))))

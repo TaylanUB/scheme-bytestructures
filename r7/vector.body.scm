@@ -62,7 +62,7 @@
           ((= i (vector-length values)))
         (bytestructure-set!* bytevector offset content (vector-ref values i)))))
    ((bytevector? values)
-    (bytevector-copy! values 0 bytevector offset (%vector-size vector)))
+    (bytevector-copy! bytevector offset values 0 (%vector-size vector)))
    (else
     (error "Vector type failed to write:" values))))
 

@@ -101,7 +101,7 @@
            (bytestructure-set!* bytevector offset descriptor value))))
      values))
    ((bytevector? values)
-    (bytevector-copy! values 0 bytevector offset (%struct-size struct)))
+    (bytevector-copy! bytevector offset values 0 (%struct-size struct)))
    (else
     (error "Struct type failed to write:" values))))
 

@@ -349,9 +349,10 @@ In other words, given our previous `bs` with descriptor `my-struct`:
 
     (bytestructure-set! bs 'y #u8(...))
     ;; Equivalent to:
-         (bytevector-copy! #u8(...) 0
-                           (bytestructure-bytevector bs)
+         (bytevector-copy! (bytestructure-bytevector bs)
                            (+ 2 (bytestructure-offset bs))
+                           #u8(...)
+                           0
                            (bytestructure-descriptor-size
                              (bytestructure-bytevector bs)
                              (+ 2 (bytestructure-offset bs))

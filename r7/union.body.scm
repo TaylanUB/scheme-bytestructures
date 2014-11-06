@@ -64,7 +64,7 @@
                   (union-ref-helper bytevector offset union (car values))))
       (bytestructure-set!* bytevector* offset* descriptor (cadr values))))
    ((bytevector? values)
-    (bytevector-copy! values 0 bytevector offset (%union-size union)))
+    (bytevector-copy! bytevector offset values 0 (%union-size union)))
    (else
     (error "Union type failed to write:" values))))
 
