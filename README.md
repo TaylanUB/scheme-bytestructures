@@ -472,7 +472,7 @@ For example the ref-helper of the vector type multiplies the size of
 the element descriptor (as received through the "contents" object)
 with the index and adds the resulting value to the old offset, and
 always returns the element descriptor and the same bytevector that was
-given (which may just be #f).  The ref-helper of the struct type, on
+given (which may just be `#f`).  The ref-helper of the struct type, on
 the other hand, must iterate through its fields, adding to the offset
 the sizes of the descriptors it skips until it comes to the field with
 the requested index (a symbol), and returns the accumulated offset and
