@@ -23,14 +23,17 @@
 ;; This descriptor type allows the creation of vector descriptors of a specific
 ;; element descriptor and length.
 
+;; Be careful with identifier names here; don't confuse vector descriptor and
+;; Scheme vector APIs and variables.
+
 
 ;;; Code:
 
 (define-record-type <vector>
   (%make-vector length content size)
-  vector?
-  (length  vector-length)
-  (content vector-content)
+  %vector?
+  (length  %vector-length)
+  (content %vector-content)
   (size    %vector-size))
 
 (define (make-vector length content-description)
@@ -42,7 +45,7 @@
   (%vector-size vector))
 
 (define (vector-ref-helper bytevector offset vector index)
-  (let ((content (vector-content vector)))
+  (let ((content (%vector-content vector)))
     (values bytevector
             (+ offset
                (* index (bytestructure-descriptor-size
@@ -51,14 +54,13 @@
 
 (define (vector-set! bytevector offset vector values)
   (cond
-   ((list? values)
-    (let* ((content (vector-content vector))
+   ((vector? values)
+    (let* ((content (%vector-content vector))
            (content-size (bytestructure-descriptor-size content)))
-      (let lp ((values values)
-               (offset offset))
-        (unless (null? values)
-          (bytestructure-set!* bytevector offset content (car values))
-          (lp (cdr values) (+ offset content-size))))))
+      (do ((i 0 (+ 1 i))
+           (offset offset (+ offset content-size)))
+          ((= i (vector-length values)))
+        (bytestructure-set!* bytevector offset content (vector-ref values i)))))
    ((bytevector? values)
     (bytevector-copy! values 0 bytevector offset (%vector-size vector)))
    (else

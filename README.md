@@ -231,9 +231,9 @@ is mainly intended for descriptors of atomic types to implement
 conversion from Scheme objects to byte-sequences, compound types can
 use it to provide convenient content initialization.
 
-Vectors accept a list of elements to be written:
+Vectors accept a (Scheme) vector of elements to be written:
 
-    (define bs (bytestructure uint8-v3 '(0 1 2)))
+    (define bs (bytestructure uint8-v3 #(0 1 2)))
 
 Structs accept alists, as well as vectors for sequential assignment:
 
@@ -277,10 +277,7 @@ assignment procedure.
       (make-bytestructure-descriptor
         `(,bs:struct (x ,uint16) (y (,bs:vector 3 ,uint8)))))
 
-    (define bs (bytestructure my-struct '((x 0) (y (0 1 2)))))
-
-    (define bs (bytestructure `(,bs:pointer ,my-struct)
-                              '(((x 0) (y (0 1 2))))))
+    (define bs (bytestructure my-struct '((x 0) (y #(0 1 2)))))
 
 
 Referencing and assignment
@@ -320,7 +317,7 @@ conveniently" on its last argument, which matches the second argument
 to the `bytestructure` syntax, so the same types of arguments are
 accepted.
 
-    (bytestructure-set! bs #(0 (1 2 3))) ;; Re-fill the whole struct.
+    (bytestructure-set! bs #(0 #(1 2 3))) ;; Re-fill the whole struct.
 
 The pointer type accepts an additional type of argument not mentioned
 in the section about initialization: a one-element list whose contents
@@ -328,7 +325,7 @@ are passed to the underlying bytestructure's assignment procedure.
 This usage is only valid if the pointer is already pointing to a valid
 bytevector, so using it at initialization does not make sense.
 
-    (bytestructure-set! uint8-v3-ptr '((0 1 2)))
+    (bytestructure-set! uint8-v3-ptr '(#(0 1 2)))
 
 When a descriptor does not provide a referencing or assignment
 procedure, a default action is taken: when referencing, a
