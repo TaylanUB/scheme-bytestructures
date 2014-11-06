@@ -235,12 +235,14 @@ Vectors accept a list of elements to be written:
 
     (define bs (bytestructure uint8-v3 '(0 1 2)))
 
-Structs, like in C, also accept a sequential list of elements:
+Structs accept alists, as well as vectors for sequential assignment:
 
     (define a-simple-struct (make-bytestructure-descriptor
                               `(,bs:struct (x ,uint8) (y ,uint8))))
 
-    (define bs (bytestructure a-simple-struct '(0 1))) ;; x = 0, y = 1
+    (define bs (bytestructure a-simple-struct '((x 0) (y 1))))
+
+    (define bs (bytestructure a-simple-struct #(0 1))) ;; x = 0, y = 1
 
 Unions take a two-element list, whose first element is a field-name,
 and the second element the value:
@@ -275,10 +277,10 @@ assignment procedure.
       (make-bytestructure-descriptor
         `(,bs:struct (x ,uint16) (y (,bs:vector 3 ,uint8)))))
 
-    (define bs (bytestructure my-struct '(0 (0 1 2))))
+    (define bs (bytestructure my-struct '((x 0) (y (0 1 2)))))
 
     (define bs (bytestructure `(,bs:pointer ,my-struct)
-                              '((0 (0 1 2)))))
+                              '(((x 0) (y (0 1 2))))))
 
 
 Referencing and assignment
@@ -318,7 +320,7 @@ conveniently" on its last argument, which matches the second argument
 to the `bytestructure` syntax, so the same types of arguments are
 accepted.
 
-    (bytestructure-set! bs '(0 (1 2 3))) ;; Re-fill the whole struct.
+    (bytestructure-set! bs #(0 (1 2 3))) ;; Re-fill the whole struct.
 
 The pointer type accepts an additional type of argument not mentioned
 in the section about initialization: a one-element list whose contents
