@@ -1,3 +1,5 @@
+- Write a test-suite in SRFI-64!!!
+
 - Bit-level access ?  (E.g. TCP packets have single-bit flag fields.)
   Possible with (rnrs arithmetic bitwise), but I don't think we will
   ever support bitwise offsets into bytevectors, so descriptors will
