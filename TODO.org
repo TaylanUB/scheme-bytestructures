@@ -11,3 +11,7 @@
   "recurse on the same descriptor."  (Since it only receives
   the *contents* of a descriptor, it can't just return the same object
   to do this.)
+
+- When writing a bytevector atop a bytestructure through assignment,
+  is it really our job to stop writing at the end of the current
+  descriptor's bounds, or should we write all of the given BV?
