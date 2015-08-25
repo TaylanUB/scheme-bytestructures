@@ -1,59 +1,61 @@
-*This library's core is written in R7RS, with extensions for R6RS and
-Guile.  It assumes that R6RS's (rnrs bytevectors) API works on R7RS
-bytevectors as well, which should be the case for any sane Scheme
-implementation supporting R7RS and R6RS.*
-
 Structured access to bytevector contents
 ========================================
 
-A "bytestructure descriptor" describes a structure for the contents of
-a bytevector, or how its bytes are to be accessed and converted into
-Scheme objects.  It is analogous to a "type" in the barely abstracted
-typing and type casting system of the C programming language, since
-those types also offer mere "views" on raw bytes.
+This library offers a system imitating the type system of the C
+programming language, to be used on bytevectors.  C's type system
+works on raw memory, and ours works on bytevectors which are an
+abstraction over raw memory in Scheme.
 
-Every descriptor is of a certain type.  Going on with the C analogy,
-if a descriptor is a type, then a descriptor type would be a
-type-type, or meta-type; the C programming language does not give
-control over these, although the array, struct, union, function, and
-pointer "types" it supports are all not stand-alone types, but indeed
-such meta-types that construct derived types.  (E.g. a variable never
-has type "array," it has a type "array of \<type\>" for an underlying
-type \<type\>, called its element type.)
+An abstract class of C types like "array" or "struct" corresponds to a
+"bytestructure descriptor type" object in our system.
 
-In our system, both descriptors and descriptor types are first-class
-objects; a descriptor type can define how descriptors of that type are
-created, how their size (or rather, the size of the structure they
-describe) is calculated, what it means to use indices with them, what
-it means to reference a value with them, and what it means to assign a
-value with them.
+A concrete C type like `uint8_t[5]` (i.e. `uint8_t` array of length 5)
+corresponds to a "bytestructure descriptor" object.  Every such object
+is of a given descriptor type, and created with certain parameters
+making it unique.
 
-For example, descriptors of the vector type are created with a length,
-and an element descriptor; their size is calculated by multiplying the
-length with the size of the element descriptor; and one can use
-non-negative exact integer indices on them, which results in an offset
-(calculated by multiplying the index with the size of the element
-descriptor), and the element descriptor, such that referencing or
-assigning a value can continue from there; referencing or assigning a
-value directly as a vector does not make much sense, although the
-vector type also defines a certain convenient assignment semantics,
-which can be used to mutate multiple elements of the vector at once,
-or replace its whole contents with another.
+For example we could define a descriptor type called "number" which
+takes a Boolean parameter specifying whether it's signed, a parameter
+defining its endianness, and a parameter defining how many bytes it's
+long, so one could create concrete descriptors like `uint16-le`,
+`sint64-be`, etc. from this type.
 
-As another example, instances of a hypothetical "number" type could be
-created with a specific size, endianness, etc., and their referencing
-and assignment semantics would be to encode and decode numeric values
-to and from byte-sequences as specified by said properties.  In this
-case, in contrast to the vector type, indexing semantics would be left
-out, since instances of this descriptor type would work with singular
-objects.
+Some descriptor types, like vector, struct, and union, take other
+descriptor objects as part of their setup, so for instance you can
+create a `uint8_t[5]` descriptor by passing the `uint8` descriptor and
+the number 5 as parameters to the "vector" descriptor type.  You can
+then use that descriptor while setting up a descriptor of the struct
+type, and so on.
+
+Note that these concrete descriptors still don't hold any actual bytes
+themselves, so there are three layers: the abstract descriptor type, a
+concrete descriptor with all its parameters set, and then the actual
+data (bytevector) whose contents the descriptor describes.  We have a
+convenience type bundling a descriptor with a bytevector, yielding a
+"bytestructure" object which both holds real data, and the meta-data
+(descriptor) which declares the layout of the bytes it contains.
+These correspond roughly to actual variables in C, which both point to
+a memory address and hold the type information for that address.
+
+Note that C's type system is static, whereas ours is fully dynamic,
+and even the abstract descriptor type objects are first-class objects,
+and not set in stone like in C (array, struct, union, pointer).
+
+
+Supported platforms
+-------------------
+
+R7RS and Guile are supported.  Import `(bytestructures r7)` in R7RS,
+and `(bytestructures guile)` in Guile.  These will import all of the
+supported sub-libraries, which you can see by peeking into the `r7/`
+and `guile/` directories.  They are mostly documented below.
 
 
 Creating bytestructure descriptors
 ----------------------------------
 
 The procedure `make-bytestructure-descriptor` takes one argument, the
-"bytestructure description," which may be one of the following:
+"bytestructure *description*," which may be one of the following:
 
 1. A descriptor type; this will call the constructor for that type
 with no arguments.
@@ -74,17 +76,19 @@ following example:
     (define uint8-v3
       (make-bytestructure-descriptor (list bs:vector 3 uint8)))
 
-The `bs:vector` variable holds the descriptor type "vector."  The
-constructor for this type takes a length and an element description.
-We provided the existing `uint8` descriptor, so we get a descriptor
-for uint8 vectors of length 3.  In C terminology, a `uint8_t[3]`.  The
-following creates a `uint8_t[3][5]` descriptor:
+The `bs:vector` variable holds the vector descriptor type.  The
+constructor for this type actually takes a length and an element
+*description*.  We provided the existing `uint8` descriptor as the
+description, so we get a descriptor for uint8 vectors of length 3.
+I.e. a `uint8_t[3]`.  Compare to the following, which creates a
+`uint8_t[3][5]` descriptor by using a nested description list:
 
     (define uint8-v3-v5
       (make-bytestructure-descriptor
         `(,bs:vector 5 (,bs:vector 3 ,uint8))))
 
-As does the following, using our previous `uint8-v3`:
+And the following does the same using our previously defined
+`uint8-v3`:
 
     (define uint8-v3-v5
       (make-bytestructure-descriptor
@@ -103,19 +107,19 @@ descriptor.
     (bytestructure-descriptor-size crazy-descriptor)
     ;;; error
 
-    (bytestructure-descriptor-size bv offset crazy-descriptor)
+    (bytestructure-descriptor-size bytevector offset crazy-descriptor)
     => whatever
 
 
 The "simple" type
 -----------------
 
-The module comes with the type "simple," which can fulfill all needs
+The library comes with the type "simple," which can fulfill all needs
 of "non-compound" descriptors -- those whose sole purpose is to
 convert between Scheme objects and byte-sequences.  Its instances are
 created with a constant size, a bytevector-ref procedure, and a
-bytevector-set procedure.  E.g. the following is the definition of
-`uint8`, in r7/uint8.scm:
+bytevector-set procedure.  E.g. the following is a definition for
+`uint8`:
 
     (define uint8
       (make-bytestructure-descriptor
@@ -123,12 +127,14 @@ bytevector-set procedure.  E.g. the following is the definition of
 
 (The 1 is the size, in bytes.)
 
-If your Scheme implementation supports (rnrs bytevectors) from R6RS,
-you can import r6/numeric.scm to get all the usual numeric types:
+If your Scheme implementation supports the library `(rnrs
+bytevectors)` or `(r6rs bytevectors)`, then all the usual numeric
+types will be defined when you load the `numeric` module:
 float\[le,be\], double\[le,be\], \[u\]int(8,16,32,64)\[le,be\]
 
-On Guile you can import guile/numeric-native.scm to get the following:
-\[unsigned-\](short,int,long), `size_t`, `ssize_t`, `ptrdiff_t`
+On Guile you can import the `numeric-native` module to get the
+following: \[unsigned-\](short,int,long), `size_t`, `ssize_t`,
+`ptrdiff_t`
 
 
 Compound types
@@ -176,7 +182,7 @@ through the pointer might try to access invalid memory addresses.
 As an additional feature, the pointer type accepts a promise for the
 description of the pointed-to substructure.  The promise must evaluate
 to a normal bytestructure description when forced, as accepted by
-`make-bytestructure-descriptor'.  This helps when creating cyclic
+`make-bytestructure-descriptor`.  This helps when creating cyclic
 structures:
 
     (define linked-uint8-list
@@ -184,6 +190,18 @@ structures:
         `(,bs:pointer ,(delay `(,bs:struct
                                 (head ,uint8)
                                 (tail ,linked-uint8-list))))))
+
+Descriptors generally describe a byte layout with a fixed width.
+E.g. the `my-struct` above has a width of 5 bytes in total, because it
+contains one 2-byte integer, and three 1-byte integers.  It is also
+possible for a descriptor to have a variable width, calculated on
+basis of the bytevector the descriptor is used on.  For instance the
+first byte of the bytevector could be a tag-byte giving information
+about the layout of the rest of the bytevector.  Such descriptors with
+variable width are not accepted as components in any of the default
+compound types (vector, struct, union, pointer) because they calculate
+their size once at setup and not every time they're used on a
+bytevector.
 
 
 The bytestructure data-type
@@ -196,7 +214,7 @@ dedicated to a certain structure, so it is most convenient to be able
 to bundle a descriptor onto a bytevector and not be required to
 provide it explicitly at each access into the bytevector.  Similarly,
 a section of a bytevector starting from a certain offset might be
-dedicated to the structure, so being able to bundle this offset too is
+dedicated to the structure, so being able to bundle this offset is
 also useful.
 
     (define bs (make-bytestructure bytevector offset descriptor))
@@ -407,15 +425,15 @@ This will return a descriptor type object which can be used with
 `make-bytestructure-descriptor` as explained in the section "Creating
 bytestructure descriptors."
 
-The `constructor` is the one mentioned in the section "Creating
+- The `constructor` is the one mentioned in the section "Creating
 bytestructure descriptors"; it handles the arguments used to create a
 descriptor instance of this type, and should return the "content" for
 this instance (NOT a descriptor; just the content; this is an internal
 field of a descriptor which the framework will populate for you).
 This "content" object can be anything; it's private to your descriptor
 type and will be passed to the other procedures you provided so they
-know what to do.  For example the vector type uses a record that holds
-a length and an element descriptor.
+know what to do.  Typically a record type is used, e.g. the vector
+type uses a record that holds a length and an element descriptor.
 
 A common strategy that can be utilized by a type's constructor,
 usually in types that hold other descriptors (e.g. vector), is to call
@@ -431,9 +449,9 @@ users can provide a variable that has been bound but its value not
 defined yet (e.g. via `letrec`), and will shortly after be defined to
 be another (or the same) descriptor, thus creating cyclic descriptors.
 
-The `size-or-size-accessor` must either be a non-negative exact
-integer, or a ternary procedure taking a bytevector, an offset, and
-your descriptor contents, returning the size of the instance as
+- The `size-or-size-accessor` must either be a non-negative exact
+integer, or a procedure taking a bytevector, an offset, and your
+descriptor contents, and returning the size of the instance as
 described by the contents.
 
 The bytevector and offset are given to satisfy possible use-cases
@@ -450,10 +468,7 @@ checking like in C).
 
 The size-accessor procedure of a compound type can use
 `bytestructure-descriptor-size` to acquire the size of other
-descriptors it holds.  This procedure takes either only a
-bytestructure descriptor (when calculating the size statically), or a
-bytevector, offset, and descriptor (for when requesting the size of a
-descriptor with a possibly dynamic size).
+descriptors it holds.
 
 In descriptor types that don't allow dynamic size, a small performance
 hack is to calculate the size of the structure in the constructor and
@@ -461,35 +476,37 @@ put it into the contents object so the size-accessor doesn't have to
 recalculate it every time and instead just take it out from the given
 contents object.
 
-The `ref-helper` must be a four-argument procedure that takes a
-bytevector, an offset, the contents of the descriptor, and an "index"
-object; it returns three values: the same or a different bytevector,
-and a new offset and descriptor as determined by the index.
+- The `ref-helper` must be a procedure that takes a bytevector, an
+offset, the contents of the descriptor, and an "index" object; it
+returns three values: the same or a different bytevector, and a new
+offset and descriptor as determined by the index.
 
 For example the ref-helper of the vector type multiplies the size of
 the element descriptor (as received through the "contents" object)
-with the index and adds the resulting value to the old offset, and
-always returns the element descriptor and the same bytevector that was
-given (which may just be `#f`).  The ref-helper of the struct type, on
-the other hand, must iterate through its fields, adding to the offset
-the sizes of the descriptors it skips until it comes to the field with
-the requested index (a symbol), and returns the accumulated offset and
-the descriptor of the field at which it arrived.
+with the index, and adds the resulting value to the old offset, to
+calculate the new offset.  It always returns the element descriptor,
+and the same bytevector that was given (which may just be `#f`).  The
+ref-helper of the struct type, on the other hand, must iterate through
+its fields, adding to the offset the sizes of the descriptors it skips
+until it arrives at the field with the requested index (a symbol), and
+returns the accumulated offset and the descriptor of the field at
+which it arrived.
 
 Note that while the ref-helper receives contents of a descriptor, it
 is expected to return an actual descriptor.  This means it cannot
 return the same object to induce recursion on the same descriptor.
 
-The ref-helper may be `#f` to indicate that it doesn't make sense to
-use an index with a descriptor type.  In that case, an error will be
-raised when the user attempts this.
+The ref-helper mainly makes sense for compound types.  It may be `#f`
+to indicate that it doesn't make sense to use an index with the
+descriptor type.  (In that case, an error will be raised when the user
+attempts this.)
 
-The `bytevector-ref-proc` must be a ternary procedure that takes a
-bytevector, an offset, and the descriptor contents, and returns a
-decoded value as specified by the descriptor contents residing at the
-given offset in the bytevector.
+- The `bytevector-ref-proc` must be a procedure that takes a bytevector,
+an offset, and the descriptor contents, and returns a decoded value as
+specified by the descriptor contents residing at the given offset in
+the bytevector.
 
-The `bytevector-set-proc` is similar, but takes an additional value
+- The `bytevector-set-proc` is similar, but takes an additional value
 argument, whose encoded representation it should fill into the
 bytevector, at the given offset and as specified by the descriptor
 contents.
