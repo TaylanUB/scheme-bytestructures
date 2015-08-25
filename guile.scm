@@ -1,33 +1,39 @@
-(define-module (bytestructures guile)
-  #:version (1 3 1))
-(import (bytestructures guile standard))
-(reexport
- (
-  make-bytestructure-descriptor-type
-  bytestructure-descriptor-type?
-  make-bytestructure-descriptor
-  bytestructure-descriptor?
-  bytestructure-descriptor-size
-  make-bytestructure
-  bytestructure?
-  bytestructure-bytevector
-  bytestructure-offset
-  bytestructure-descriptor
-  bytestructure
-  bytestructure-ref-helper
-  bytestructure-ref-helper*
-  bytestructure-ref
-  bytestructure-ref*
-  bytestructure-set!
-  bytestructure-set!*
+(define-module (bytestructures guile))
+(import
+ (bytestructures guile base)
+ (bytestructures guile simple)
+ (bytestructures guile numeric)
+ (bytestructures guile vector)
+ (bytestructures guile struct)
+ (bytestructures guile union)
+ (bytestructures guile pointer)
+ (bytestructures guile numeric-native))
+(re-export
+ make-bytestructure-descriptor-type
+ bytestructure-descriptor-type?
+ make-bytestructure-descriptor
+ bytestructure-descriptor?
+ bytestructure-descriptor-size
+ make-bytestructure
+ bytestructure?
+ bytestructure-bytevector
+ bytestructure-offset
+ bytestructure-descriptor
+ bytestructure
+ bytestructure-ref-helper
+ bytestructure-ref-helper*
+ bytestructure-ref
+ bytestructure-ref*
+ bytestructure-set!
+ bytestructure-set!*
 
-  bs:simple bs:vector bs:struct bs:union bs:pointer
+ bs:simple bs:vector bs:struct bs:union bs:pointer
 
-  int8 uint8 int16 uint16 int32 uint32 int64 uint64
-  int16le uint16le int32le uint32le int64le uint64le
-  int16be uint16be int32be uint32be int64be uint64be
-  float double floatle doublele floatbe doublebe
+ int8 uint8 int16 uint16 int32 uint32 int64 uint64
+ int16le uint16le int32le uint32le int64le uint64le
+ int16be uint16be int32be uint32be int64be uint64be
+ float double floatle doublele floatbe doublebe
 
-  short unsigned-short int unsigned-int long unsigned-long
-  size_t ssize_t ptrdiff_t
-  ))
+ short unsigned-short int unsigned-int long unsigned-long
+ size_t ssize_t ptrdiff_t
+ )

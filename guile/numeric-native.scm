@@ -26,16 +26,14 @@
 
 ;;; Code:
 
-(define-module (bytestructures guile numeric-native)
-  #:version (1 3 1)
-  #:export
-  (
-   short unsigned-short int unsigned-int long unsigned-long
-   size_t ssize_t ptrdiff_t
-   ))
-
-(use-modules (bytestructures r6 numeric)
-             ((system foreign) #:select (sizeof)))
+(define-module (bytestructures guile numeric-native))
+(export
+ short unsigned-short int unsigned-int long unsigned-long
+ size_t ssize_t ptrdiff_t
+ )
+(import
+ (bytestructures guile numeric)
+ (only (system foreign) sizeof))
 
 (define-syntax define-native-synonyms
   (syntax-rules ()
@@ -47,8 +45,7 @@
            ((2) int16)
            ((4) int32)
            ((8) int64)))
-       ...)
-     (begin
+       ...
        (define unsigned
          (case (sizeof (@ (system foreign) unsigned))
            ((1) uint8)

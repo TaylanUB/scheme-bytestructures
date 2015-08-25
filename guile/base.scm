@@ -1,0 +1,25 @@
+(define-module (bytestructures guile base))
+(export
+ make-bytestructure-descriptor-type
+ bytestructure-descriptor-type?
+ make-bytestructure-descriptor
+ bytestructure-descriptor?
+ bytestructure-descriptor-size
+ make-bytestructure
+ bytestructure?
+ bytestructure-bytevector
+ bytestructure-offset
+ bytestructure-descriptor
+ bytestructure
+ bytestructure-ref-helper
+ bytestructure-ref-helper*
+ bytestructure-ref
+ bytestructure-ref*
+ bytestructure-set!
+ bytestructure-set!*
+ )
+(import
+ (srfi :9)
+ (srfi :11)
+ (bytestructures bytevectors))
+(include-from-path "bytestructures/body/base.scm")

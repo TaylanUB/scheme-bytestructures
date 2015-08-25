@@ -1,6 +1,0 @@
-(include-library-declarations "base.exports.scm")
-(include-library-declarations "simple.exports.scm")
-(include-library-declarations "vector.exports.scm")
-(include-library-declarations "struct.exports.scm")
-(include-library-declarations "union.exports.scm")
-(include-library-declarations "uint8.exports.scm")

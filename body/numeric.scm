@@ -24,32 +24,28 @@
 ;; native or specific endianness, as made possible by the bytevector referencing
 ;; and assigning procedures in the (rnrs bytevectors) module.
 ;;
-;; The uint8 type is in (bytestructures r7 uint8) so it's left out here.
+;; If the R6RS bytevector API is supported, all the types are defined; otherwise
+;; we can only define uint8.
 
 
 ;;; Code:
 
-(library (bytestructures r6 numeric (1 3 1))
-  (export
-   int8 int16 uint16 int32 uint32 int64 uint64
-   int16le uint16le int32le uint32le int64le uint64le
-   int16be uint16be int32be uint32be int64be uint64be
-   float double floatle doublele floatbe doublebe
-   )
-  (import
-   (rnrs base (6))
-   (rnrs bytevectors (6))
-   (bytestructures r7 base)
-   (bytestructures r7 simple))
+(define-syntax define-numeric-types
+  (syntax-rules ()
+    ((_ (name size ref-proc set-proc) ...)
+     (begin
+       (define name
+         (make-bytestructure-descriptor
+          (list bs:simple size ref-proc set-proc)))
+       ...))))
 
-  (define-syntax define-numeric-types
-    (syntax-rules ()
-      ((_ (name size ref-proc set-proc) ...)
-       (begin
-         (define name
-           (make-bytestructure-descriptor
-            (list bs:simple size ref-proc set-proc)))
-         ...))))
+(define-numeric-types
+  (uint8 1 bytevector-u8-ref bytevector-u8-set!))
+
+(cond-expand
+ ((or guile
+      (library (rnrs bytevectors))
+      (library (r6rs bytevectors)))
 
   (define-numeric-types
     (float
@@ -100,6 +96,9 @@
     (uint32le uint32be uint32 4 bytevector-u32-ref bytevector-u32-set!)
     (int64le  int64be  int64  8 bytevector-s64-ref bytevector-s64-set!)
     (uint64le uint64be uint64 8 bytevector-u64-ref bytevector-u64-set!))
+
   )
+ (else
+  ))
 
 ;;; numeric.scm ends here

@@ -2,4 +2,4 @@
   (import (scheme base)
           (scheme case-lambda))
   (include-library-declarations "base.exports.scm")
-  (include "base.body.scm"))
+  (include "../body/base.scm"))

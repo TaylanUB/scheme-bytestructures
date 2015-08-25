@@ -1,6 +1,6 @@
 (define-module (bytestructures guile-test))
 
-(use-modules (bytestructures guile standard)
+(use-modules (bytestructures guile)
              (ice-9 format)
              (rnrs bytevectors)
              (srfi srfi-11)
@@ -11,7 +11,7 @@
     ((df (syntax-rules ()
            ((df fn ...)
             (begin
-              (define fn (@@ (bytestructures r6 base) fn))
+              (define fn (@@ (bytestructures guile base) fn))
               ...)))))
   (df bytestructure-descriptor-constructor
       bytestructure-descriptor-type-size

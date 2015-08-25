@@ -2,4 +2,4 @@
   (import (scheme base)
           (bytestructures r7 base))
   (include-library-declarations "struct.exports.scm")
-  (include "struct.body.scm"))
+  (include "../body/struct.scm"))

@@ -2,4 +2,4 @@
   (import (scheme base)
           (bytestructures r7 base))
   (include-library-declarations "union.exports.scm")
-  (include "union.body.scm"))
+  (include "../body/union.scm"))
