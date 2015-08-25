@@ -1,6 +1,6 @@
 ;;; struct.scm --- Struct descriptor type.
 
-;; Copyright (C) 2013  Taylan Ulrich Bayırlı/Kammer
+;; Copyright (C) 2013 - 2015  Taylan Ulrich Bayırlı/Kammer
 
 ;; Author: Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;; Keywords: ffi struct bytevector bytestructure struct
