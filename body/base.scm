@@ -35,9 +35,19 @@
   bytestructure-descriptor-type?
   (constructor           bytestructure-descriptor-constructor)
   (size-or-size-accessor bytestructure-descriptor-type-size)
-  (ref-helper            bytevector-ref-helper)
-  (ref-proc              bytevector-ref-proc)
-  (set-proc              bytevector-set-proc))
+  (ref-helper            %bytevector-ref-helper)
+  (ref-proc              %bytevector-ref-proc)
+  (set-proc              %bytevector-set-proc)
+
+(define-syntax define-convenience-accessor
+  (syntax-rules ()
+    ((_ <name> <original>)
+     (define (<name> descriptor)
+       (<original> (bytestructure-descriptor-type descriptor))))))
+
+(define-convenience-accessor bytevector-ref-helper %bytevector-ref-helper)
+(define-convenience-accessor bytevector-ref-proc %bytevector-ref-proc)
+(define-convenience-accessor bytevector-set-proc %bytevector-set-proc)
 
 
 ;;; Descriptors
@@ -109,9 +119,8 @@
     ((_ bytevector offset descriptor)
      (values bytevector offset descriptor))
     ((_ bytevector offset descriptor index indices ...)
-     (let ((type (bytestructure-descriptor-type descriptor))
-           (content (bytestructure-descriptor-content descriptor)))
-       (let ((ref-helper (bytevector-ref-helper type)))
+     (let ((content (bytestructure-descriptor-content descriptor)))
+       (let ((ref-helper (bytevector-ref-helper descriptor)))
          (if ref-helper
              (let-values (((bytevector* offset* descriptor*)
                            (ref-helper bytevector offset content index)))
@@ -135,8 +144,7 @@
        (bytestructure-primitive-ref bytevector* offset* descriptor*)))))
 
 (define (bytestructure-primitive-ref bytevector offset descriptor)
-  (let ((ref-proc (bytevector-ref-proc
-                   (bytestructure-descriptor-type descriptor))))
+  (let ((ref-proc (bytevector-ref-proc descriptor)))
     (if ref-proc
         (let ((content (bytestructure-descriptor-content descriptor)))
           (ref-proc bytevector offset content))
@@ -158,8 +166,7 @@
        (bytestructure-primitive-set! bytevector* offset* descriptor* value)))))
 
 (define (bytestructure-primitive-set! bytevector offset descriptor value)
-  (let ((set-proc (bytevector-set-proc
-                   (bytestructure-descriptor-type descriptor))))
+  (let ((set-proc (bytevector-set-proc descriptor)))
     (if set-proc
         (let ((content (bytestructure-descriptor-content descriptor)))
           (set-proc bytevector offset content value))
