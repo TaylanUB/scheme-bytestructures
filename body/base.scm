@@ -26,6 +26,14 @@
 
 ;;; Code:
 
+(define-syntax define-syntax-rule
+  (syntax-rules ()
+    ((_ (<name> . <args>) . <body>)
+     (define-syntax <name>
+       (syntax-rules ()
+         ((_ . <args>)
+          (begin . <body>)))))))
+
 ;;; Descriptor-types
 
 (define-record-type <bytestructure-descriptor-type>
@@ -39,11 +47,9 @@
   (ref-proc              %bytevector-ref-proc)
   (set-proc              %bytevector-set-proc)
 
-(define-syntax define-convenience-accessor
-  (syntax-rules ()
-    ((_ <name> <original>)
-     (define (<name> descriptor)
-       (<original> (bytestructure-descriptor-type descriptor))))))
+(define-syntax-rule (define-convenience-accessor <name> <original>)
+  (define (<name> descriptor)
+    (<original> (bytestructure-descriptor-type descriptor))))
 
 (define-convenience-accessor bytevector-ref-helper %bytevector-ref-helper)
 (define-convenience-accessor bytevector-ref-proc %bytevector-ref-proc)
@@ -106,42 +112,39 @@
       (bytestructure-primitive-set! bytevector 0 descriptor values))
     (make-bytestructure bytevector 0 descriptor)))
 
-(define-syntax bytestructure-ref-helper
-  (syntax-rules ()
-    ((_ bytestructure index ...)
-     (let ((bytevector (bytestructure-bytevector bytestructure))
-           (offset (bytestructure-offset bytestructure))
-           (descriptor (bytestructure-descriptor bytestructure)))
-       (bytestructure-ref-helper* bytevector offset descriptor index ...)))))
+(define-syntax-rule (bytestructure-ref-helper <bytestructure> <index> ...)
+  (let ((bytestructure <bytestructure>))
+    (let ((bytevector (bytestructure-bytevector bytestructure))
+          (offset (bytestructure-offset bytestructure))
+          (descriptor (bytestructure-descriptor bytestructure)))
+      (bytestructure-ref-helper* bytevector offset descriptor <index> ...))))
 
 (define-syntax bytestructure-ref-helper*
   (syntax-rules ()
-    ((_ bytevector offset descriptor)
-     (values bytevector offset descriptor))
-    ((_ bytevector offset descriptor index indices ...)
-     (let ((content (bytestructure-descriptor-content descriptor)))
-       (let ((ref-helper (bytevector-ref-helper descriptor)))
-         (if ref-helper
-             (let-values (((bytevector* offset* descriptor*)
-                           (ref-helper bytevector offset content index)))
-               (bytestructure-ref-helper*
-                bytevector* offset* descriptor* indices ...))
-             (error "Cannot index through this descriptor:" descriptor)))))))
+    ((_ <bytevector> <offset> <descriptor>)
+     (values <bytevector> <offset> <descriptor>))
+    ((_ <bytevector> <offset> <descriptor> <index> <indices> ...)
+     (let* ((descriptor <descriptor>)
+            (content (bytestructure-descriptor-content descriptor))
+            (ref-helper (bytevector-ref-helper descriptor)))
+       (if ref-helper
+           (let-values (((bytevector offset descriptor*)
+                         (ref-helper <bytevector> <offset> content <index>)))
+             (bytestructure-ref-helper*
+              bytevector offset descriptor* <indices> ...))
+           (error "Cannot index through this descriptor:" descriptor))))))
 
-(define-syntax bytestructure-ref
-  (syntax-rules ()
-    ((_ bytestructure index ...)
-     (let-values (((bytevector offset descriptor)
-                   (bytestructure-ref-helper bytestructure index ...)))
-       (bytestructure-primitive-ref bytevector offset descriptor)))))
+(define-syntax-rule (bytestructure-ref <bytestructure> <index> ...)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-ref-helper <bytestructure> <index> ...)))
+    (bytestructure-primitive-ref bytevector offset descriptor)))
 
-(define-syntax bytestructure-ref*
-  (syntax-rules ()
-    ((_ bytevector offset descriptor index ...)
-     (let-values (((bytevector* offset* descriptor*)
-                   (bytestructure-ref-helper*
-                    bytevector offset descriptor index ...)))
-       (bytestructure-primitive-ref bytevector* offset* descriptor*)))))
+(define-syntax-rule (bytestructure-ref*
+                     <bytevector> <offset> <descriptor> <index> ...)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-ref-helper*
+                 <bytevector> <offset> <descriptor> <index> ...)))
+    (bytestructure-primitive-ref bytevector offset descriptor)))
 
 (define (bytestructure-primitive-ref bytevector offset descriptor)
   (let ((ref-proc (bytevector-ref-proc descriptor)))
@@ -150,20 +153,17 @@
           (ref-proc bytevector offset content))
         (make-bytestructure bytevector offset descriptor))))
 
-(define-syntax bytestructure-set!
-  (syntax-rules ()
-    ((_ bytestructure index ... value)
-     (let-values (((bytevector offset descriptor)
-                   (bytestructure-ref-helper bytestructure index ...)))
-       (bytestructure-primitive-set! bytevector offset descriptor value)))))
+(define-syntax-rule (bytestructure-set! <bytestructure> <index> ... <value>)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-ref-helper <bytestructure> <index> ...)))
+    (bytestructure-primitive-set! bytevector offset descriptor <value>)))
 
-(define-syntax bytestructure-set!*
-  (syntax-rules ()
-    ((_ bytevector offset descriptor index ... value)
-     (let-values (((bytevector* offset* descriptor*)
-                   (bytestructure-ref-helper*
-                    bytevector offset descriptor index ...)))
-       (bytestructure-primitive-set! bytevector* offset* descriptor* value)))))
+(define-syntax-rule (bytestructure-set!*
+                     <bytevector> <offset> <descriptor> <index> ... <value>)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-ref-helper*
+                 <bytevector> <offset> <descriptor> <index> ...)))
+    (bytestructure-primitive-set! bytevector offset descriptor <value>)))
 
 (define (bytestructure-primitive-set! bytevector offset descriptor value)
   (let ((set-proc (bytevector-set-proc descriptor)))
