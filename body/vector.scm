@@ -76,7 +76,8 @@
 
 (define bs:vector
   (make-bytestructure-descriptor-type
-   make-vector vector-size
+   make-vector
+   vector-size #f
    vector-ref-helper #f vector-set!
    vector-ref-helper/syntax #f #f))
 

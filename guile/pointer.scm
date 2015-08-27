@@ -142,7 +142,8 @@
 
 (define bs:pointer
   (make-bytestructure-descriptor-type
-   make-pointer (ffi:sizeof '*)
+   make-pointer
+   (ffi:sizeof '*) #f
    pointer-ref-helper pointer-ref pointer-set!
    pointer-ref-helper/syntax pointer-ref/syntax pointer-set!/syntax))
 

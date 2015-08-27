@@ -30,12 +30,13 @@
 
 (define-record-type <bytestructure-descriptor-type>
   (make-bytestructure-descriptor-type
-   constructor size-or-size-accessor
+   constructor size-or-size-accessor size-accessor/syntax
    ref-helper ref-proc set-proc
    ref-helper/syntax ref-proc/syntax set-proc/syntax)
   bytestructure-descriptor-type?
   (constructor           bytestructure-descriptor-constructor)
   (size-or-size-accessor bytestructure-descriptor-type-size)
+  (size-accessor/syntax  bytestructure-descriptor-type-size/syntax)
   (ref-helper            %bytevector-ref-helper)
   (ref-proc              %bytevector-ref-proc)
   (set-proc              %bytevector-set-proc)
@@ -90,8 +91,17 @@
             (size (bytestructure-descriptor-type-size type)))
        (if (procedure? size)
            (let ((content (bytestructure-descriptor-content descriptor)))
-            (size bytevector offset content))
+             (size bytevector offset content))
            size)))))
+
+(define (bytestructure-descriptor-size/syntax bytevector offset descriptor)
+  (let* ((type (bytestructure-descriptor-type descriptor))
+         (size (or (bytestructure-descriptor-type-size/syntax type)
+                   (bytestructure-descriptor-type-size type))))
+    (if (procedure? size)
+        (let ((content (bytestructure-descriptor-content descriptor)))
+          (size bytevector offset content))
+        size)))
 
 
 ;;; Bytestructures

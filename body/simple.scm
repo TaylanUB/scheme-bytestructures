@@ -56,7 +56,8 @@
 
 (define bs:simple
   (make-bytestructure-descriptor-type
-   make-simple simple-size
+   make-simple
+   simple-size #f
    #f simple-ref simple-set!
    #f simple-ref/synax simple-set!/syntax))
 

@@ -75,7 +75,8 @@
 
 (define bs:union
   (make-bytestructure-descriptor-type
-   make-union union-size
+   make-union
+   union-size #f
    union-ref-helper #f union-set!
    union-ref-helper/syntax #f #f))
 

@@ -122,7 +122,8 @@
 
 (define bs:struct
   (make-bytestructure-descriptor-type
-   make-struct struct-size
+   make-struct
+   struct-size #f
    struct-ref-helper #f struct-set!
    struct-ref-helper/syntax #f #f))
 

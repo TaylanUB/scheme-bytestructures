@@ -484,7 +484,8 @@ Creating new types
 ------------------
 
     (make-bytestructure-descriptor-type
-      constructor size-or-size-accessor
+      constructor
+      size-or-size-accessor syntactic-size-accessor
       ref-helper bytevector-ref-proc bytevector-set-proc
       syntactic-ref-helper syntactic-ref-proc syntactic-set-proc)
 
@@ -542,6 +543,14 @@ hack is to calculate the size of the structure in the constructor and
 put it into the contents object so the size-accessor doesn't have to
 recalculate it every time and instead just take it out from the given
 contents object.
+
+- The `syntactic-size-accessor` may be `#f`, otherwise it must be a
+procedure taking a syntax object that would evaluate to a bytevector,
+a syntax object that would evaluate to an offset, and the descriptor
+contents, and returning a syntax object that would evaluate to the
+size of the structure.  This way, dynamic-sized structures still work
+with the macro API.  If it's `#f`, then the regular
+`size-or-size-accessor` is used.
 
 - The `ref-helper` must be a procedure that takes a bytevector, an
 offset, the contents of the descriptor, and an "index" object; it
