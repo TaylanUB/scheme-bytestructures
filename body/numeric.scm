@@ -36,12 +36,10 @@
      (begin
        (define name
          (make-bytestructure-descriptor
-          (cond-expand
-           ((or guile syntax-case)
-            (list bs:simple size ref-proc set-proc
-                  (syntax ref-proc) (syntax set-proc)))
-           (else
-            (list bs:simple size ref-proc set-proc #f #f)))))
+          (if-syntax-case
+           (list bs:simple size ref-proc set-proc
+                 (syntax ref-proc) (syntax set-proc))
+           (list bs:simple size ref-proc set-proc #f #f))))
        ...))))
 
 (define-numeric-types
