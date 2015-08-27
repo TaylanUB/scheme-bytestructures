@@ -629,8 +629,9 @@ Plain bytevector reference:
     > ,time (for-each ref times)
     ;; ~0.14s real time
 
-Equivalent bytestructure reference:
+Bytestructure reference:
 
+    > (define bv (make-bytevector 1000))
     > (define-bytestructure-accessors
         bs-ref-helper bs-ref bs-set
         `(,bs:vector
