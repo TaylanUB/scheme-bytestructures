@@ -488,7 +488,7 @@ Creating new types
     (make-bytestructure-descriptor-type
       constructor size-or-size-accessor
       ref-helper bytevector-ref-proc bytevector-set-proc
-      syntactic-ref-proc syntactic-set-proc)
+      syntactic-ref-helper syntactic-ref-proc syntactic-set-proc)
 
 This will return a descriptor type object which can be used with
 `make-bytestructure-descriptor` as explained in the section "Creating
@@ -587,15 +587,24 @@ to the ref and set procedures of the descriptor instance.
 The ref and set procedures may be `#f`, specifying default behavior
 (see section "Accessing and mutating").
 
+- The `syntactic-ref-helper` must be a procedure that takes a syntax
+  object that would evaluate to an offset, the contents of the
+  descriptor, and a syntax object that would evaluate to an index or
+  can directly be interpreted as an index (e.g. an implicitly quoted
+  symbol); it returns two values: a syntax object that would evaluate
+  to a new offset, and a new descriptor.
+
 - The `syntactic-ref-proc` must be a procedure that takes a syntax
-  object that would evaluate to a bytevector, an offset, and the
-  descriptor contents, and returns a syntax object that would evaluate
-  to a procedure-call that does what `bytevector-ref-proc` would do.
+  object that would evaluate to a bytevector, a syntax object that
+  would evaluate to an offset, and the descriptor contents, and
+  returns a syntax object that would evaluate to a procedure-call that
+  does what `bytevector-ref-proc` would do.
 
 - The `syntactic-set-proc` must be a procedure that takes a syntax
-  object that would evaluate to a bytevector, an offset, and the
-  descriptor contents, and returns a syntax object that would evaluate
-  to a procedure-call that does what `bytevector-set-proc` would do.
+  object that would evaluate to a bytevector, a syntax object that
+  would evaluate to an offset, and the descriptor contents, and
+  returns a syntax object that would evaluate to a procedure-call that
+  does what `bytevector-set-proc` would do.
 
 These are called during the macro-expand phase if the user uses the
 macro-based API.  See the pointer type's syntactic-set-proc to see
