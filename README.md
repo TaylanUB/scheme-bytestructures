@@ -204,23 +204,21 @@ basis of the bytevector the descriptor is used on.  For instance the
 first byte of the bytevector could be a tag-byte giving information
 about the layout of the rest of the bytevector.  Such descriptors with
 variable width are not accepted as components in any of the default
-compound types (vector, struct, union, pointer) because they calculate
-their size once at setup and not every time they're used on a
-bytevector.
+compound types vector, struct, and union, because they calculate their
+size once at setup and not every time they're used on a bytevector.
 
 
 The bytestructure data-type
 ---------------------------
 
 Any bytestructure descriptor can be used with any bytevector to work
-on the vector momentarily with accordance to the structure described
-by the given descriptor, but in the usual case a bytevector will be
-dedicated to a certain structure, so it is most convenient to be able
-to bundle a descriptor onto a bytevector and not be required to
-provide it explicitly at each access into the bytevector.  Similarly,
-a section of a bytevector starting from a certain offset might be
-dedicated to the structure, so being able to bundle this offset is
-also useful.
+on that vector momentarily in accordance with the descriptor, but in
+the usual case a bytevector will be dedicated to a certain structure,
+so it is most convenient to be able to bundle a descriptor onto a
+bytevector and not be required to provide it explicitly at each access
+into the bytevector.  Similarly, a section of a bytevector starting
+from a certain offset might be dedicated to the structure, so being
+able to bundle this offset is also useful.
 
     (define bs (make-bytestructure bytevector offset descriptor))
     (bytestructure? bs)           => #t
@@ -392,9 +390,9 @@ offset into the bytevector, and a bytestructure descriptor.
 
 The `bytestructure-ref-helper` and `bytestructure-ref-helper*`
 syntaxes are like `bytestructure-ref` and `bytestructure-ref*`, except
-that they always return three values; a bytevector, an offset, and a
-bytestructure descriptor; instead of a bytestructure encapsulating
-these or the ultimate value of the referencing.
+that they always return three values: a bytevector, an offset, and a
+bytestructure descriptor, instead of a bytestructure encapsulating
+these (or the ultimate value of the referencing).
 
     (bytestructure-ref-helper bs 'y 1)
     => (bytestructure-bytevector bs), 3, uint8-v3
