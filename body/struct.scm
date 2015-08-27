@@ -56,36 +56,32 @@
   (let ((fields (struct-fields struct)))
     (let lp ((fields fields)
              (offset offset))
-      (if (null? fields)
-          (error "No such struct field:" key)
-          (let ((field (car fields)))
-            (if (eq? (field-name field) key)
-                (values bytevector offset (field-content field))
-                (lp (cdr fields)
-                    (+ offset
-                       (bytestructure-descriptor-size
-                        bytevector
-                        offset
-                        (field-content field))))))))))
+      (when (null? fields)
+        (error "No such struct field:" key))
+      (let ((field (car fields)))
+        (if (eq? (field-name field) key)
+            (values bytevector offset (field-content field))
+            (lp (cdr fields)
+                (+ offset
+                   (bytestructure-descriptor-size
+                    (field-content field)))))))))
 
 (define/sc (struct-ref-helper/syntax offset struct key)
   (let ((fields (struct-fields struct))
         (key (syntax->datum key)))
     (let lp ((fields fields)
              (offset offset))
-      (if (null? fields)
-          (error "No such struct field:" key)
-          (let ((field (car fields)))
-            (if (eq? (field-name field) key)
-                (values offset (field-content field))
-                (lp (cdr fields)
-                    (quasisyntax
-                     (+ (unsyntax offset)
-                        (unsyntax
-                         (bytestructure-descriptor-size
-                          #f
-                          offset
-                          (field-content field))))))))))))
+      (when (null? fields)
+        (error "No such struct field:" key))
+      (let ((field (car fields)))
+        (if (eq? (field-name field) key)
+            (values offset (field-content field))
+            (lp (cdr fields)
+                (quasisyntax
+                 (+ (unsyntax offset)
+                    (unsyntax
+                     (bytestructure-descriptor-size
+                      (field-content field)))))))))))
 
 (define (alist? list)
   (or (null? list)
@@ -102,14 +98,14 @@
              (offset offset)
              (index 0))
       (unless (null? values)
-        (if (null? fields)
-            (error "Struct field index out of bounds:" index)
-            (let ((content (field-content (car fields))))
-              (bytestructure-set!* bytevector offset content (car values))
-              (lp (cdr values)
-                  (cdr fields)
-                  (+ offset (bytestructure-descriptor-size content))
-                  (+ 1 index)))))))
+        (when (null? fields)
+          (error "Struct field index out of bounds:" index))
+        (let ((content (field-content (car fields))))
+          (bytestructure-set!* bytevector offset content (car values))
+          (lp (cdr values)
+              (cdr fields)
+              (+ offset (bytestructure-descriptor-size content))
+              (+ 1 index))))))
    ((alist? values)
     (for-each
      (lambda (pair)

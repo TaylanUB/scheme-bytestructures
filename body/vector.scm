@@ -48,8 +48,7 @@
   (let ((content (%vector-content vector)))
     (values bytevector
             (+ offset
-               (* index (bytestructure-descriptor-size
-                         bytevector offset content)))
+               (* index (bytestructure-descriptor-size content)))
             content)))
 
 (define/sc (vector-ref-helper/syntax offset vector index)
@@ -58,8 +57,7 @@
              (+ (unsyntax offset)
                 (* (unsyntax index)
                    (unsyntax
-                    (bytestructure-descriptor-size
-                     #f offset content)))))
+                    (bytestructure-descriptor-size content)))))
             content)))
 
 (define (vector-set! bytevector offset vector values)

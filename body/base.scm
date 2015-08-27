@@ -86,11 +86,11 @@
   (case-lambda
     ((descriptor) (bytestructure-descriptor-size #f #f descriptor))
     ((bytevector offset descriptor)
-     (let ((size (bytestructure-descriptor-type-size
-                  (bytestructure-descriptor-type descriptor))))
+     (let* ((type (bytestructure-descriptor-type descriptor))
+            (size (bytestructure-descriptor-type-size type)))
        (if (procedure? size)
-           (size
-            bytevector offset (bytestructure-descriptor-content descriptor))
+           (let ((content (bytestructure-descriptor-content descriptor)))
+            (size bytevector offset content))
            size)))))
 
 
