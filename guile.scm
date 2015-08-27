@@ -26,6 +26,10 @@
  bytestructure-ref*
  bytestructure-set!
  bytestructure-set!*
+ bytestructure-ref-helper/syntax
+ bytestructure-ref/syntax
+ bytestructure-set!/syntax
+ define-bytestructure-accessors
 
  bs:simple bs:vector bs:struct bs:union bs:pointer
 

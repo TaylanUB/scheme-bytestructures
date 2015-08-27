@@ -33,6 +33,7 @@
  )
 (import
  (bytestructures guile numeric)
+ (bytestructures guile utils)
  (only (system foreign) sizeof))
 
 (define-syntax define-native-synonyms

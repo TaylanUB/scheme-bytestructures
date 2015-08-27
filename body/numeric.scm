@@ -36,7 +36,12 @@
      (begin
        (define name
          (make-bytestructure-descriptor
-          (list bs:simple size ref-proc set-proc)))
+          (cond-expand
+           ((or guile syntax-case)
+            (list bs:simple size ref-proc set-proc
+                  (syntax ref-proc) (syntax set-proc)))
+           (else
+            (list bs:simple size ref-proc set-proc #f #f)))))
        ...))))
 
 (define-numeric-types
@@ -60,6 +65,51 @@
     (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
     (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
 
+  (define-syntax define-explicit-endianness-operations
+    (syntax-rules ()
+      ((_ (original le-name be-name) ...)
+       (begin
+         (begin
+           (define (le-name bytevector index)
+             (original bytevector index (endianness little)))
+           (define (be-name bytevector index)
+             (original bytevector index (endianness big))))
+         ...))))
+
+  (define-explicit-endianness-operations
+    (bytevector-ieee-single-ref bytevector-ieee-single-le-ref
+                                bytevector-ieee-single-be-ref)
+    (bytevector-ieee-single-set! bytevector-ieee-single-le-set!
+                                 bytevector-ieee-single-be-set!)
+    (bytevector-ieee-double-ref bytevector-ieee-double-le-ref
+                                bytevector-ieee-double-be-ref)
+    (bytevector-ieee-double-set! bytevector-ieee-double-le-set!
+                                 bytevector-ieee-double-be-set!)
+    (bytevector-s16-ref bytevector-s16le-ref
+                        bytevector-s16be-ref)
+    (bytevector-s16-set! bytevector-s16le-set!
+                         bytevector-s16be-set!)
+    (bytevector-u16-ref bytevector-u16le-ref
+                        bytevector-u16be-ref)
+    (bytevector-u16-set! bytevector-u16le-set!
+                         bytevector-u16be-set!)
+    (bytevector-s32-ref bytevector-s32le-ref
+                        bytevector-s32be-ref)
+    (bytevector-s32-set! bytevector-s32le-set!
+                         bytevector-s32be-set!)
+    (bytevector-u32-ref bytevector-u32le-ref
+                        bytevector-u32be-ref)
+    (bytevector-u32-set! bytevector-u32le-set!
+                         bytevector-u32be-set!)
+    (bytevector-s64-ref bytevector-s64le-ref
+                        bytevector-s64be-ref)
+    (bytevector-s64-set! bytevector-s64le-set!
+                         bytevector-s64be-set!)
+    (bytevector-u64-ref bytevector-u64le-ref
+                        bytevector-u64be-ref)
+    (bytevector-u64-set! bytevector-u64le-set!
+                         bytevector-u64be-set!))
+
   (define-syntax define-with-endianness
     (syntax-rules ()
       ((_ (name native-name size ref-proc set-proc endianness) ...)
@@ -68,34 +118,48 @@
            (if (equal? endianness native-endianness)
                native-name
                (make-bytestructure-descriptor
-                (list bs:simple size
-                      (lambda (bytevector index)
-                        (ref-proc bytevector index endianness))
-                      (lambda (bytevector index value)
-                        (set-proc
-                         bytevector index value endianness))))))
+                (list bs:simple size ref-proc set-proc 'ref-proc 'set-proc))))
          ...))))
 
   (define-syntax define-with-endianness*
     (syntax-rules ()
-      ((_ (le-name be-name native-name size ref-proc set-proc) ...)
+      ((_ (native-name size
+                       le-name le-ref-proc le-set-proc
+                       be-name be-ref-proc be-set-proc) ...)
        (begin
          (define-with-endianness
-           (le-name native-name size ref-proc set-proc (endianness little))
-           (be-name native-name size ref-proc set-proc (endianness big)))
+           (le-name native-name size
+                    le-ref-proc le-set-proc (endianness little))
+           (be-name native-name size
+                    be-ref-proc be-set-proc (endianness big)))
          ...))))
 
   (define-with-endianness*
-    (floatle floatbe
-             float 4 bytevector-ieee-single-ref bytevector-ieee-single-set!)
-    (doublele doublebe
-              double 8 bytevector-ieee-double-ref bytevector-ieee-double-set!)
-    (int16le  int16be  int16  2 bytevector-s16-ref bytevector-s16-set!)
-    (uint16le uint16be uint16 2 bytevector-u16-ref bytevector-u16-set!)
-    (int32le  int32be  int32  4 bytevector-s32-ref bytevector-s32-set!)
-    (uint32le uint32be uint32 4 bytevector-u32-ref bytevector-u32-set!)
-    (int64le  int64be  int64  8 bytevector-s64-ref bytevector-s64-set!)
-    (uint64le uint64be uint64 8 bytevector-u64-ref bytevector-u64-set!))
+    (float 4
+           floatle bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!
+           floatbe bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
+    (double
+     8
+     doublele bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!
+     doublebe bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!)
+    (int16 2
+           int16le bytevector-s16le-ref bytevector-s16le-set!
+           int16be bytevector-s16be-ref bytevector-s16be-set!)
+    (uint16 2
+            uint16le bytevector-u16le-ref bytevector-u16le-set!
+            uint16be bytevector-u16be-ref bytevector-u16be-set!)
+    (int32 4
+           int32le bytevector-s32le-ref bytevector-s32le-set!
+           int32be bytevector-s32be-ref bytevector-s32be-set!)
+    (uint32 4
+            uint32le bytevector-u32le-ref bytevector-u32le-set!
+            uint32be bytevector-u32be-ref bytevector-u32be-set!)
+    (int64 8
+           int64le bytevector-s64le-ref bytevector-s64le-set!
+           int64be bytevector-s64be-ref bytevector-s64be-set!)
+    (uint64 8
+            uint64le bytevector-u64le-ref bytevector-u64le-set!
+            uint64be bytevector-u64be-ref bytevector-u64be-set!))
 
   )
  (else

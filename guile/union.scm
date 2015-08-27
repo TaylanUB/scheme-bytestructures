@@ -2,6 +2,7 @@
 (export bs:union)
 (import
  (bytestructures guile base)
+ (bytestructures guile utils)
  (bytestructures bytevectors)
  (srfi :9)
  (srfi :11))

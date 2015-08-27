@@ -40,6 +40,12 @@ a memory address and hold the type information for that address.
 Note that C's type system is static, whereas ours is fully dynamic,
 and even the abstract descriptor type objects are first-class objects,
 and not set in stone like in C (array, struct, union, pointer).
+However, a static (macro-based) API is offered on top of the dynamic
+(procedural) one, for when you need maximum performance.  The
+macro-based API has several limitations over the procedural one, since
+macros have the inherent limitation of not being able to access
+run-time data.  The macro API is only available on systems supporting
+syntax-case.
 
 
 Supported platforms
@@ -129,12 +135,11 @@ bytevector-set procedure.  E.g. the following is a definition for
 
 If your Scheme implementation supports the library `(rnrs
 bytevectors)` or `(r6rs bytevectors)`, then all the usual numeric
-types will be defined when you load the `numeric` module:
-float\[le,be\], double\[le,be\], \[u\]int(8,16,32,64)\[le,be\]
+types will be defined: float\[le,be\], double\[le,be\],
+\[u\]int(8,16,32,64)\[le,be\]
 
-On Guile you can import the `numeric-native` module to get the
-following: \[unsigned-\](short,int,long), `size_t`, `ssize_t`,
-`ptrdiff_t`
+On Guile, the following native types are supported as well:
+\[unsigned-\](short,int,long), `size_t`, `ssize_t`, `ptrdiff_t`
 
 
 Compound types
@@ -319,7 +324,7 @@ we can
     (bytestructure-ref bs 'y 2)     ;; bs->y[2]
     (bytestructure-set! bs 'y 2 42) ;; bs->y[2] = 42;
 
-(The field-name `y` is also called an "index" in our terminology.)
+(In the macro API, the `y` would be implicitly quoted.)
 
 The pointer type accepts the index `*` to induce dereferencing; if any
 other index is given, it implicitly dereferences and re-uses the index
@@ -414,12 +419,76 @@ good style should probably use `#f`:
     => #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
 
 
+Macro-based API
+---------------
+
+For when you need maximum performance in your code, a macro-based API
+is offered, which internally works similar to the procedural API but
+does the bulk of the work at macro-expand time, so there is zero or
+near-zero run-time overhead.  This API requires syntax-case.
+
+The main entry point of this API is the
+`define-bytestructure-accessors` macro, which takes a bytestructure
+description, and defines three macros for you: a referencing helper
+(to calculate offsets only), a referencer (to actually acquire
+values), and a setter.
+
+    (define-bytestructure-accessors
+      uint8-v3-v5-ref-helper uint8-v3-v5-reffer uint8-v3-v5-setter
+      `(,bs:vector 5 (,bs:vector 3 ,uint8)))
+
+    (uint8-v3-v5-ref-helper 3 2)
+    => 11 (third position in fourth vector-of-5)
+
+    (define bv (bytevector 0 1 2 3 ...))
+    (uint8-v3-v5-reffer bv 2 1) => 7
+    (uint8-v3-v5-setter bv 2 1 42)
+    (uint8-v3-v5-reffer bv 2 1) => 42
+
+Something important to note on the macro API is that the indices you
+pass to the defined accessors aren't handled the same way the
+procedural API handles them.  For some types, e.g. vectors, there's no
+difference, but for instance the struct and union types implicitly
+quote the index object, since they can't wait for program execution to
+determine what symbol you're passing them, since the symbol is used
+for a (slightly) expensive look-up in a key-to-offset table for the
+struct, and a similar table in the union.
+
+Some referencing and setting operations which can't be resolved to
+bare bytevector references or assignments are turned into copying
+operations.  E.g. if you have a vector of vectors, but you provide
+only one index while referencing, then you will get a fresh bytevector
+that is a copy of a slice of the original; the slice which contained
+the inner vector to which your one index pointed to.  While assigning,
+similarly, the value you provide is expected to be a bytevector, and
+its contents will be written over the part of the original bytevector
+which contains the inner vector.
+
+The following procedures meant for use in procedural macros might be
+useful for advanced use of the library:
+
+- `bytestructure-ref-helper/syntax` takes an offset, bytestructure
+  descriptor, and a list of indices, and returns a new offset (which
+  is also a syntax object by virtue of being a number).
+
+- `bytestructure-ref/syntax` takes a syntax object that would evaluate
+  to a bytevector, an offset, a bytestructure descriptor, and a list
+  of indices, and returns a syntax object that would evaluate to a
+  procedure call doing what `bytestructure-ref*` would do.
+
+- `bytestructure-set!/syntax` takes a syntax object that would
+  evaluate to a bytevector, an offset, a bytestructure descriptor, and
+  a list of indices, and returns a syntax object that would evaluate
+  to a procedure call doing what `bytestructure-set!*` would do.
+
+
 Creating new types
 ------------------
 
     (make-bytestructure-descriptor-type
       constructor size-or-size-accessor
-      ref-helper bytevector-ref-proc bytevector-set-proc)
+      ref-helper bytevector-ref-proc bytevector-set-proc
+      syntactic-ref-proc syntactic-set-proc)
 
 This will return a descriptor type object which can be used with
 `make-bytestructure-descriptor` as explained in the section "Creating
@@ -518,21 +587,77 @@ to the ref and set procedures of the descriptor instance.
 The ref and set procedures may be `#f`, specifying default behavior
 (see section "Accessing and mutating").
 
+- The `syntactic-ref-proc` must be a procedure that takes a syntax
+  object that would evaluate to a bytevector, an offset, and the
+  descriptor contents, and returns a syntax object that would evaluate
+  to a procedure-call that does what `bytevector-ref-proc` would do.
 
+- The `syntactic-set-proc` must be a procedure that takes a syntax
+  object that would evaluate to a bytevector, an offset, and the
+  descriptor contents, and returns a syntax object that would evaluate
+  to a procedure-call that does what `bytevector-set-proc` would do.
+
+These are called during the macro-expand phase if the user uses the
+macro-based API.  See the pointer type's syntactic-set-proc to see
+an example use of e.g. `bytestructure-set!/syntax`.
+
+
 Performance
 ===========
+
+Macro API
+---------
+
+The macro API incurs zero run-time overhead for normal referencing and
+assignment operations, since most things happen in the macro-expand
+phase.
+
+Plain bytevector reference:
+
+    > (define times (iota 1000000)) ;A million
+    > (define bv (make-bytevector 1))
+    > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
+    > ,time (for-each ref times)
+    ;; ~0.14s real time
+
+Equivalent bytestructure reference:
+
+    > (define-bytestructure-accessors
+        bs-ref-helper bs-ref bs-set
+        `(,bs:vector
+          5 (,bs:vector
+             5 (,bs:struct (x ,uint8)
+                           (y ,uint8)
+                           (z ,uint8)))))
+    > (define-inlinable (ref x) (bs-ref bv 4 4 z))
+    > ,time (for-each ref times)
+    ;; ~0.14s real time
+
+(Ignoring the jitter for both.)
+
+Note that if we used variables instead of constant values for the
+vector indices, then *some* calculation would need to happen at
+run-time (multiplying the variables' value with the vectors' lengths),
+but that isn't really overhead either because the same goes for the
+plain bytevector referencing example, except there you would need to
+do said multiplications manually in your code.
+
+
+Procedural API
+--------------
 
 When descriptors are statically apparent, an aggressively constant
 propagating and partial evaluating optimizer would be able to turn
 bytestructure references into direct bytevector references, which,
 through further optimization, could even end up identical to the
 results of hand-written C code.  That is the most optimal outcome,
-whereas the opposite is that even offset calculation happens at
-run-time, let alone type and bound checks being removed.  In Guile
-2.0, the latter is the case (and additionally, record types are not as
-efficient as they could be), so using a bytestructure reference will
-be slower, by orders of magnitude, than a direct bytevector reference,
-which itself is not optimized against type and bounds checks.
+which would obsolete the macro API, but the opposite situation is that
+even offset calculation happens at run-time, let alone type and bound
+checks being removed.  In Guile 2.0, the latter is the case (and
+additionally, record types are not as efficient as they could be), so
+using a bytestructure reference will be slower, by orders of
+magnitude, than a direct bytevector reference, which itself is not
+optimized against type and bounds checks.
 
 Nevertheless, the offset calculation at least avoids the consing of
 rest-argument lists, so no heap allocation happens, which will make
@@ -541,10 +666,11 @@ regard to the depth of a structure and, for structs and unions, the
 positions of referenced fields.
 
 When possible, the performance issues can be alleviated, without
-relying on automatic optimization, by hoisting offset calculations to
-outside of speed-critical sections by using the ref-helper forms, only
-leaving bare bytevector references at bottlenecks.  This way a big
-part of the convenience offered by the framework can still be used.
+relying on automatic optimization or the macro API, by hoisting offset
+calculations to outside of speed-critical sections by using the
+ref-helper forms, only leaving bare bytevector references at
+bottlenecks.  This way a big part of the convenience offered by the
+procedural API can still be used.
 
 Following are some figures from Guile 2.0.11.
 
@@ -554,14 +680,14 @@ Plain bytevector reference, for comparison:
     > (define bv (make-bytevector 1))
     > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
     > ,time (for-each ref times)
-    ;; 0.157073s real time
+    ;; 0.130245s real time
 
 Equivalent bytestructure reference:
 
     > (define bs (bytestructure `(,bs:vector 1 ,uint8)))
     > (define-inlinable (ref x) (bytestructure-ref bs 0))
     > ,time (for-each ref times)
-    ;; 2.495025s real time
+    ;; 1.700115s real time
 
 Showcasing the effect of a deeper structure:
 
@@ -570,7 +696,7 @@ Showcasing the effect of a deeper structure:
                                      (,bs:vector 1 ,uint8)))))
     > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
     > ,time (for-each ref times)
-    ;; 4.667697s real time
+    ;; 3.200876s real time
 
 Showcasing the effect of referencing latter fields of a struct:
 
@@ -579,7 +705,7 @@ Showcasing the effect of referencing latter fields of a struct:
                                              (z ,uint8))))
     > (define-inlinable (ref x) (bytestructure-ref bs 'x))
     > ,time (for-each ref times)
-    ;; 2.152634s real time
+    ;; 1.613504s real time
     > (define-inlinable (ref x) (bytestructure-ref bs 'z))
     > ,time (for-each ref times)
-    ;; 4.001873s real time
+    ;; 2.857634s

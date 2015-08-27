@@ -57,6 +57,11 @@
           offset
           (field-content (field-find key (union-fields union)))))
 
+(define/sc (union-ref-helper/syntax offset union key)
+  (let ((key (syntax->datum key)))
+    (values offset
+            (field-content (field-find key (union-fields union))))))
+
 (define (union-set! bytevector offset union values)
   (cond
    ((and (list? values) (= 2 (length values)))
@@ -71,6 +76,7 @@
 (define bs:union
   (make-bytestructure-descriptor-type
    make-union union-size
-   union-ref-helper #f union-set!))
+   union-ref-helper #f union-set!
+   union-ref-helper/syntax #f #f))
 
 ;;; union.scm ends here

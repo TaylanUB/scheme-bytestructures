@@ -16,4 +16,8 @@
  bytestructure-ref*
  bytestructure-set!
  bytestructure-set!*
+ bytestructure-ref-helper/syntax
+ bytestructure-ref/syntax
+ bytestructure-set!/syntax
+ define-bytestructure-accessors
  )

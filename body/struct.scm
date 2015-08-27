@@ -68,6 +68,25 @@
                         offset
                         (field-content field))))))))))
 
+(define/sc (struct-ref-helper/syntax offset struct key)
+  (let ((fields (struct-fields struct))
+        (key (syntax->datum key)))
+    (let lp ((fields fields)
+             (offset offset))
+      (if (null? fields)
+          (error "No such struct field:" key)
+          (let ((field (car fields)))
+            (if (eq? (field-name field) key)
+                (values offset (field-content field))
+                (lp (cdr fields)
+                    (quasisyntax
+                     (+ (unsyntax offset)
+                        (unsyntax
+                         (bytestructure-descriptor-size
+                          #f
+                          offset
+                          (field-content field))))))))))))
+
 (define (alist? list)
   (or (null? list)
       (and (pair? list)
@@ -108,6 +127,7 @@
 (define bs:struct
   (make-bytestructure-descriptor-type
    make-struct struct-size
-   struct-ref-helper #f struct-set!))
+   struct-ref-helper #f struct-set!
+   struct-ref-helper/syntax #f #f))
 
 ;;; struct.scm ends here

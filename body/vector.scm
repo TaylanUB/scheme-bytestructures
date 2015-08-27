@@ -52,6 +52,16 @@
                          bytevector offset content)))
             content)))
 
+(define/sc (vector-ref-helper/syntax offset vector index)
+  (let ((content (%vector-content vector)))
+    (values (quasisyntax
+             (+ (unsyntax offset)
+                (* (unsyntax index)
+                   (unsyntax
+                    (bytestructure-descriptor-size
+                     #f offset content)))))
+            content)))
+
 (define (vector-set! bytevector offset vector values)
   (cond
    ((vector? values)
@@ -69,6 +79,7 @@
 (define bs:vector
   (make-bytestructure-descriptor-type
    make-vector vector-size
-   vector-ref-helper #f vector-set!))
+   vector-ref-helper #f vector-set!
+   vector-ref-helper/syntax #f #f))
 
 ;;; vector.scm ends here

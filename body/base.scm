@@ -26,26 +26,22 @@
 
 ;;; Code:
 
-(define-syntax define-syntax-rule
-  (syntax-rules ()
-    ((_ (<name> . <args>) . <body>)
-     (define-syntax <name>
-       (syntax-rules ()
-         ((_ . <args>)
-          (begin . <body>)))))))
-
 ;;; Descriptor-types
 
 (define-record-type <bytestructure-descriptor-type>
   (make-bytestructure-descriptor-type
    constructor size-or-size-accessor
-   ref-helper ref-proc set-proc)
+   ref-helper ref-proc set-proc
+   ref-helper/syntax ref-proc/syntax set-proc/syntax)
   bytestructure-descriptor-type?
   (constructor           bytestructure-descriptor-constructor)
   (size-or-size-accessor bytestructure-descriptor-type-size)
   (ref-helper            %bytevector-ref-helper)
   (ref-proc              %bytevector-ref-proc)
   (set-proc              %bytevector-set-proc)
+  (ref-helper/syntax     %bytevector-ref-helper/syntax)
+  (ref-proc/syntax       %bytevector-ref-proc/syntax)
+  (set-proc/syntax       %bytevector-set-proc/syntax))
 
 (define-syntax-rule (define-convenience-accessor <name> <original>)
   (define (<name> descriptor)
@@ -54,6 +50,12 @@
 (define-convenience-accessor bytevector-ref-helper %bytevector-ref-helper)
 (define-convenience-accessor bytevector-ref-proc %bytevector-ref-proc)
 (define-convenience-accessor bytevector-set-proc %bytevector-set-proc)
+(define-convenience-accessor
+  bytevector-ref-helper/syntax %bytevector-ref-helper/syntax)
+(define-convenience-accessor
+  bytevector-ref-proc/syntax %bytevector-ref-proc/syntax)
+(define-convenience-accessor
+  bytevector-set-proc/syntax %bytevector-set-proc/syntax)
 
 
 ;;; Descriptors
@@ -127,12 +129,12 @@
      (let* ((descriptor <descriptor>)
             (content (bytestructure-descriptor-content descriptor))
             (ref-helper (bytevector-ref-helper descriptor)))
-       (if ref-helper
-           (let-values (((bytevector offset descriptor*)
-                         (ref-helper <bytevector> <offset> content <index>)))
-             (bytestructure-ref-helper*
-              bytevector offset descriptor* <indices> ...))
-           (error "Cannot index through this descriptor:" descriptor))))))
+       (when (not ref-helper)
+         (error "Cannot index through this descriptor:" descriptor))
+       (let-values (((bytevector offset descriptor*)
+                     (ref-helper <bytevector> <offset> content <index>)))
+         (bytestructure-ref-helper*
+          bytevector offset descriptor* <indices> ...))))))
 
 (define-syntax-rule (bytestructure-ref <bytestructure> <index> ...)
   (let-values (((bytevector offset descriptor)
@@ -175,5 +177,31 @@
                               (bytestructure-descriptor-size
                                bytevector offset descriptor))
             (error "Failed to write:" value)))))
+
+(cond-expand
+ (guile
+
+  (include-from-path "bytestructures/body/base.syntactic.scm")
+
+  )
+ ((or syntax-case)               ;redundant 'or' for proper indentation by Emacs
+
+  (include "base.syntactic.scm")
+
+  )
+ (else
+
+  (define-syntax-rule (define-syntax-case-stubs <name> ...)
+    (define-syntax-rule (<name> . rest)
+      (syntax-error "Not implemented.  You need syntax-case."))
+    ...)
+
+  (define-syntax-case-stubs
+    bytestructure-ref-helper/syntax
+    bytestructure-ref/syntax
+    bytestructure-set!/syntax
+    define-bytestructure-accessors)
+
+  ))
 
 ;;; base.scm ends here

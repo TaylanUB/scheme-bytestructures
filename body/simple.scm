@@ -28,11 +28,13 @@
 ;;; Code:
 
 (define-record-type <simple>
-  (make-simple size ref-proc set-proc)
+  (make-simple size ref-proc set-proc ref-id set-id)
   simple?
   (size     %simple-size)
   (ref-proc simple-ref-proc)
-  (set-proc simple-set-proc))
+  (set-proc simple-set-proc)
+  (ref-id   simple-ref-id)
+  (set-id   simple-set-id))
 
 (define (simple-size bytevector offset simple)
   (%simple-size simple))
@@ -43,9 +45,19 @@
 (define (simple-set! bytevector offset simple value)
   ((simple-set-proc simple) bytevector offset value))
 
+(define/sc (simple-ref/synax bytevector offset simple)
+  (quasisyntax
+   ((unsyntax (simple-ref-id simple)) (unsyntax bytevector) (unsyntax offset))))
+
+(define/sc (simple-set!/syntax bytevector offset simple value)
+  (quasisyntax
+   ((unsyntax (simple-set-id simple))
+    (unsyntax bytevector) (unsyntax offset) (value))))
+
 (define bs:simple
   (make-bytestructure-descriptor-type
    make-simple simple-size
-   #f simple-ref simple-set!))
+   #f simple-ref simple-set!
+   #f simple-ref/synax simple-set!/syntax))
 
 ;;; simple.el ends here
