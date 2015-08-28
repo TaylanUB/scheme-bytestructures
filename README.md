@@ -116,6 +116,13 @@ descriptor.
     (bytestructure-descriptor-size bytevector offset crazy-descriptor)
     => whatever
 
+To make dynamic-sized structures work with the macro API as well,
+there is a syntactic variant, `bytestructure-descriptor-size/syntax`,
+which can be used in the macro-expand phase to generate code that
+would then calculate the size at run-time.  This takes three
+arguments: a syntax object that would evaluate to a bytevector, a
+syntax object that would evaluate to an offset, and the descriptor.
+
 
 The "simple" type
 -----------------

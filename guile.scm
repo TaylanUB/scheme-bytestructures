@@ -14,6 +14,7 @@
  make-bytestructure-descriptor
  bytestructure-descriptor?
  bytestructure-descriptor-size
+ bytestructure-descriptor-size/syntax
  make-bytestructure
  bytestructure?
  bytestructure-bytevector
