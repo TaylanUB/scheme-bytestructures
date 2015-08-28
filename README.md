@@ -208,7 +208,7 @@ the size of your vector descriptor.
 Vectors don't accept variable-size descriptors as their element
 descriptor, because they calculate their own total size eagerly.
 
-- `(bs:struct \`((key1 ,descriptor1) (key2 ,descriptor2) ...)`
+- ```(bs:struct `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
 
 This returns a descriptor for a struct as in C, with the given fields.
 
@@ -231,7 +231,7 @@ the size of your struct descriptor.
 Structs don't accept variable-size descriptors as field descriptors,
 because they calculate their own total size eagerly.
 
-- `(bs:union \`((key1 ,descriptor1) (key2 ,descriptor2) ...)`
+- ```(bs:union `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
 
 This returns a descriptor for a union as in C, with the given fields.
 
