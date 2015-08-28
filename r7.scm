@@ -1,13 +1,11 @@
 (define-library (bytestructures r7)
   (import
    (bytestructures r7 base)
-   (bytestructures r7 simple)
    (bytestructures r7 vector)
    (bytestructures r7 struct)
    (bytestructures r7 union)
    (bytestructures r7 uint8))
   (include-library-declarations "base.exports.scm")
-  (include-library-declarations "simple.exports.scm")
   (include-library-declarations "numeric.exports.scm")
   (include-library-declarations "vector.exports.scm")
   (include-library-declarations "struct.exports.scm")

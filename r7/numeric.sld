@@ -2,7 +2,6 @@
   (import
    (scheme base)
    (bytestructures r7 base)
-   (bytestructures r7 simple)
    (bytestructures r7 utils))
   (cond-expand
    ((library (r6rs bytevectors))

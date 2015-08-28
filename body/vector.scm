@@ -29,56 +29,29 @@
 
 ;;; Code:
 
-(define-record-type <vector>
-  (%make-vector length content size)
-  %vector?
-  (length  %vector-length)
-  (content %vector-content)
-  (size    %vector-size))
-
-(define (make-vector length content-description)
-  (let ((content (make-bytestructure-descriptor content-description)))
-    (%make-vector length content
-                  (* length (bytestructure-descriptor-size content)))))
-
-(define (vector-size bytevector offset vector)
-  (%vector-size vector))
-
-(define (vector-ref-helper bytevector offset vector index)
-  (let ((content (%vector-content vector)))
+(define (bs:vector length descriptor)
+  (define content-size (bytestructure-descriptor-size descriptor))
+  (define size (* length content-size))
+  (define (ref-helper syntax? bytevector offset index)
     (values bytevector
-            (+ offset
-               (* index (bytestructure-descriptor-size content)))
-            content)))
-
-(define/sc (vector-ref-helper/syntax offset vector index)
-  (let ((content (%vector-content vector)))
-    (values (quasisyntax
-             (+ (unsyntax offset)
-                (* (unsyntax index)
-                   (unsyntax
-                    (bytestructure-descriptor-size content)))))
-            content)))
-
-(define (vector-set! bytevector offset vector values)
-  (cond
-   ((vector? values)
-    (let* ((content (%vector-content vector))
-           (content-size (bytestructure-descriptor-size content)))
-      (do ((i 0 (+ 1 i))
+            (if syntax?
+                (quasisyntax
+                 (+ (unsyntax offset)
+                    (* (unsyntax index) (unsyntax content-size))))
+                (+ offset (* index content-size)))
+            descriptor))
+  (define (setter bytevector offset index value)
+    (cond
+     ((vector? value)
+      (do ((i 0 (+ i 1))
            (offset offset (+ offset content-size)))
-          ((= i (vector-length values)))
-        (bytestructure-set!* bytevector offset content (vector-ref values i)))))
-   ((bytevector? values)
-    (bytevector-copy! bytevector offset values 0 (%vector-size vector)))
-   (else
-    (error "Vector type failed to write:" values))))
-
-(define bs:vector
-  (make-bytestructure-descriptor-type
-   make-vector
-   vector-size #f
-   vector-ref-helper #f vector-set!
-   vector-ref-helper/syntax #f #f))
+          ((= i (vector-length value)))
+        (bytestructure-set!*
+         bytevector offset descriptor (vector-ref value i))))
+     ((bytevector? value)
+      (bytevector-copy! bytevector offset value 0 size))
+     (else
+      (error "Invalid value for writing into vector." value))))
+  (make-bytestructure-descriptor size ref-helper #f setter))
 
 ;;; vector.scm ends here

@@ -33,77 +33,77 @@
       ((_ . <pattern>)
        <body>))))
 
-(define (syntax-car syntax)
-  (datum->syntax syntax (car (syntax->datum syntax))))
-
-(define (syntax-cdr syntax)
-  (datum->syntax syntax (cdr (syntax->datum syntax))))
-
-(define (syntax-null? syntax)
-  (null? (syntax->datum syntax)))
-
-(define (syntactic-ref-helper offset descriptor indices)
-  (let loop ((offset offset) (descriptor descriptor) (indices indices))
+(define (syntactic-ref-helper bytevector offset descriptor indices)
+  (define (syntax-car syntax)
+    (datum->syntax syntax (car (syntax->datum syntax))))
+  (define (syntax-cdr syntax)
+    (datum->syntax syntax (cdr (syntax->datum syntax))))
+  (define (syntax-null? syntax)
+    (null? (syntax->datum syntax)))
+  (let loop ((bytevector bytevector)
+             (offset offset)
+             (descriptor descriptor)
+             (indices indices))
     (if (not (syntax-null? indices))
-        (let ((content (bytestructure-descriptor-content descriptor))
-              (ref-helper (bytevector-ref-helper/syntax descriptor)))
+        (let ((ref-helper (bd-ref-helper descriptor)))
           (when (not ref-helper)
-            (error "Cannot index through this descriptor:" descriptor))
-          (let-values (((offset* descriptor*)
-                        (ref-helper offset content (syntax-car indices))))
-            (loop offset* descriptor* (syntax-cdr indices))))
-        (let ((ref-proc (bytevector-ref-proc/syntax descriptor))
-              (set-proc (bytevector-set-proc/syntax descriptor)))
-          (values offset descriptor ref-proc set-proc)))))
+            (error "Cannot index through this descriptor." descriptor))
+          (let-values (((bytevector* offset* descriptor*)
+                        (ref-helper #t bytevector offset (syntax-car indices))))
+            (loop bytevector* offset* descriptor* (syntax-cdr indices))))
+        (let ((reffer (bd-reffer descriptor))
+              (setter (bd-setter descriptor)))
+          (values bytevector offset descriptor reffer setter)))))
 
-(define (bytestructure-ref-helper/syntax offset descriptor indices)
-  (let-values (((offset _descriptor _ref-proc _set-proc)
-                (syntactic-ref-helper offset descriptor indices)))
-    offset))
+(define (bytestructure-ref-helper/syntax bytevector offset descriptor indices)
+  (let-values (((bytevector* offset* _descriptor _reffer _setter)
+                (syntactic-ref-helper bytevector offset descriptor indices)))
+    #`(values #,bytevector* #,offset*)))
 
 (define (bytestructure-ref/syntax bytevector offset descriptor indices)
-  (let-values (((offset descriptor ref-proc _set-proc)
-                (syntactic-ref-helper offset descriptor indices)))
-    (if ref-proc
-        (let ((content (bytestructure-descriptor-content descriptor)))
-          (ref-proc bytevector offset content))
-        (let ((size (bytestructure-descriptor-size descriptor)))
+  (let-values (((bytevector* offset* descriptor* reffer _setter)
+                (syntactic-ref-helper bytevector offset descriptor indices)))
+    (if reffer
+        (reffer #t bytevector* offset*)
+        (let ((size (bytestructure-descriptor-size/syntax
+                     bytevector* offset* descriptor*)))
           #`(let ((bv (make-bytevector #,size)))
-              (bytevector-copy! bv 0 #,bytevector #,offset #,size)
+              (bytevector-copy! bv 0 #,bytevector* #,offset* #,size)
               bv)))))
 
 (define (bytestructure-set!/syntax bytevector offset descriptor indices value)
-  (let-values (((offset descriptor _ref-proc set-proc)
-                (syntactic-ref-helper offset descriptor indices)))
-    (if set-proc
-        (let ((content (bytestructure-descriptor-content descriptor)))
-          (set-proc bytevector offset content value))
-        (let ((size (bytestructure-descriptor-size descriptor)))
-          #`(bytevector-copy! #,bytevector #,offset #,value 0 #,size)))))
+  (let-values (((bytevector* offset* descriptor* _reffer setter)
+                (syntactic-ref-helper bytevector offset descriptor indices)))
+    (if setter
+        (setter #t bytevector* offset* value)
+        (let ((size (bytestructure-descriptor-size/syntax
+                     bytevector* offset* descriptor*)))
+          #`(bytevector-copy! #,bytevector* #,offset* #,value 0 #,size)))))
 
-(define-syntax-rule (define-bytestructure-ref-helper <name> <description>)
+(define-syntax-rule (define-bytestructure-ref-helper <name> <descriptor>)
   (define-syntax <name>
-    (let ((descriptor (make-bytestructure-descriptor <description>)))
-      (syntax-case-lambda stx <indices>
-        (bytestructure-ref-helper/syntax #'0 descriptor #'<indices>)))))
+    (let ((descriptor <descriptor>))
+      (syntax-case-lambda stx (<bytevector> <offset> . <indices>)
+        (bytestructure-ref-helper/syntax
+         #'<bytevector> #'<offset> descriptor #'<indices>)))))
 
-(define-syntax-rule (define-bytestructure-reffer <name> <description>)
+(define-syntax-rule (define-bytestructure-reffer <name> <descriptor>)
   (define-syntax <name>
-    (let ((descriptor (make-bytestructure-descriptor <description>)))
+    (let ((descriptor <descriptor>))
       (syntax-case-lambda stx (<bytevector> . <indices>)
-        (bytestructure-ref/syntax #'<bytevector> #'0 descriptor #'<indices>)))))
+        (bytestructure-ref/syntax #'<bytevector> 0 descriptor #'<indices>)))))
 
-(define-syntax-rule (define-bytestructure-setter <name> <description>)
+(define-syntax-rule (define-bytestructure-setter <name> <descriptor>)
   (define-syntax <name>
-    (let ((descriptor (make-bytestructure-descriptor <description>)))
+    (let ((descriptor <descriptor>))
       (syntax-case-lambda stx (<bytevector> <index> (... ...) <value>)
         (bytestructure-set!/syntax
-         #'<bytevector> #'0 descriptor #'(<index> (... ...)) #'<value>)))))
+         #'<bytevector> 0 descriptor #'(<index> (... ...)) #'<value>)))))
 
-(define-syntax-rule (define-bytestructure-accessors
-                      <ref-helper> <reffer> <setter> <description>)
-  (define-bytestructure-ref-helper <ref-helper> <description>)
-  (define-bytestructure-reffer <reffer> <description>)
-  (define-bytestructure-setter <setter> <description>))
+(define-syntax-rule (define-bytestructure-accessors <descriptor>
+                      <ref-helper> <reffer> <setter>)
+  (define-bytestructure-ref-helper <ref-helper> <descriptor>)
+  (define-bytestructure-reffer <reffer> <descriptor>)
+  (define-bytestructure-setter <setter> <descriptor>))
 
 ;;; base.syntactic.scm ends here

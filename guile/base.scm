@@ -1,7 +1,5 @@
 (define-module (bytestructures guile base))
 (export
- make-bytestructure-descriptor-type
- bytestructure-descriptor-type?
  make-bytestructure-descriptor
  bytestructure-descriptor?
  bytestructure-descriptor-size

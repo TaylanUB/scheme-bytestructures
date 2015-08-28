@@ -26,58 +26,37 @@
 
 ;;; Code:
 
+(define make-field cons)
 (define field-name car)
 (define field-content cdr)
-(define field-find assq)
+(define find-field assq)
 
 (define (construct-fields fields)
   (map (lambda (field)
-         (cons (car field)
-               (make-bytestructure-descriptor (cadr field))))
+         (make-field (car field) (cadr field)))
        fields))
 
-(define-record-type <union>
-  (%make-union fields size)
-  union?
-  (fields union-fields)
-  (size   %union-size))
-
-(define (make-union . fields)
-  (let ((fields (construct-fields fields)))
-    (%make-union fields (apply max (map (lambda (field)
-                                          (bytestructure-descriptor-size
-                                           (field-content field)))
-                                        fields)))))
-
-(define (union-size bytevector offset union)
-  (%union-size union))
-
-(define (union-ref-helper bytevector offset union key)
-  (values bytevector
-          offset
-          (field-content (field-find key (union-fields union)))))
-
-(define/sc (union-ref-helper/syntax offset union key)
-  (let ((key (syntax->datum key)))
-    (values offset
-            (field-content (field-find key (union-fields union))))))
-
-(define (union-set! bytevector offset union values)
-  (cond
-   ((and (list? values) (= 2 (length values)))
-    (let-values (((bytevector* offset* descriptor)
-                  (union-ref-helper bytevector offset union (car values))))
-      (bytestructure-set!* bytevector* offset* descriptor (cadr values))))
-   ((bytevector? values)
-    (bytevector-copy! bytevector offset values 0 (%union-size union)))
-   (else
-    (error "Union type failed to write:" values))))
-
-(define bs:union
-  (make-bytestructure-descriptor-type
-   make-union
-   union-size #f
-   union-ref-helper #f union-set!
-   union-ref-helper/syntax #f #f))
+(define (bs:union %fields)
+  (define fields (construct-fields %fields))
+  (define size (apply max (map (lambda (field)
+                                 (bytestructure-descriptor-size
+                                  (field-content field)))
+                               fields)))
+  (define (ref-helper syntax? bytevector offset index)
+    (let ((index (if syntax? (syntax->datum index) index)))
+      (values bytevector
+              offset
+              (field-content (find-field index fields)))))
+  (define (setter bytevector offset value)
+    (cond
+     ((and (list? value) (= 2 (length value)))
+      (let-values (((bytevector* offset* descriptor)
+                    (ref-helper #f bytevector offset (car value))))
+        (bytestructure-set!* bytevector* offset* descriptor (cadr value))))
+     ((bytevector? value)
+      (bytevector-copy! bytevector offset value 0 size))
+     (else
+      (error "Invalid value for writing into union." value))))
+  (make-bytestructure-descriptor size ref-helper #f setter))
 
 ;;; union.scm ends here

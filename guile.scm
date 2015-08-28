@@ -1,7 +1,6 @@
 (define-module (bytestructures guile))
 (import
  (bytestructures guile base)
- (bytestructures guile simple)
  (bytestructures guile numeric)
  (bytestructures guile vector)
  (bytestructures guile struct)
@@ -9,8 +8,6 @@
  (bytestructures guile pointer)
  (bytestructures guile numeric-native))
 (re-export
- make-bytestructure-descriptor-type
- bytestructure-descriptor-type?
  make-bytestructure-descriptor
  bytestructure-descriptor?
  bytestructure-descriptor-size
@@ -32,7 +29,7 @@
  bytestructure-set!/syntax
  define-bytestructure-accessors
 
- bs:simple bs:vector bs:struct bs:union bs:pointer
+ bs:vector bs:struct bs:union bs:pointer
 
  int8 uint8 int16 uint16 int32 uint32 int64 uint64
  int16le uint16le int32le uint32le int64le uint64le

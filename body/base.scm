@@ -26,81 +26,29 @@
 
 ;;; Code:
 
-;;; Descriptor-types
-
-(define-record-type <bytestructure-descriptor-type>
-  (make-bytestructure-descriptor-type
-   constructor size-or-size-accessor size-accessor/syntax
-   ref-helper ref-proc set-proc
-   ref-helper/syntax ref-proc/syntax set-proc/syntax)
-  bytestructure-descriptor-type?
-  (constructor           bytestructure-descriptor-constructor)
-  (size-or-size-accessor bytestructure-descriptor-type-size)
-  (size-accessor/syntax  bytestructure-descriptor-type-size/syntax)
-  (ref-helper            %bytevector-ref-helper)
-  (ref-proc              %bytevector-ref-proc)
-  (set-proc              %bytevector-set-proc)
-  (ref-helper/syntax     %bytevector-ref-helper/syntax)
-  (ref-proc/syntax       %bytevector-ref-proc/syntax)
-  (set-proc/syntax       %bytevector-set-proc/syntax))
-
-(define-syntax-rule (define-convenience-accessor <name> <original>)
-  (define (<name> descriptor)
-    (<original> (bytestructure-descriptor-type descriptor))))
-
-(define-convenience-accessor bytevector-ref-helper %bytevector-ref-helper)
-(define-convenience-accessor bytevector-ref-proc %bytevector-ref-proc)
-(define-convenience-accessor bytevector-set-proc %bytevector-set-proc)
-(define-convenience-accessor
-  bytevector-ref-helper/syntax %bytevector-ref-helper/syntax)
-(define-convenience-accessor
-  bytevector-ref-proc/syntax %bytevector-ref-proc/syntax)
-(define-convenience-accessor
-  bytevector-set-proc/syntax %bytevector-set-proc/syntax)
-
-
 ;;; Descriptors
 
 (define-record-type <bytestructure-descriptor>
-  (%make-bytestructure-descriptor type content)
+  (make-bytestructure-descriptor size ref-helper reffer setter)
   bytestructure-descriptor?
-  (type    bytestructure-descriptor-type)
-  (content bytestructure-descriptor-content))
-
-(define (make-bytestructure-descriptor description)
-  (cond
-   ((bytestructure-descriptor-type? description)
-    (%make-bytestructure-descriptor
-     description
-     ((bytestructure-descriptor-constructor description))))
-   ((list? description)
-    (let ((type (car description))
-          (contents (cdr description)))
-      (%make-bytestructure-descriptor
-       type
-       (apply (bytestructure-descriptor-constructor type) contents))))
-   ((bytestructure-descriptor? description)
-    description)
-   (else (error "Invalid bytestructure-descriptor description:" description))))
+  (size       bd-size)
+  (ref-helper bd-ref-helper)
+  (reffer     bd-reffer)
+  (setter     bd-setter))
 
 (define bytestructure-descriptor-size
   (case-lambda
-    ((descriptor) (bytestructure-descriptor-size #f #f descriptor))
-    ((bytevector offset descriptor)
-     (let* ((type (bytestructure-descriptor-type descriptor))
-            (size (bytestructure-descriptor-type-size type)))
+    ((descriptor) (bytestructure-descriptor-size descriptor #f #f))
+    ((descriptor bytevector offset)
+     (let ((size (bd-size descriptor)))
        (if (procedure? size)
-           (let ((content (bytestructure-descriptor-content descriptor)))
-             (size bytevector offset content))
+           (size #f bytevector offset)
            size)))))
 
 (define (bytestructure-descriptor-size/syntax bytevector offset descriptor)
-  (let* ((type (bytestructure-descriptor-type descriptor))
-         (size (or (bytestructure-descriptor-type-size/syntax type)
-                   (bytestructure-descriptor-type-size type))))
+  (let ((size (bd-size descriptor)))
     (if (procedure? size)
-        (let ((content (bytestructure-descriptor-content descriptor)))
-          (size bytevector offset content))
+        (size #t bytevector offset)
         size)))
 
 
@@ -116,10 +64,10 @@
 (define bytestructure
   (case-lambda ((description)        (%bytestructure description #f #f))
                ((description values) (%bytestructure description #t values))))
-(define (%bytestructure description init? values)
-  (let* ((descriptor (make-bytestructure-descriptor description))
-         (bytevector (make-bytevector
-                      (bytestructure-descriptor-size descriptor))))
+
+(define (%bytestructure descriptor init? values)
+  (let ((bytevector (make-bytevector
+                     (bytestructure-descriptor-size descriptor))))
     (when init?
       (bytestructure-primitive-set! bytevector 0 descriptor values))
     (make-bytestructure bytevector 0 descriptor)))
@@ -127,7 +75,7 @@
 (define-syntax-rule (bytestructure-ref-helper <bytestructure> <index> ...)
   (let ((bytestructure <bytestructure>))
     (let ((bytevector (bytestructure-bytevector bytestructure))
-          (offset (bytestructure-offset bytestructure))
+          (offset     (bytestructure-offset     bytestructure))
           (descriptor (bytestructure-descriptor bytestructure)))
       (bytestructure-ref-helper* bytevector offset descriptor <index> ...))))
 
@@ -136,15 +84,16 @@
     ((_ <bytevector> <offset> <descriptor>)
      (values <bytevector> <offset> <descriptor>))
     ((_ <bytevector> <offset> <descriptor> <index> <indices> ...)
-     (let* ((descriptor <descriptor>)
-            (content (bytestructure-descriptor-content descriptor))
-            (ref-helper (bytevector-ref-helper descriptor)))
-       (when (not ref-helper)
-         (error "Cannot index through this descriptor:" descriptor))
-       (let-values (((bytevector offset descriptor*)
-                     (ref-helper <bytevector> <offset> content <index>)))
-         (bytestructure-ref-helper*
-          bytevector offset descriptor* <indices> ...))))))
+     (let ((bytevector <bytevector>)
+           (offset <offset>)
+           (descriptor <descriptor>))
+       (let ((ref-helper (bd-ref-helper descriptor)))
+         (when (not ref-helper)
+           (error "Cannot index through this descriptor." descriptor))
+         (let-values (((bytevector* offset* descriptor*)
+                       (ref-helper #f bytevector offset <index>)))
+           (bytestructure-ref-helper*
+            bytevector* offset* descriptor* <indices> ...)))))))
 
 (define-syntax-rule (bytestructure-ref <bytestructure> <index> ...)
   (let-values (((bytevector offset descriptor)
@@ -159,10 +108,9 @@
     (bytestructure-primitive-ref bytevector offset descriptor)))
 
 (define (bytestructure-primitive-ref bytevector offset descriptor)
-  (let ((ref-proc (bytevector-ref-proc descriptor)))
-    (if ref-proc
-        (let ((content (bytestructure-descriptor-content descriptor)))
-          (ref-proc bytevector offset content))
+  (let ((reffer (bd-reffer descriptor)))
+    (if reffer
+        (reffer #f bytevector offset)
         (make-bytestructure bytevector offset descriptor))))
 
 (define-syntax-rule (bytestructure-set! <bytestructure> <index> ... <value>)
@@ -178,15 +126,15 @@
     (bytestructure-primitive-set! bytevector offset descriptor <value>)))
 
 (define (bytestructure-primitive-set! bytevector offset descriptor value)
-  (let ((set-proc (bytevector-set-proc descriptor)))
-    (if set-proc
-        (let ((content (bytestructure-descriptor-content descriptor)))
-          (set-proc bytevector offset content value))
+  (let ((setter (bd-setter descriptor)))
+    (if setter
+        (setter #f bytevector offset value)
         (if (bytevector? value)
             (bytevector-copy! bytevector offset value 0
                               (bytestructure-descriptor-size
                                bytevector offset descriptor))
-            (error "Failed to write:" value)))))
+            (error "Cannot write value with this bytestructure descriptor."
+                   value descriptor)))))
 
 (cond-expand
  (guile

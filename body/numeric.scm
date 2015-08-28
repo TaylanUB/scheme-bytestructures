@@ -36,10 +36,19 @@
      (begin
        (define name
          (make-bytestructure-descriptor
-          (if-syntax-case
-           (list bs:simple size ref-proc set-proc
-                 (syntax ref-proc) (syntax set-proc))
-           (list bs:simple size ref-proc set-proc #f #f))))
+          size
+          #f
+          (lambda (syntax? bytevector offset)
+            (if syntax?
+                (quasisyntax
+                 (ref-proc (unsyntax bytevector) (unsyntax offset)))
+                (ref-proc bytevector offset)))
+          (lambda (syntax? bytevector offset value)
+            (if syntax?
+                (quasisyntax
+                 (set-proc (unsyntax bytevector) (unsyntax offset)
+                           (unsyntax value)))
+                (set-proc bytevector offset value)))))
        ...))))
 
 (define-numeric-types
@@ -116,7 +125,19 @@
            (if (equal? endianness native-endianness)
                native-name
                (make-bytestructure-descriptor
-                (list bs:simple size ref-proc set-proc 'ref-proc 'set-proc))))
+                size
+                #f
+                (lambda (syntax? bytevector offset)
+                  (if syntax?
+                      (quasisyntax
+                       (ref-proc (unsyntax bytevector) (unsyntax offset)))
+                      (ref-proc bytevector offset)))
+                (lambda (syntax? bytevector offset value)
+                  (if syntax?
+                      (quasisyntax
+                       (set-proc (unsyntax bytevector) (unsyntax offset)
+                                 (unsyntax value)))
+                      (set-proc bytevector offset value))))))
          ...))))
 
   (define-syntax define-with-endianness*

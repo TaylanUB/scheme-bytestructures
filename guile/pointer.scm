@@ -35,57 +35,21 @@
  (bytestructures bytevectors)
  (prefix (system foreign) ffi:))
 
-(define-record-type <pointer>
-  (%make-pointer content)
-  pointer?
-  (content %pointer-content))
-
-(define (pointer-content pointer)
-  (let ((content (%pointer-content pointer)))
-    (if (promise? content)
-        (force content)
-        content)))
-
-(define (make-pointer content-description)
-  (%make-pointer
-   (if (promise? content-description)
-       (delay (make-bytestructure-descriptor (force content-description)))
-       (make-bytestructure-descriptor content-description))))
-
-(define (pointer-ref-helper bytevector offset pointer index)
-  (let ((content (pointer-content pointer))
-        (bytevector* (pointer-ref bytevector offset pointer)))
-    (if (eq? '* index)
-        (values bytevector* 0 content)
-        (bytestructure-ref-helper* bytevector* 0 content index))))
-
-(define (syntax-list id . elements)
-  (datum->syntax id (map syntax->datum elements)))
-
-(define (pointer-ref-helper/syntax offset pointer index)
-  (let ((content (pointer-content pointer)))
-    (if (eq? '* (syntax->datum index))
-        (values #'0 content)
-        (bytestructure-ref-helper/syntax
-         #'0 content (syntax-list index index)))))
+(define pointer-size (ffi:sizeof '*))
 
 (define bytevector-address-ref
-  (case (ffi:sizeof '*)
+  (case pointer-size
     ((1) bytevector-u8-ref)
     ((2) bytevector-u16-native-ref)
     ((4) bytevector-u32-native-ref)
     ((8) bytevector-u64-native-ref)))
 
 (define bytevector-address-set!
-  (case (ffi:sizeof '*)
+  (case pointer-size
     ((1) bytevector-u8-set!)
     ((2) bytevector-u16-native-set!)
     ((4) bytevector-u32-native-set!)
     ((8) bytevector-u64-native-set!)))
-
-(define (pointer-ref bytevector offset pointer)
-  (let ((size (bytestructure-descriptor-size (pointer-content pointer))))
-    (%pointer-ref bytevector offset size)))
 
 (define (%pointer-ref bytevector offset content-size)
   (let ((address (bytevector-address-ref bytevector offset)))
@@ -93,14 +57,7 @@
         (error "Tried to dereference null-pointer.")
         (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
 
-(define (pointer-set! bytevector offset pointer value)
-  (if (and (pair? value) (null? (cdr value)))
-      (let ((bytevector* (pointer-ref bytevector offset pointer))
-            (content (pointer-content pointer)))
-        (bytestructure-set!* bytevector* 0 content (car value)))
-      (pointer-set-primitive! bytevector offset value)))
-
-(define (pointer-set-primitive! bytevector offset value)
+(define (%pointer-set! bytevector offset value)
   (let ((address (cond
                   ((integer? value)
                    value)
@@ -112,39 +69,44 @@
                    (error "Pointer type failed to write:" value)))))
     (bytevector-address-set! bytevector offset address)))
 
-(cond-expand
- ((or guile syntax-case)
-
-  (define (pointer-ref/syntax bytevector offset pointer)
-    (let ((size (bytestructure-descriptor-size (pointer-content pointer))))
-      #`(%pointer-ref bytevector offset #,size)))
-
-  (define (pointer-set!/syntax bytevector offset pointer value)
-    (let ((value-datum (syntax->datum value)))
+(define (bs:pointer %descriptor)
+  (define (get-descriptor)
+    (if (promise? %descriptor)
+        (force %descriptor)
+        %descriptor))
+  (define size pointer-size)
+  (define (ref-helper syntax? bytevector offset index)
+    (define (syntax-list id . elements)
+      (datum->syntax id (map syntax->datum elements)))
+    (let ((descriptor (get-descriptor))
+          (bytevector* (reffer syntax? bytevector offset)))
+      (if (eq? '* (if syntax? (syntax->datum index) index))
+          (values bytevector* 0 descriptor)
+          (if syntax?
+              (bytestructure-ref-helper/syntax
+               bytevector* 0 descriptor (syntax-list index))
+              (bytestructure-ref-helper*
+               bytevector* 0 descriptor index)))))
+  (define (reffer syntax? bytevector offset)
+    (let ((size (bytestructure-descriptor-size (get-descriptor))))
+      (if syntax?
+          #`(%pointer-ref #,bytevector #,offset #,size)
+          (%pointer-ref bytevector offset size))))
+  (define (setter syntax? bytevector offset value)
+    (define (syntax-car syntax)
+      (datum->syntax syntax (car (syntax->datum syntax))))
+    (let ((value-datum (if syntax? (syntax->datum value) value)))
       (if (and (pair? value-datum) (null? (cdr value-datum)))
-          (let* ((content (pointer-content pointer))
-                 (size (bytestructure-descriptor-size content))
-                 (bytevector* #`(%pointer-ref #,bytevector #,offset #,size)))
-            (bytestructure-set!/syntax bytevector* 0 content '()
-                                       (datum->syntax value (car value-datum))))
-          #`(pointer-set-primitive! #,bytevector #,offset #,value))))
-
-  )
- (else
-
-  (define (pointer-ref/syntax)
-    (error "Not implemented.  You need syntax-case."))
-
-  (define (pointer-set!/syntax)
-    (error "Not implemented.  You need syntax-case."))
-
-  ))
-
-(define bs:pointer
-  (make-bytestructure-descriptor-type
-   make-pointer
-   (ffi:sizeof '*) #f
-   pointer-ref-helper pointer-ref pointer-set!
-   pointer-ref-helper/syntax pointer-ref/syntax pointer-set!/syntax))
+          (let ((descriptor (get-descriptor))
+                (bytevector* (reffer syntax? bytevector offset)))
+            (if syntax?
+                (bytestructure-set!/syntax bytevector* 0 descriptor '()
+                                           (syntax-car value))
+                (bytestructure-set!* bytevector* 0 descriptor
+                                     (car value))))
+          (if syntax?
+              #`(%pointer-set! #,bytevector #,offset #,value)
+              (%pointer-set! bytevector offset value)))))
+  (make-bytestructure-descriptor size ref-helper reffer setter))
 
 ;;; pointer.scm ends here
