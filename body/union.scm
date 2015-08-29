@@ -1,9 +1,6 @@
-;;; union.scm --- Union descriptor type.
+;;; union.scm --- Union descriptor constructor.
 
-;; Copyright (C) 2013 - 2015  Taylan Ulrich Bayırlı/Kammer
-
-;; Author: Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
-;; Keywords: ffi struct bytevector bytestructure union
+;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,8 +17,8 @@
 
 ;;; Commentary:
 
-;; This descriptor type allows the creation of union descriptors with named
-;; fields with a specific content descriptor.
+;; This constructor allows the creation of union descriptors with named fields
+;; with a specific content descriptor.
 
 
 ;;; Code:

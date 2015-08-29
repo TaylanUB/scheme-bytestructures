@@ -1,9 +1,6 @@
-;;; vector.scm --- Vector descriptor type.
+;;; vector.scm --- Vector descriptor constructor.
 
-;; Copyright (C) 2013 - 2015  Taylan Ulrich Bayırlı/Kammer
-
-;; Author: Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
-;; Keywords: ffi struct bytevector bytestructure vector
+;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,8 +17,8 @@
 
 ;;; Commentary:
 
-;; This descriptor type allows the creation of vector descriptors of a specific
-;; element descriptor and length.
+;; This constructor allows the creation of vector descriptors with a specific
+;; length and element descriptor.
 
 ;; Be careful with identifier names here; don't confuse vector descriptor and
 ;; Scheme vector APIs and variables.

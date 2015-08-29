@@ -1,9 +1,6 @@
-;;; pointer.scm --- Pointer descriptor type.
+;;; pointer.scm --- Pointer descriptor constructor.
 
-;; Copyright (C) 2013  Taylan Ulrich Bayırlı/Kammer
-
-;; Author: Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
-;; Keywords: ffi struct bytevector bytestructure pointer
+;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,8 +17,8 @@
 
 ;;; Commentary:
 
-;; This descriptor type allows the creation of pointer descriptors with a
-;; specific pointed-to descriptor.
+;; This constructor allows the creation of pointer descriptors with a specific
+;; pointed-to descriptor.
 
 
 ;;; Code:
