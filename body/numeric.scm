@@ -72,51 +72,6 @@
     (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
     (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
 
-  (define-syntax define-explicit-endianness-operations
-    (syntax-rules ()
-      ((_ (original le-name be-name) ...)
-       (begin
-         (begin
-           (define (le-name bytevector index)
-             (original bytevector index (endianness little)))
-           (define (be-name bytevector index)
-             (original bytevector index (endianness big))))
-         ...))))
-
-  (define-explicit-endianness-operations
-    (bytevector-ieee-single-ref bytevector-ieee-single-le-ref
-                                bytevector-ieee-single-be-ref)
-    (bytevector-ieee-single-set! bytevector-ieee-single-le-set!
-                                 bytevector-ieee-single-be-set!)
-    (bytevector-ieee-double-ref bytevector-ieee-double-le-ref
-                                bytevector-ieee-double-be-ref)
-    (bytevector-ieee-double-set! bytevector-ieee-double-le-set!
-                                 bytevector-ieee-double-be-set!)
-    (bytevector-s16-ref bytevector-s16le-ref
-                        bytevector-s16be-ref)
-    (bytevector-s16-set! bytevector-s16le-set!
-                         bytevector-s16be-set!)
-    (bytevector-u16-ref bytevector-u16le-ref
-                        bytevector-u16be-ref)
-    (bytevector-u16-set! bytevector-u16le-set!
-                         bytevector-u16be-set!)
-    (bytevector-s32-ref bytevector-s32le-ref
-                        bytevector-s32be-ref)
-    (bytevector-s32-set! bytevector-s32le-set!
-                         bytevector-s32be-set!)
-    (bytevector-u32-ref bytevector-u32le-ref
-                        bytevector-u32be-ref)
-    (bytevector-u32-set! bytevector-u32le-set!
-                         bytevector-u32be-set!)
-    (bytevector-s64-ref bytevector-s64le-ref
-                        bytevector-s64be-ref)
-    (bytevector-s64-set! bytevector-s64le-set!
-                         bytevector-s64be-set!)
-    (bytevector-u64-ref bytevector-u64le-ref
-                        bytevector-u64be-ref)
-    (bytevector-u64-set! bytevector-u64le-set!
-                         bytevector-u64be-set!))
-
   (define-syntax define-with-endianness
     (syntax-rules ()
       ((_ (name native-name size ref-proc set-proc endianness) ...)

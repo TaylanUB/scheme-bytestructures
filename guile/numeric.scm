@@ -8,5 +8,6 @@
 (import
  (bytestructures guile base)
  (bytestructures guile utils)
- (bytestructures bytevectors))
+ (bytestructures bytevectors)
+ (bytestructures guile explicit-endianness))
 (include-from-path "bytestructures/body/numeric.scm")
