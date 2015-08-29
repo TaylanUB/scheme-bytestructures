@@ -313,7 +313,7 @@ between creating the bytevector, and calculating what its size should
 be.)
 
 
-The bytestructure data-type
+The bytestructure data type
 ---------------------------
 
 Any bytestructure descriptor can be used with any bytevector to work
@@ -330,10 +330,6 @@ able to bundle this offset is also useful.
     (bytestructure-bytevector bs) => bytevector
     (bytestructure-offset bs)     => offset
     (bytestructure-descriptor bs) => descriptor
-
-
-Creating and initializing bytestructures conveniently
------------------------------------------------------
 
 The `bytestructure` procedure can be used to create a bytestructure
 with a new bytevector of the right size for its descriptor, and
