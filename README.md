@@ -56,6 +56,12 @@ and `(bytestructures guile)` in Guile.  These will import all of the
 supported sub-libraries, which you can see by peeking into the `r7/`
 and `guile/` directories.  They are mostly documented below.
 
+To make the library available to Guile, rename the repository
+directory to `bytestructures` (it will likely be
+`scheme-bytestructures` when you clone it), then add its parent
+directory to `GUILE_LOAD_PATH`.  Don't use the `-L` flag with a
+relative path because `include-from-path` doesn't work well with that.
+
 
 Bytestructure descriptors
 -------------------------
