@@ -1,5 +1,3 @@
-- Write a test-suite in SRFI-64!!!
-
 - Bit-level access ?  (E.g. TCP packets have single-bit flag fields.)
   Possible with (rnrs arithmetic bitwise), but I don't think we will
   ever support bitwise offsets into bytevectors, so descriptors will
@@ -7,12 +5,6 @@
 
 - A utility that reads C header files and spits out descriptors, in
   either object or source form, probably source.
-
-- If ever needed, provide some unique object that a ref-helper can
-  return in place of the descriptor it needs to return, to say
-  "recurse on the same descriptor."  (Since it only receives
-  the *contents* of a descriptor, it can't just return the same object
-  to do this.)
 
 - When writing a bytevector atop a bytestructure through assignment,
   is it really our job to stop writing at the end of the current
