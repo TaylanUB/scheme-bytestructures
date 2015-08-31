@@ -97,7 +97,7 @@
                          (quasisyntax (+ (unsyntax offset) (unsyntax position)))
                          (+ offset position))))
         (values bytevector offset descriptor))))
-  (define (setter bytevector offset value)
+  (define (setter syntax? bytevector offset value)
     (define (count-error fields values)
       (error "Mismatch between number of struct fields and given values."
              fields values))

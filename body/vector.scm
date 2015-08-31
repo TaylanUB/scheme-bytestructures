@@ -38,7 +38,7 @@
                     (* (unsyntax index) (unsyntax content-size))))
                 (+ offset (* index content-size)))
             descriptor))
-  (define (setter bytevector offset index value)
+  (define (setter syntax? bytevector offset index value)
     (cond
      ((vector? value)
       (do ((i 0 (+ i 1))

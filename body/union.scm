@@ -45,7 +45,7 @@
       (values bytevector
               offset
               (field-content (find-field index fields)))))
-  (define (setter bytevector offset value)
+  (define (setter syntax? bytevector offset value)
     (cond
      ((and (list? value) (= 2 (length value)))
       (let-values (((bytevector* offset* descriptor)
