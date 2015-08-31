@@ -33,7 +33,7 @@
      (begin
        (define name
          (make-bytestructure-descriptor
-          size
+          size size
           #f
           (lambda (syntax? bytevector offset)
             (if syntax?
@@ -77,7 +77,7 @@
            (if (equal? endianness native-endianness)
                native-name
                (make-bytestructure-descriptor
-                size
+                size size
                 #f
                 (lambda (syntax? bytevector offset)
                   (if syntax?

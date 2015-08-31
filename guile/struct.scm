@@ -4,6 +4,7 @@
  (bytestructures guile base)
  (bytestructures guile utils)
  (bytestructures bytevectors)
+ (srfi :1)
  (srfi :9)
  (srfi :11))
 (include-from-path "bytestructures/body/struct.scm")

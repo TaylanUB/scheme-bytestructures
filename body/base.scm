@@ -26,9 +26,10 @@
 ;;; Descriptors
 
 (define-record-type <bytestructure-descriptor>
-  (make-bytestructure-descriptor size ref-helper reffer setter)
+  (make-bytestructure-descriptor size alignment ref-helper reffer setter)
   bytestructure-descriptor?
   (size       bd-size)
+  (alignment  bd-alignment)
   (ref-helper bd-ref-helper)
   (reffer     bd-reffer)
   (setter     bd-setter))
@@ -47,6 +48,12 @@
     (if (procedure? size)
         (size #t bytevector offset)
         size)))
+
+(define (bytestructure-descriptor-alignment descriptor)
+  (let ((alignment (bd-alignment descriptor)))
+    (if (procedure? alignment)
+        (alignment)
+        alignment)))
 
 
 ;;; Bytestructures

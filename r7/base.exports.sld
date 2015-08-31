@@ -3,6 +3,7 @@
  bytestructure-descriptor?
  bytestructure-descriptor-size
  bytestructure-descriptor-size/syntax
+ bytestructure-descriptor-alignment
  make-bytestructure
  bytestructure?
  bytestructure-bytevector

@@ -14,7 +14,9 @@ system.
 
     ;; typedef struct { uint16_t x; uint8_v3_t y; } my_struct;
     (define my-struct
-      (bs:struct `((x ,uint16) (y ,uint8-v3))))
+      (bs:struct #t `((x ,uint16) (y ,uint8-v3))))
+
+(The `#t` means it should apply C struct alignment.)
 
 These can then be bundled with a bytevector, yielding a
 "bytestructure" object on which referencing and assignment work in
@@ -214,9 +216,12 @@ the size of your vector descriptor.
 Vectors don't accept variable-size descriptors as their element
 descriptor, because they calculate their own total size eagerly.
 
-- ```(bs:struct `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
+- ```(bs:struct align? `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
 
 This returns a descriptor for a struct as in C, with the given fields.
+
+C struct alignment is applied if `align?` is true.  Otherwise there
+are no padding fields.
 
 The elements are indexed by symbols.  In the macro API, they are
 quoted implicitly and looked up at compile-time.
@@ -226,7 +231,7 @@ convenience purposes.  This accepts a Scheme vector for assigning the
 fields sequentially, and a list like the one in the constructor for
 assigning any number of fields by name.
 
-    (define bs (bytestructure (bs:struct `((x ,uint8) (y ,uint8)))))
+    (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint8)))))
     (bytestructure-set! bs #(0 1))  ;x = 0, y = 1
     (bytestructure-set! bs '((y 2) (x 1)))
 
@@ -285,8 +290,8 @@ should evaluate to a descriptor when forced.  This helps when creating
 cyclic structures:
 
     (define linked-uint8-list
-      (bs:pointer (delay (bs:struct `((head ,uint8)
-                                      (tail ,linked-uint8-list))))))
+      (bs:pointer (delay (bs:struct #t `((head ,uint8)
+                                         (tail ,linked-uint8-list))))))
 
 Pointers also have a direct referencing and a direct assignment
 procedure.  Referencing the pointer bytestructure yields the
@@ -364,7 +369,7 @@ Vectors accept a (Scheme) vector of elements to be written:
 Structs accept quasi-alists, as well as vectors for sequential
 assignment:
 
-    (define a-simple-struct (bs:struct `((x ,uint8) (y ,uint8))))
+    (define a-simple-struct (bs:struct #t `((x ,uint8) (y ,uint8))))
 
     (define bs (bytestructure a-simple-struct '((x 0) (y 1))))
 
@@ -407,7 +412,7 @@ implemented such that they again use the underlying descriptor's
 assignment procedure.
 
     (define my-struct
-      (bs:struct `((x ,uint16) (y ,(bs:vector 3 uint8)))))
+      (bs:struct #t `((x ,uint16) (y ,(bs:vector 3 uint8)))))
 
     (define bs (bytestructure my-struct '((x 0) (y #(0 1 2)))))
 
@@ -560,9 +565,9 @@ Bytestructure reference:
 
     > (define bv (make-bytevector 1000))
     > (define-bytestructure-accessors
-        (bs:vector 5 (bs:vector 5 (bs:struct `((x ,uint8)
-                                               (y ,uint8)
-                                               (z ,uint8)))))
+        (bs:vector 5 (bs:vector 5 (bs:struct #t `((x ,uint8)
+                                                  (y ,uint8)
+                                                  (z ,uint8)))))
         bs-ref-helper bs-ref bs-set)
     > (define-inlinable (ref x) (bs-ref bv 4 4 z))
     > ,time (for-each ref times)
@@ -633,9 +638,9 @@ Showcasing the effect of a deeper structure:
 
 Showcasing the effect of referencing latter fields of a struct:
 
-    > (define bs (bytestructure (bs:struct `((x ,uint8)
-                                             (y ,uint8)
-                                             (z ,uint8)))))
+    > (define bs (bytestructure (bs:struct #t `((x ,uint8)
+                                                (y ,uint8)
+                                                (z ,uint8)))))
     > (define-inlinable (ref x) (bytestructure-ref bs 'x))
     > ,time (for-each ref times)
     ;; 0.920915s real time

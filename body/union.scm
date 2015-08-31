@@ -39,6 +39,7 @@
                                  (bytestructure-descriptor-size
                                   (field-content field)))
                                fields)))
+  (define alignment size)
   (define (ref-helper syntax? bytevector offset index)
     (let ((index (if syntax? (syntax->datum index) index)))
       (values bytevector
@@ -54,6 +55,6 @@
       (bytevector-copy! bytevector offset value 0 size))
      (else
       (error "Invalid value for writing into union." value))))
-  (make-bytestructure-descriptor size ref-helper #f setter))
+  (make-bytestructure-descriptor size alignment ref-helper #f setter))
 
 ;;; union.scm ends here

@@ -72,6 +72,7 @@
         (force %descriptor)
         %descriptor))
   (define size pointer-size)
+  (define alignment size)
   (define (ref-helper syntax? bytevector offset index)
     (define (syntax-list id . elements)
       (datum->syntax id (map syntax->datum elements)))
@@ -104,6 +105,6 @@
           (if syntax?
               #`(%pointer-set! #,bytevector #,offset #,value)
               (%pointer-set! bytevector offset value)))))
-  (make-bytestructure-descriptor size ref-helper reffer setter))
+  (make-bytestructure-descriptor size alignment ref-helper reffer setter))
 
 ;;; pointer.scm ends here

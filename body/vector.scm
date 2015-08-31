@@ -29,6 +29,7 @@
 (define (bs:vector length descriptor)
   (define content-size (bytestructure-descriptor-size descriptor))
   (define size (* length content-size))
+  (define alignment content-size)
   (define (ref-helper syntax? bytevector offset index)
     (values bytevector
             (if syntax?
@@ -49,6 +50,6 @@
       (bytevector-copy! bytevector offset value 0 size))
      (else
       (error "Invalid value for writing into vector." value))))
-  (make-bytestructure-descriptor size ref-helper #f setter))
+  (make-bytestructure-descriptor size alignment ref-helper #f setter))
 
 ;;; vector.scm ends here
