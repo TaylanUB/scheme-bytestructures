@@ -68,7 +68,7 @@ relative path because `include-from-path` doesn't work well with that.
 Bytestructure descriptors
 -------------------------
 
-- `(make-bytestructure-descriptor size ref-helper reffer setter)`
+- `(make-bytestructure-descriptor size alignment ref-helper reffer setter)`
 
 This is the low-level procedure for creating descriptors, but you will
 usually be using one of the higher-level procedures such as
@@ -96,6 +96,11 @@ phase, since it depends on the bytevector that will only be available
 at run-time; we only have a syntax object that will later evaluate to
 the bytevector, so we have to construct code that will later do the
 calculation).
+
+The `alignment` must be an integer specifying the type's preferred
+memory alignment (e.g. equal to `size` for numeric types).  Struct
+descriptors make use of this to apply typical C struct field
+alignment.
 
 The `ref-helper` is a procedure taking four arguments: a Boolean
 indicating whether we're in the macro-expand phase, a bytevector (or
@@ -154,6 +159,12 @@ The `bytestructure-descriptor-size` and
 `bytestructure-descriptor-size/syntax` procedures call the given
 descriptor's `size` procedure with the "in macro-expand phase" flag
 set to false and true respectively.
+
+- `(bytestructure-descriptor-alignment descriptor)`
+
+Returns the preferred memory alignment of the descriptor.  Struct
+descriptors make use of this to apply typical C struct field
+alignment.
 
 
 Numeric types
