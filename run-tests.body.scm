@@ -129,7 +129,7 @@
 (test-group "vector"
   (test-assert "create" (bs:vector 3 uint16))
   (test-group "procedural"
-    (define bs (bytestructure (bs:vector 3 uint16)))
+    (define bs (bytestructure (bs:vector 3 uint16) #(321 123 321)))
     (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
     (test-eqv "ref" 321 (bytestructure-ref bs 1))
     (test-eqv "set" 456 (begin (bytestructure-set! bs 1 456)
@@ -148,7 +148,8 @@
   (test-group "unaligned"
     (test-assert "create" (bs:struct #f `((x ,uint8) (y ,uint16))))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct #f `((x ,uint8) (y ,uint16)))))
+      (define bs (bytestructure (bs:struct #f `((x ,uint8) (y ,uint16)))
+                                #(123 321)))
       (bytevector-u16-native-set! (bytestructure-bytevector bs) 1 321)
       (test-eqv "ref" 321 (bytestructure-ref bs 'y))
       (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
@@ -165,7 +166,8 @@
   (test-group "aligned"
     (test-assert "create" (bs:struct #t `((x ,uint8) (y ,uint16))))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))))
+      (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))
+                                #(123 321)))
       (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
       (test-eqv "ref" 321 (bytestructure-ref bs 'y))
       (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
@@ -183,7 +185,8 @@
 (test-group "union"
   (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
   (test-group "procedural"
-    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))))
+    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))
+                              '(y 321)))
     (bytevector-u16-native-set! (bytestructure-bytevector bs) 0 321)
     (test-eqv "ref" 321 (bytestructure-ref bs 'y))
     (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
