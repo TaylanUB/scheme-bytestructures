@@ -40,14 +40,14 @@
             descriptor))
   (define (setter syntax? bytevector offset value)
     (cond
+     ((bytevector? value)
+      (bytevector-copy! bytevector offset value 0 size))
      ((vector? value)
       (do ((i 0 (+ i 1))
            (offset offset (+ offset content-size)))
           ((= i (vector-length value)))
         (bytestructure-set!*
          bytevector offset descriptor (vector-ref value i))))
-     ((bytevector? value)
-      (bytevector-copy! bytevector offset value 0 size))
      (else
       (error "Invalid value for writing into vector." value))))
   (make-bytestructure-descriptor size alignment ref-helper #f setter))

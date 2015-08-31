@@ -102,6 +102,8 @@
       (error "Mismatch between number of struct fields and given values."
              fields values))
     (cond
+     ((bytevector? value)
+      (bytevector-copy! bytevector offset value 0 size))
      ((vector? value)
       (let loop ((fields fields)
                  (values (vector->list value)))
@@ -127,8 +129,6 @@
                          (ref-helper #f bytevector offset key)))
              (bytestructure-set!* bytevector offset descriptor value))))
        value))
-     ((bytevector? value)
-      (bytevector-copy! bytevector offset value 0 size))
      (else
       (error "Invalid value for writing into struct." value))))
   (make-bytestructure-descriptor size alignment ref-helper #f setter))

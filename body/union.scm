@@ -47,12 +47,12 @@
               (field-content (find-field index fields)))))
   (define (setter syntax? bytevector offset value)
     (cond
+     ((bytevector? value)
+      (bytevector-copy! bytevector offset value 0 size))
      ((and (list? value) (= 2 (length value)))
       (let-values (((bytevector* offset* descriptor)
                     (ref-helper #f bytevector offset (car value))))
         (bytestructure-set!* bytevector* offset* descriptor (cadr value))))
-     ((bytevector? value)
-      (bytevector-copy! bytevector offset value 0 size))
      (else
       (error "Invalid value for writing into union." value))))
   (make-bytestructure-descriptor size alignment ref-helper #f setter))
