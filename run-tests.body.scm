@@ -145,28 +145,40 @@
                                (reffer bv 1)))))
 
 (test-group "struct"
-  (define-syntax-rule (test align?)
-    (test-assert "create" (bs:struct align? `((x ,uint16) (z ,uint32))))
+  (test-group "unaligned"
+    (test-assert "create" (bs:struct #f `((x ,uint8) (y ,uint16))))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct align? `((x ,uint16) (y ,uint16)))))
+      (define bs (bytestructure (bs:struct #f `((x ,uint8) (y ,uint16)))))
+      (bytevector-u16-native-set! (bytestructure-bytevector bs) 1 321)
+      (test-eqv "ref" 321 (bytestructure-ref bs 'y))
+      (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
+                                 (bytestructure-ref bs 'y))))
+    (maybe-skip-syntax)
+    (test-group "syntactic"
+      (define-bytestructure-accessors (bs:struct #f `((x ,uint8) (y ,uint16)))
+        ref-helper reffer setter)
+      (define bv (make-bytevector 4))
+      (bytevector-u16-native-set! bv 1 321)
+      (test-eqv "ref" 321 (reffer bv y))
+      (test-eqv "set" 456 (begin (setter bv y 456)
+                                 (reffer bv y)))))
+  (test-group "aligned"
+    (test-assert "create" (bs:struct #t `((x ,uint8) (y ,uint16))))
+    (test-group "procedural"
+      (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))))
       (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
       (test-eqv "ref" 321 (bytestructure-ref bs 'y))
       (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
                                  (bytestructure-ref bs 'y))))
     (maybe-skip-syntax)
     (test-group "syntactic"
-      (define-bytestructure-accessors
-        (bs:struct align? `((x ,uint16) (y ,uint16)))
+      (define-bytestructure-accessors (bs:struct #t `((x ,uint8) (y ,uint16)))
         ref-helper reffer setter)
       (define bv (make-bytevector 4))
       (bytevector-u16-native-set! bv 2 321)
       (test-eqv "ref" 321 (reffer bv y))
       (test-eqv "set" 456 (begin (setter bv y 456)
-                                 (reffer bv y)))))
-  (test-group "unaligned"
-    (test #f))
-  (test-group "aligned"
-    (test #t)))
+                                 (reffer bv y))))))
 
 (test-group "union"
   (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
