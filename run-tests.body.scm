@@ -164,9 +164,9 @@
       (test-eqv "set" 456 (begin (setter bv y 456)
                                  (reffer bv y)))))
   (test-group "aligned"
-    (test-assert "create" (bs:struct #t `((x ,uint8) (y ,uint16))))
+    (test-assert "create" (bs:struct `((x ,uint8) (y ,uint16))))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))
+      (define bs (bytestructure (bs:struct `((x ,uint8) (y ,uint16)))
                                 #(123 321)))
       (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
       (test-eqv "ref" 321 (bytestructure-ref bs 'y))
@@ -174,7 +174,7 @@
                                  (bytestructure-ref bs 'y))))
     (maybe-skip-syntax)
     (test-group "syntactic"
-      (define-bytestructure-accessors (bs:struct #t `((x ,uint8) (y ,uint16)))
+      (define-bytestructure-accessors (bs:struct `((x ,uint8) (y ,uint16)))
         ref-helper reffer setter)
       (define bv (make-bytevector 4))
       (bytevector-u16-native-set! bv 2 321)
