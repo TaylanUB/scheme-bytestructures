@@ -50,10 +50,10 @@ compile time.  The ref-helper will be explained later.
 Supported platforms
 -------------------
 
-R7RS and Guile are supported.  Import `(bytestructures r7)` in R7RS,
-and `(bytestructures guile)` in Guile.  These will import all of the
-supported sub-libraries, which you can see by peeking into the `r7/`
-and `guile/` directories.  They are mostly documented below.
+R7RS and GNU Guile are supported.  Import `(bytestructures r7)` in
+R7RS, and `(bytestructures guile)` in Guile.  These will import all of
+the supported sub-libraries, which you can see by peeking into the
+`r7/` and `guile/` directories.  They are mostly documented below.
 
 To make the library available to Guile, rename the repository
 directory to `bytestructures` (it will likely be
@@ -279,6 +279,8 @@ Unions don't accept variable-size descriptors as field descriptors,
 because they calculate their own total size eagerly.
 
 - `(bs:pointer content-descriptor)`
+
+*(Only available on Guile so far.)*
 
 This returns a descriptor for a pointer value as in C.  I.e. the
 bytevector with which you use this descriptor will be expected to hold
