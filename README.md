@@ -65,7 +65,7 @@ relative path because `include-from-path` doesn't work well with that.
 Bytestructure descriptors
 -------------------------
 
-- `(make-bytestructure-descriptor size alignment ref-helper reffer setter)`
+- `(make-bytestructure-descriptor size alignment ref-helper getter setter)`
 
 This is the low-level procedure for creating descriptors, but you will
 usually be using one of the higher-level procedures such as
@@ -110,7 +110,7 @@ indexing semantics; see their implementations to get an idea.
 Non-compound descriptors like for numbers should pass `#f` for the
 `ref-helper` argument, since they can't be indexed through.
 
-The `reffer` takes a Boolean, a bytevector (or syntax object), and an
+The `getter` takes a Boolean, a bytevector (or syntax object), and an
 offset (or syntax object).  It typically decodes a value from the
 bytevector found at the given offset (or generates syntax doing so).
 It may be `#f` for compound descriptors like vectors and structs where
@@ -435,9 +435,9 @@ References through the bytestructure with the given zero or more
 indices to arrive at a certain bytevector, byte-offset, and
 bytestructure descriptor (see the `ref-helper` argument of
 `make-bytestructure-descriptor`), then does a referencing operation
-there (see `reffer` argument to `make-bytestructure-descriptor`).
+there (see `getter` argument to `make-bytestructure-descriptor`).
 
-If the descriptor at which we arrive has no `reffer`, then a
+If the descriptor at which we arrive has no `getter`, then a
 bytestructure object is created with the bytevector, offset, and
 descriptor at which we arrived, and this bytestructure returned.
 
@@ -508,16 +508,16 @@ actually acquire values), and a setter.
 
     (define-bytestructure-accessors
       (bs:vector 5 (bs:vector 3 uint8))
-      uint8-v3-v5-ref-helper uint8-v3-v5-reffer uint8-v3-v5-setter)
+      uint8-v3-v5-ref-helper uint8-v3-v5-getter uint8-v3-v5-setter)
 
     (uint8-v3-v5-ref-helper #f 0 3 2)  ;the #f is a bogus bytevector
                                        ;the 0 is the initial offset
     => 11 (3 * 3 + 2)
 
     (define bv (bytevector 0 1 2 3 ...))
-    (uint8-v3-v5-reffer bv 2 1) => 7
+    (uint8-v3-v5-getter bv 2 1) => 7
     (uint8-v3-v5-setter bv 2 1 42)
-    (uint8-v3-v5-reffer bv 2 1) => 42
+    (uint8-v3-v5-getter bv 2 1) => 42
 
 Don't forget that struct and union fields and the `*` symbol for
 pointers will be quoted implicitly when used with these macros.
@@ -532,7 +532,7 @@ similarly, the value you provide is expected to be a bytevector, and
 its contents will be written over the part of the original bytevector
 which contains the inner vector.
 
-The following procedures may be useful in the `ref-helper`, `reffer`,
+The following procedures may be useful in the `ref-helper`, `getter`,
 and `setter` arguments to `make-bytestructure-descriptor`.
 
 - `(bytestructure-ref-helper/syntax bytevector offset descriptor indices)`

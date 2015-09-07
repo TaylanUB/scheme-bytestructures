@@ -71,12 +71,12 @@
            (test-group (symbol->string 'descriptor)
              (let ((max (max signed? size)))
                (define-bytestructure-accessors descriptor
-                 ref-helper reffer setter)
+                 ref-helper getter setter)
                (define bv (make-bytevector size))
                (test-= "ref" 2
                        (begin
                          (set-proc bv 0 2)
-                         (reffer bv)))
+                         (getter bv)))
                (test-= "set" 1
                        (begin
                          (setter bv 1)
@@ -84,7 +84,7 @@
                (test-= "max" max
                        (begin
                          (setter bv max)
-                         (reffer bv)))))
+                         (getter bv)))))
            ...)))))
   (test-numeric-descriptors
    (float #t 4
@@ -137,12 +137,12 @@
   (maybe-skip-syntax)
   (test-group "syntactic"
     (define-bytestructure-accessors (bs:vector 3 uint16)
-      ref-helper reffer setter)
+      ref-helper getter setter)
     (define bv (make-bytevector 6))
     (bytevector-u16-native-set! bv 2 321)
-    (test-eqv "ref" 321 (reffer bv 1))
+    (test-eqv "ref" 321 (getter bv 1))
     (test-eqv "set" 456 (begin (setter bv 1 456)
-                               (reffer bv 1)))))
+                               (getter bv 1)))))
 
 (test-group "struct"
   (test-group "unaligned"
@@ -157,12 +157,12 @@
     (maybe-skip-syntax)
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:struct #f `((x ,uint8) (y ,uint16)))
-        ref-helper reffer setter)
+        ref-helper getter setter)
       (define bv (make-bytevector 4))
       (bytevector-u16-native-set! bv 1 321)
-      (test-eqv "ref" 321 (reffer bv y))
+      (test-eqv "ref" 321 (getter bv y))
       (test-eqv "set" 456 (begin (setter bv y 456)
-                                 (reffer bv y)))))
+                                 (getter bv y)))))
   (test-group "aligned"
     (test-assert "create" (bs:struct `((x ,uint8) (y ,uint16))))
     (test-group "procedural"
@@ -175,12 +175,12 @@
     (maybe-skip-syntax)
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:struct `((x ,uint8) (y ,uint16)))
-        ref-helper reffer setter)
+        ref-helper getter setter)
       (define bv (make-bytevector 4))
       (bytevector-u16-native-set! bv 2 321)
-      (test-eqv "ref" 321 (reffer bv y))
+      (test-eqv "ref" 321 (getter bv y))
       (test-eqv "set" 456 (begin (setter bv y 456)
-                                 (reffer bv y))))))
+                                 (getter bv y))))))
 
 (test-group "union"
   (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
@@ -194,12 +194,12 @@
   (maybe-skip-syntax)
   (test-group "syntactic"
     (define-bytestructure-accessors (bs:union `((x ,uint8) (y ,uint16)))
-      ref-helper reffer setter)
+      ref-helper getter setter)
     (define bv (make-bytevector 2))
     (bytevector-u16-native-set! bv 0 321)
-    (test-eqv "ref" 321 (reffer bv y))
+    (test-eqv "ref" 321 (getter bv y))
     (test-eqv "set" 456 (begin (setter bv y 456)
-                               (reffer bv y)))))
+                               (getter bv y)))))
 
 (test-skip (cond-expand (guile 0) (else 1)))
 (test-group "pointer"
@@ -232,20 +232,20 @@
       (protect-from-gc-upto-here bv2)))
   (test-group "syntactic"
     (define-bytestructure-accessors (bs:pointer uint16)
-      ref-helper reffer setter)
+      ref-helper getter setter)
     (define bv (make-bytevector pointer-size))
     (define bv1 (make-bytevector 2))
     (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
     (bytevector-address-set! bv 0 address)
     (bytevector-u16-native-set! bv1 0 321)
-    (test-eqv "ref" 321 (reffer bv *))
+    (test-eqv "ref" 321 (getter bv *))
     (test-eqv "set" 456 (begin (setter bv * 456)
-                               (reffer bv *)))
-    (test-equal "ref2" bv1 (reffer bv))
+                               (getter bv *)))
+    (test-equal "ref2" bv1 (getter bv))
     (protect-from-gc-upto-here bv1)
     (let ((bv2 (make-bytevector 2 123)))
       (test-equal "set2" bv2 (begin (setter bv bv2)
-                                    (reffer bv)))
+                                    (getter bv)))
       (protect-from-gc-upto-here bv2))))
 
 (test-end "bytestructures")

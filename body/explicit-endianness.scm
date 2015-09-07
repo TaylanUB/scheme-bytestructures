@@ -24,7 +24,7 @@
 
 ;;; Code:
 
-(define-syntax define-explicit-endianness-reffers
+(define-syntax define-explicit-endianness-getters
   (syntax-rules ()
     ((_ (original le-name be-name) ...)
      (begin
@@ -35,7 +35,7 @@
            (original bytevector index (endianness big))))
        ...))))
 
-(define-explicit-endianness-reffers
+(define-explicit-endianness-getters
   (bytevector-ieee-single-ref bytevector-ieee-single-le-ref
                               bytevector-ieee-single-be-ref)
   (bytevector-ieee-double-ref bytevector-ieee-double-le-ref

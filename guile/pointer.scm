@@ -77,7 +77,7 @@
     (define (syntax-list id . elements)
       (datum->syntax id (map syntax->datum elements)))
     (let ((descriptor (get-descriptor))
-          (bytevector* (reffer syntax? bytevector offset)))
+          (bytevector* (getter syntax? bytevector offset)))
       (if (eq? '* (if syntax? (syntax->datum index) index))
           (values bytevector* 0 descriptor)
           (if syntax?
@@ -85,7 +85,7 @@
                bytevector* 0 descriptor (syntax-list index))
               (bytestructure-ref-helper*
                bytevector* 0 descriptor index)))))
-  (define (reffer syntax? bytevector offset)
+  (define (getter syntax? bytevector offset)
     (let ((size (bytestructure-descriptor-size (get-descriptor))))
       (if syntax?
           #`(%pointer-ref #,bytevector #,offset #,size)
@@ -96,7 +96,7 @@
     (let ((value-datum (if syntax? (syntax->datum value) value)))
       (if (and (pair? value-datum) (null? (cdr value-datum)))
           (let ((descriptor (get-descriptor))
-                (bytevector* (reffer syntax? bytevector offset)))
+                (bytevector* (getter syntax? bytevector offset)))
             (if syntax?
                 (bytestructure-set!/syntax bytevector* 0 descriptor '()
                                            (syntax-car value))
@@ -105,6 +105,6 @@
           (if syntax?
               #`(%pointer-set! #,bytevector #,offset #,value)
               (%pointer-set! bytevector offset value)))))
-  (make-bytestructure-descriptor size alignment ref-helper reffer setter))
+  (make-bytestructure-descriptor size alignment ref-helper getter setter))
 
 ;;; pointer.scm ends here

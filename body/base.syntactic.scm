@@ -48,20 +48,20 @@
           (let-values (((bytevector* offset* descriptor*)
                         (ref-helper #t bytevector offset (syntax-car indices))))
             (loop bytevector* offset* descriptor* (syntax-cdr indices))))
-        (let ((reffer (bd-reffer descriptor))
+        (let ((getter (bd-getter descriptor))
               (setter (bd-setter descriptor)))
-          (values bytevector offset descriptor reffer setter)))))
+          (values bytevector offset descriptor getter setter)))))
 
 (define (bytestructure-ref-helper/syntax bytevector offset descriptor indices)
-  (let-values (((bytevector* offset* _descriptor _reffer _setter)
+  (let-values (((bytevector* offset* _descriptor _getter _setter)
                 (syntactic-ref-helper bytevector offset descriptor indices)))
     #`(values #,bytevector* #,offset*)))
 
 (define (bytestructure-ref/syntax bytevector offset descriptor indices)
-  (let-values (((bytevector* offset* descriptor* reffer _setter)
+  (let-values (((bytevector* offset* descriptor* getter _setter)
                 (syntactic-ref-helper bytevector offset descriptor indices)))
-    (if reffer
-        (reffer #t bytevector* offset*)
+    (if getter
+        (getter #t bytevector* offset*)
         (let ((size (bytestructure-descriptor-size/syntax
                      bytevector* offset* descriptor*)))
           #`(let ((bv (make-bytevector #,size)))
@@ -69,7 +69,7 @@
               bv)))))
 
 (define (bytestructure-set!/syntax bytevector offset descriptor indices value)
-  (let-values (((bytevector* offset* descriptor* _reffer setter)
+  (let-values (((bytevector* offset* descriptor* _getter setter)
                 (syntactic-ref-helper bytevector offset descriptor indices)))
     (if setter
         (setter #t bytevector* offset* value)
@@ -84,7 +84,7 @@
         (bytestructure-ref-helper/syntax
          #'<bytevector> #'<offset> descriptor #'<indices>)))))
 
-(define-syntax-rule (define-bytestructure-reffer <name> <descriptor>)
+(define-syntax-rule (define-bytestructure-getter <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
       (syntax-case-lambda stx (<bytevector> . <indices>)
@@ -98,9 +98,9 @@
          #'<bytevector> 0 descriptor #'(<index> (... ...)) #'<value>)))))
 
 (define-syntax-rule (define-bytestructure-accessors <descriptor>
-                      <ref-helper> <reffer> <setter>)
+                      <ref-helper> <getter> <setter>)
   (define-bytestructure-ref-helper <ref-helper> <descriptor>)
-  (define-bytestructure-reffer <reffer> <descriptor>)
+  (define-bytestructure-getter <getter> <descriptor>)
   (define-bytestructure-setter <setter> <descriptor>))
 
 ;;; base.syntactic.scm ends here
