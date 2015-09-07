@@ -377,8 +377,8 @@ Vectors accept a (Scheme) vector of elements to be written:
 
     (define bs (bytestructure uint8-v3 #(0 1 2)))
 
-Structs accept quasi-alists, as well as vectors for sequential
-assignment:
+Structs accept quasi-alists (the entries are two-element lists and not
+plain pairs), as well as vectors for sequential assignment:
 
     (define a-simple-struct (bs:struct `((x ,uint8) (y ,uint8))))
 
