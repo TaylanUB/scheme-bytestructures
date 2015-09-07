@@ -87,24 +87,24 @@
                          (getter bv)))))
            ...)))))
   (test-numeric-descriptors
-   (float #t 4
-          bytevector-ieee-single-native-ref
-          bytevector-ieee-single-native-set!)
-   (floatle #t 4
-            bytevector-ieee-single-le-ref
-            bytevector-ieee-single-le-set!)
-   (floatbe #t 4
-            bytevector-ieee-single-be-ref
-            bytevector-ieee-single-be-set!)
-   (double #t 8
-           bytevector-ieee-double-native-ref
-           bytevector-ieee-double-native-set!)
-   (doublele #t 8
-             bytevector-ieee-double-le-ref
-             bytevector-ieee-double-le-set!)
-   (doublebe #t 8
-             bytevector-ieee-double-be-ref
-             bytevector-ieee-double-be-set!)
+   (float32 #t 4
+            bytevector-ieee-single-native-ref
+            bytevector-ieee-single-native-set!)
+   (float32le #t 4
+              bytevector-ieee-single-le-ref
+              bytevector-ieee-single-le-set!)
+   (float32be #t 4
+              bytevector-ieee-single-be-ref
+              bytevector-ieee-single-be-set!)
+   (double64 #t 8
+             bytevector-ieee-double-native-ref
+             bytevector-ieee-double-native-set!)
+   (double64le #t 8
+               bytevector-ieee-double-le-ref
+               bytevector-ieee-double-le-set!)
+   (double64be #t 8
+               bytevector-ieee-double-be-ref
+               bytevector-ieee-double-be-set!)
    (int8     #t 1 bytevector-s8-ref         bytevector-s8-set!)
    (uint8    #f 1 bytevector-u8-ref         bytevector-u8-set!)
    (int16    #t 2 bytevector-s16-native-ref bytevector-s16-native-set!)

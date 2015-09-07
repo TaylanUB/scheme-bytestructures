@@ -171,7 +171,7 @@ Some descriptors for numeric types are readily provided in the
 `numeric` sub-library.  It contains, at the very least, `uint8`.  If
 your Scheme implementation supports the library `(rnrs bytevectors)`
 or `(r6rs bytevectors)`, then all of the following are available:
-`float[le,be]`, `double[le,be]`, `[u]int(8,16,32,64)[le,be]`.
+`float32[le,be]`, `double64[le,be]`, `[u]int(8,16,32,64)[le,be]`.
 
 On Guile, the following native types are also available:
 \[unsigned-\](short,int,long), `size_t`, `ssize_t`, `ptrdiff_t`

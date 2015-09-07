@@ -57,9 +57,9 @@
       (library (r6rs bytevectors)))
 
   (define-numeric-types
-    (float
+    (float32
      4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
-    (double
+    (double64
      8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
     (int8   1 bytevector-s8-ref bytevector-s8-set!)
     (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
@@ -106,13 +106,14 @@
          ...))))
 
   (define-with-endianness*
-    (float 4
-           floatle bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!
-           floatbe bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
-    (double
+    (float32
+     4
+     float32le bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!
+     float32be bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
+    (double64
      8
-     doublele bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!
-     doublebe bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!)
+     double64le bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!
+     double64be bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!)
     (int16 2
            int16le bytevector-s16le-ref bytevector-s16le-set!
            int16be bytevector-s16be-ref bytevector-s16be-set!)
