@@ -144,4 +144,23 @@
          (error "Invalid value for writing into struct." value))))
      (make-bytestructure-descriptor size alignment ref-helper #f setter))))
 
+(define (debug-alignment %alignment fields)
+  (let* ((fields (construct-fields %alignment fields))
+         (alignment (case %alignment
+                      ((#f) 1)
+                      ((#t) (apply max (map field-size fields)))
+                      (else (min %alignment
+                                 (apply max (map field-size fields))))))
+         (size (align (apply + (map field-size fields)) alignment)))
+    (format #t "{\n")
+    (for-each (lambda (field)
+                (let ((name (field-name field))
+                      (pos (field-position field))
+                      (size (field-size field)))
+                  (let ((pad (- (align size alignment) size)))
+                    (format #t "  ~a: ~a +~a: ~a\n" pos size pad name))))
+              fields)
+    (format #t "} = ~a\n" (align size alignment))
+    (values)))
+
 ;;; struct.scm ends here
