@@ -225,12 +225,13 @@ Vectors don't accept variable-size descriptors as their element
 descriptor, because they calculate their own total size eagerly.
 
 - ```(bs:struct `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
-- ```(bs:struct align? `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
+- ```(bs:struct alignment `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
 
 This returns a descriptor for a struct as in C, with the given fields.
 
-C struct alignment is applied if `align?` is true, which defaults to
-true when not specified.  When false, there are no padding fields.
+Conventional C struct alignment is applied if `alignment` is omitted
+or `#t`.  When `#f`, there are no padding fields at all.  It can also
+be an integer specifying the maximum alignment value for the fields.
 
 The elements are indexed by symbols.  In the macro API, they are
 quoted implicitly and looked up at compile-time.

@@ -44,7 +44,12 @@
   (size field-size)
   (position field-position))
 
-(define (construct-fields align? field-specs)
+(define (construct-fields alignment field-specs)
+  (define (limit-alignment a)
+    (case alignment
+      ((#f) 1)
+      ((#t) a)
+      (else (min alignment a))))
   (if (null? (cdr field-specs))
       (let* ((field-spec (car field-specs))
              (name (car field-spec))
@@ -62,10 +67,9 @@
                (nname (car next))
                (ndescriptor (cadr next))
                (nsize (bytestructure-descriptor-size ndescriptor))
-               (nalignment (bytestructure-descriptor-alignment ndescriptor))
-               (nposition (if align?
-                              (align (+ position size) nalignment)
-                              (+ position size))))
+               (nalignment (limit-alignment
+                            (bytestructure-descriptor-alignment ndescriptor)))
+               (nposition (align (+ position size) nalignment)))
           (let* ((field (make-field name descriptor size position))
                  (fields (cons field fields)))
             (if (null? field-specs)
@@ -82,11 +86,13 @@
   (case-lambda
     ((field-specs)
      (bs:struct #t field-specs))
-    ((align? field-specs)
-     (define fields (construct-fields align? field-specs))
-     (define alignment (if align?
-                           (apply max (map field-size fields))
-                           1))
+    ((%alignment field-specs)
+     (define fields (construct-fields %alignment field-specs))
+     (define alignment
+       (case %alignment
+         ((#f) 1)
+         ((#t) (apply max (map field-size fields)))
+         (else (min %alignment (apply max (map field-size fields))))))
      (define size (align (apply + (map field-size fields)) alignment))
      (define (ref-helper syntax? bytevector offset index)
        (let* ((index (if syntax? (syntax->datum index) index))
