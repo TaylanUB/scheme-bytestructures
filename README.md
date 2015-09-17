@@ -4,7 +4,9 @@ Structured access to bytevector contents
 This library offers a system imitating the type system of the C
 programming language, to be used on bytevectors.  C's type system
 works on raw memory, and ours works on bytevectors which are an
-abstraction over raw memory in Scheme.
+abstraction over raw memory in Scheme.  The system is in fact more
+powerful than the C type system, sporting a great deal of dynamicity
+and flexibility.
 
 A C type corresponds to a "bytestructure descriptor" object in our
 system.
@@ -12,15 +14,18 @@ system.
     ;; typedef uint8_t uint8_v3_t[3];
     (define uint8-v3 (bs:vector 3 uint8))
 
-    ;; typedef struct { uint16_t x; uint8_v3_t y; } my_struct;
+    ;; typedef struct { uint16_t x; uint8_v3_t y; } my_struct_t;
     (define my-struct (bs:struct `((x ,uint16) (y ,uint8-v3))))
 
 These can then be bundled with a bytevector, yielding a
 "bytestructure" object on which referencing and assignment work in
 accordance with the types declared in the descriptor.
 
-    ;; my_struct str;
+    ;; my_struct_t str;
     (define str (bytestructure my-struct))
+
+    ;; my_struct_t str = { 0, 1 };
+    (define str (bytestructure my-struct #(0 1)))
 
     ;; str.y[2]
     (bytestructure-ref str 'y 2)
@@ -41,10 +46,15 @@ your purposes.
     ;; foo.y[2] = 42;
     (my-struct-set! bytevector y 2 42)
 
-Note that we don't use the bytestructure data type anymore; we work
+(Note that we don't use the bytestructure data type anymore; we work
 directly on bytevectors.  The struct fields are also implicitly quoted
 and can't be variable references, since their look-up will happen at
-compile time.  The ref-helper will be explained later.
+compile time.  The ref-helper will be explained later.)
+
+There are also "dynamic" bytestructure descriptors, whose behavior
+depends on the bytevector on which they're used.  For instance a
+binary file format may specify that there are tag bytes declaring the
+lengths of following fields.  The system can express this cleanly.
 
 
 Supported platforms
@@ -62,110 +72,239 @@ directory to `GUILE_LOAD_PATH`.  Don't use the `-L` flag with a
 relative path because `include-from-path` doesn't work well with that.
 
 
-Bytestructure descriptors
--------------------------
+Quick overview with examples
+----------------------------
 
-- `(make-bytestructure-descriptor size alignment ref-helper getter setter)`
+### Compound types
 
-This is the low-level procedure for creating descriptors, but you will
-usually be using one of the higher-level procedures such as
-`bs:vector`.
+A few high-level procedures for creating descriptors for compound
+types are provided: `bs:vector`, `bs:struct`, and `bs:union` for R7RS,
+and additionally `bs:pointer` for Guile.
 
-You can look into the implementations of those higher-level procedures
-to get some ideas on how such descriptor constructors can be
-implemented, but here's a quick summary of the arguments taken by this
-procedure.
+- `(bs:vector length element-descriptor)` *procedure*
 
-The `size` will typically be a non-negative integer.  However,
-descriptors can have dynamic sizes.  For instance the first few bytes
-of a bytevector could be tag bytes giving information about the layout
-of the rest of the bytevector.  For such cases, the `size` argument
-may be a procedure taking three arguments and returning the size.  The
-first argument is a Boolean indicating whether we are currently in the
-macro-expand phase, or at run-time.  If run-time, the other two
-arguments are a bytevector and an offset into the bytevector, and we
-just calculate and return the size.  If we're in the macro-expand
-phase, then the two arguments are instead syntax objects that would
-evaluate to a bytevector and an offset at run-time, and we have to
-return a syntax object that contains code that would calculate the
-size at run-time.  (We can't possibly calculate it in the macro-expand
-phase, since it depends on the bytevector that will only be available
-at run-time; we only have a syntax object that will later evaluate to
-the bytevector, so we have to construct code that will later do the
-calculation).
+This returns a descriptor for vectors (arrays in C terms) of length
+`length` and element type `element-descriptor`.
 
-The `alignment` must be an integer specifying the type's preferred
-memory alignment (e.g. equal to `size` for numeric types).  Struct
-descriptors make use of this to apply typical C struct field
-alignment.
+    ;; uint16_t vec[3] = { 0, 1, 2 };
+    (define vec (bytestructure (bs:vector 3 uint16) #(0 1 2)))
 
-The `ref-helper` is a procedure taking four arguments: a Boolean
-indicating whether we're in the macro-expand phase, a bytevector (or
-syntax object thereof), an offset (or syntax object thereof), and an
-index object (or syntax object thereof).  The procedure returns three
-values: the same or another bytevector (or syntax object thereof), a
-new offset (or syntax object thereof), and a bytestructure descriptor.
-Vectors, structs, etc. provide a ref-helper that implements their
-indexing semantics; see their implementations to get an idea.
-Non-compound descriptors like for numbers should pass `#f` for the
-`ref-helper` argument, since they can't be indexed through.
+    ;; vec[1]
+    (bytestructure-ref vec 1)
 
-The `getter` takes a Boolean, a bytevector (or syntax object), and an
-offset (or syntax object).  It typically decodes a value from the
-bytevector found at the given offset (or generates syntax doing so).
-It may be `#f` for compound descriptors like vectors and structs where
-referencing them directly (instead of referencing through them with an
-index) doesn't make sense.
+    ;; vec[1] = 42;
+    (bytestructure-set! vec 1 42)
 
-The `setter` takes a Boolean, a bytevector (or syntax object), an
-offset (or syntax object), and a value (or syntax object).  It
-typically encodes the given value into the bytevector at the given
-offset (or generates syntax doing so).  It may be `#f` for compound
-descriptors like vectors and structs where assigning directly (instead
-of referencing through them with an index) doesn't make sense,
-although you may also provide some convenient semantics for such
-descriptors; see the documentation for vector, struct, union, and
-pointer descriptors.
+The elements are indexed with non-negative integers as usual, and no
+bounds checking is done; an off-bounds index will either raise an
+error due to an off-bounds bytevector index, or attempt to decode
+whatever bytes are found at the relevant place in the bytevector,
+which might just result in a valid value without raising an error.
 
-- `(bytestructure-descriptor-size descriptor)`
-- `(bytestructure-descriptor-size descriptor bytevector offset)`
+While vectors are meant to be indexed through, so that referencing and
+assignment happen with the element descriptor, you can also assign to
+them directly; in that case the value you provide is expected to be a
+regular Scheme vector of the same length as the vector descriptor, and
+each element of it will be assigned to the corresponding element of
+the vector (using the assignment procedure of the element descriptor
+for each).
 
-This procedure returns the size of a descriptor.  If the descriptor
-has variable size (as described above for the `size` argument), then
-this procedure cannot be used solely on the descriptor; it must also
-be given a bytevector, and an offset indicating where the structure
-described by the descriptor starts in the bytevector.
+    ;; Basically does bytevector-u16-set! three times.
+    (bytestructure-set! vec #(21 42 84))
 
-    (bytestructure-descriptor-size uint8-v3-v5)
-    => 15, because it's 3×5 8-bit integers in total.
+You may also provide a bytevector, in which case its contents will
+simply be copied into your bytestructure, but only as many bytes as
+the size of your vector descriptor.
 
-    (bytestructure-descriptor-size crazy-descriptor)
-    ;;; error
+    ;; The results depend on endianness here.
+    (bytestructure-set! vec #u8(0 1 2 3 4 5 6 7 8))  ;6 bytes copied
 
-    (bytestructure-descriptor-size crazy-descriptor bytevector offset)
-    => whatever
+Vectors don't accept dynamic descriptors as their element descriptor,
+because they calculate their total size eagerly and thus need to know
+the size of their element descriptor independently from the bytevector
+on which they will be used.
 
-To make dynamic-sized structures work with the macro API as well,
-there is a syntactic variant, `bytestructure-descriptor-size/syntax`,
-which can be used in the macro-expand phase to generate code that
-would then calculate the size at run-time.  This takes three
-arguments: a syntax object that would evaluate to a bytevector, a
-syntax object that would evaluate to an offset, and the descriptor.
+- `(bs:struct fields)` *procedure*
+- `(bs:struct pack fields)` *procedure*
 
-The `bytestructure-descriptor-size` and
-`bytestructure-descriptor-size/syntax` procedures call the given
-descriptor's `size` procedure with the "in macro-expand phase" flag
-set to false and true respectively.
+This returns a descriptor for a struct as in C.  `Fields` must be a
+list of field specs, each of which is a list whose first element is a
+symbol (name of the field) and second element a bytestructure
+descriptor (type of the field).  Conventional C struct alignment is
+used if `pack` is omitted or `#f`.  When `#t`, there are no padding
+fields at all.  It can also be an integer specifying the maximum
+alignment value for the fields, akin to the `pack` directive of GCC.
 
-- `(bytestructure-descriptor-alignment descriptor)`
+    ;; typedef struct { uint8_t x; uint16_t y } my_struct_t;
+    (define my-struct (bs:struct `((x ,uint8) (y ,uint16))))
 
-Returns the preferred memory alignment of the descriptor.  Struct
-descriptors make use of this to apply typical C struct field
-alignment.
+    ;; my_struct_t str = { 0, 1 };
+    (define str (bytestructure my-struct #(0 1)))
+
+    ;; my_struct_t str = { .y = 1, .x = 0 };
+    (define str (bytestructure my-struct '((y 1) (x 0))))
+
+    ;; str.y
+    (bytestructure-ref str 'y)
+
+    ;; str.y = 42;
+    (bytestructure-set! str 'y 42)
+
+Similar to vectors, a direct assignment procedure is provided for
+convenience purposes.  This accepts a Scheme vector for assigning the
+fields sequentially, and a list like the one in the constructor for
+assigning any number of fields by name.
+
+    ;; str = (my_struct_t){ 0, 1 };
+    (bytestructure-set! str #(0 1))
+
+    ;; str = (my_struct_t){ .y = 2, .x = 1 };
+    (bytestructure-set! str '((y 2) (x 1)))
+
+You may also provide a bytevector, in which case its contents will
+simply be copied into your bytestructure, but only as many bytes as
+the size of your struct descriptor.
+
+    ;; The uint8 is set to 0; the uint16 depends on endianness.
+    (bytestructure-set! str #u8(0 1 2 3 4 5))  ;3 bytes copied
+
+Like vectors, structs don't accept dynamic descriptors as field
+descriptors, because they calculate their total size eagerly.
+
+When using the macro API, the field names are implicitly quoted and
+looked up at macro-expand time.
+
+    (define-bytestructure-accessors my-struct
+      my-struct-ref-helper my-struct-ref my-struct-set!)
+
+    ;; foo.y
+    (my-struct-ref foo-bytevector y)
+
+    ;; foo.y = 42;
+    (my-struct-set! foo-bytevector y 42)
+
+- `(bs:union fields)` *procedure*
+
+This returns a descriptor for a union as in C.  `Fields` has the same
+format as in `bs:struct`.
+
+    ;; typedef union { uint8_t x; uint16_t y; } my_union_t;
+    (define my-union (bs:union `((x ,uint8) (y ,uint16))))
+
+    ;; my_union_t union = { .y = 42 };
+    (define union (bytestructure my-union '(y 42)))
+
+    ;; union.y
+    (bytestructure-ref union 'y)
+
+    ;; union.y = 42;
+    (bytestructure-set! union 'y 42)
+
+Union descriptors also offer an assignment procedure for convenience,
+which accepts a two-element list where the first element is the key
+and the second the value.
+
+    ;; union.y = 42;
+    (bytestructure-set! union '(y 42))
+
+This isn't really shorter than the normal way of doing it, but it's
+supported anyway.  (See the documentation of `bytestructure` for the
+main reason.)
+
+You may also provide a bytevector, in which case its contents will
+simply be copied into your bytestructure; as many bytes as the size of
+your union descriptor, i.e. the size of the biggest field.
+
+    ;; Value of the y field will depend on endianness.
+    (bytestructure-set! union #u8(0 1 2 3 4))  ;2 bytes copied
+
+Like vectors and structs, unions don't accept dynamic descriptors as
+field descriptors, because they calculate their total size eagerly.
+
+- `(bs:pointer content-descriptor)` *procedure*
+
+*(Only available on Guile so far.)*
+
+This returns a descriptor for a pointer value as in C.  I.e. the
+bytevector with which you use this descriptor will be expected to hold
+a pointer-sized numeric value, a memory address.  `Content-descriptor`
+is the descriptor for the bytes at the memory address pointed to.
+
+    ;; uint8_t *ptr = 0xdeadbeef;
+    (define ptr (bytestructure (bs:pointer uint8) #xdeadbeef))
+
+For the `content-descriptor`, a promise is accepted as well, which
+should evaluate to a descriptor when forced.  This helps when creating
+self-referencing descriptors:
+
+    ;; typedef struct linked_uint8_list_s {
+    ;;   uint8_t head;
+    ;;   struct linked_uint8_list_s *tail;
+    ;; } *linked_uint8_list_t;
+    (define linked-uint8-list
+      (bs:pointer (delay (bs:struct `((head ,uint8)
+                                      (tail ,linked-uint8-list))))))
+
+The symbol `*` can be used as an index to dereference through the
+pointer.  (Implicitly quoted when used in the macro API.)
+
+    ;; linked_uint8_list_t u8list;
+    (define u8list (bytestructure linked-uint8-list))
+
+    ;; (*u8list).head
+    (bytestructure-ref u8list '* 'head)
+
+    ;; (*u8list).head = 42;
+    (bytestructure-set! u8list '* 'head 42)
+
+One can also provide any other index, which will cause an implicit
+dereference.
+
+    ;; u8list->head
+    (bytestructure-ref u8list 'head)
+
+    ;; u8list->head = 42;
+    (bytestructure-set! u8list 'head 42)
+
+Pointers also have direct referencing and assignment semantics.  (That
+is what happens when your list of indices lead you up to the pointer
+but no further.)  Referencing the pointer directly yields the numeric
+value of the address.
+
+    ;; linked_uint8_list_t u8lists[3];
+    (define u8lists (bytestructure (bs:vector 3 linked-uint8-list)))
+
+    ;; Returns the address stored in u8lists[1].
+    (bytestructure-ref u8lists 1)
+
+Assigning to it accepts a numeric value to be written, and a
+one-element list whose one element will be assigned to the pointed-to
+bytestructure.
+
+    ;; uint8_t (*u8v3-ptr)[3];
+    (define u8v3-ptr (bytestructure (bs:pointer (bs:vector 3 uint8))))
+
+    ;; u8v3-ptr = 0xdeadbeef;
+    (bytestructure-set! u8v3-ptr #xdeadbeef)
+
+    ;; Sets new values for the uint8 values pointed to.
+    (bytestructure-set! u8v3-ptr '(#(0 1 2)))
+
+_**Warning: On Guile, having an address written into a bytevector does not
+protect it from garbage collection.  Using pointer descriptors can make
+your program memory unsafe.**_
+
+Pointers don't accept dynamic descriptors as their content descriptor,
+because the bytevector for the content descriptor is created on the
+fly, so the size must be known in advance.  (Bytevectors have fixed
+length; the constructor procedure from the FFI module that makes a
+bytevector from a memory address also needs the desired length to be
+specified.  A dynamic descriptor may need the bytevector to calculate
+that length, so there's a circular dependency between creating the
+bytevector, and calculating what its size should be.)
 
 
-Numeric types
--------------
+### Numeric types
 
 Some descriptors for numeric types are readily provided in the
 `numeric` sub-library.  It contains, at the very least, `uint8`.  If
@@ -174,254 +313,197 @@ or `(r6rs bytevectors)`, then all of the following are available:
 `float32[le,be]`, `double64[le,be]`, `[u]int(8,16,32,64)[le,be]`.
 
 On Guile, the following native types are also available:
-\[unsigned-\](short,int,long), `size_t`, `ssize_t`, `ptrdiff_t`
+`[unsigned-](short,int,long)`, `size_t`, `ssize_t`, `ptrdiff_t`
 
 These descriptors cannot be indexed through as vectors and structs
 can; they can only be used to directly reference or assign values.
-For instance,
+I.e. your list of indices should lead to a descriptor of such a type
+and contain no indices beyond that.  For instance,
 
-    (define bs (bytestructure uint32))
-    (bytestructure-set! bs #xdeadbeef)
+    ;; uint32_t x;
+    (define x (bytestructure uint32))
 
-is comparable to:
+    ;; x = 42;
+    (bytestructure-set! x 42)
 
-    (define bv (make-bytevector 4))
-    (bytevector-u32-native-set! bv #xdeadbeef)
+    ;; uint32_t xs[3];
+    (define xs (bytestructure (bs:vector 3 uint32)))
 
-
-Compound types
---------------
+    ;; xs[1] = 42;
+    (bytestructure-set! xs 1 42)
 
-A few high-level procedures for creating descriptors for compound
-types are provided: `bs:vector`, `bs:struct`, and `bs:union` for R7RS,
-and additionally `bs:pointer` for Guile.
-
-- `(bs:vector length element-descriptor)`
-
-This returns a descriptor for vectors (arrays in C terms) of a given
-length and element type.
-
-The elements are indexed with non-negative integers as usual, and no
-bounds checking is done; an off-bounds index will either raise an
-error due to an off-bounds bytevector index, or attempt to decode
-whatever bytes are found at the relevant place in the bytevector,
-which might just result in a valid value without raising an error.
-
-While vectors are meant to be indexed through, you can also assign to
-them directly; in that case the value you provide is expected to be a
-regular Scheme vector of the same length as the vector descriptor, and
-each element of it will be assigned into the corresponding element of
-the vector (using the assignment procedure of the `element-descriptor`
-for each).
-
-    (define bs (bytestructure (bs:vector 3 uint8)))
-    (bytestructure-set! bs #(0 1 2))  ;bytevector-u8-set! times three
-
-You may also provide a bytevector, in which case its contents will
-simply be copied into your bytestructure, but only as many bytes as
-the size of your vector descriptor.
-
-Vectors don't accept variable-size descriptors as their element
-descriptor, because they calculate their own total size eagerly.
-
-- ```(bs:struct `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
-- ```(bs:struct alignment `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
-
-This returns a descriptor for a struct as in C, with the given fields.
-
-Conventional C struct alignment is applied if `alignment` is omitted
-or `#t`.  When `#f`, there are no padding fields at all.  It can also
-be an integer specifying the maximum alignment value for the fields.
-
-The elements are indexed by symbols.  In the macro API, they are
-quoted implicitly and looked up at compile-time.
-
-Similar to vectors, a direct assignment procedure is provided for
-convenience purposes.  This accepts a Scheme vector for assigning the
-fields sequentially, and a list like the one in the constructor for
-assigning any number of fields by name.
-
-    (define bs (bytestructure (bs:struct `((x ,uint8) (y ,uint8)))))
-    (bytestructure-set! bs #(0 1))  ;x = 0, y = 1
-    (bytestructure-set! bs '((y 2) (x 1)))
-
-You may also provide a bytevector, in which case its contents will
-simply be copied into your bytestructure, but only as many bytes as
-the size of your struct descriptor.
-
-Structs don't accept variable-size descriptors as field descriptors,
-because they calculate their own total size eagerly.
-
-- ```(bs:union `((key1 ,descriptor1) (key2 ,descriptor2) ...)```
-
-This returns a descriptor for a union as in C, with the given fields.
-
-The elements are indexed by symbols.  In the macro API, they are
-quoted implicitly and looked up at compile-time.
-
-Union descriptors also offer an assignment procedure for convenience,
-which accepts a two-element list where the first element is the key
-and the second the value.
-
-    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))))
-    (bytestructure-set! bs '((y 312)))
-
-This is actually more verbose than the plain variant:
-
-    (bytestructure-set! bs 'y 312)
-
-but it's supported anyhow.
-
-You may also provide a bytevector, in which case its contents will
-simply be copied into your bytestructure; as many bytes as the size of
-your union descriptor, i.e. the size of the biggest field.
-
-Unions don't accept variable-size descriptors as field descriptors,
-because they calculate their own total size eagerly.
-
-- `(bs:pointer content-descriptor)`
-
-*(Only available on Guile so far.)*
-
-This returns a descriptor for a pointer value as in C.  I.e. the
-bytevector with which you use this descriptor will be expected to hold
-a pointer-sized numeric value, a memory address.
-
-The index `*` (symbol) can be used to dereference through the pointer.
-(Implicitly quoted when used in the macro API.)  Any other index may
-be provided as well, in which case the dereferencing will happen
-implicitly and the provided index passed through to the next
-descriptor's referencing procedure (that of the `content-descriptor`).
-
-_**On Guile, having an address written into a bytevector does not
-protect it from garbage collection.**_ So using pointer descriptors
-can make your program memory unsafe.
-
-For the `content-descriptor`, a promise is accepted as well, which
-should evaluate to a descriptor when forced.  This helps when creating
-cyclic structures:
-
-    (define linked-uint8-list
-      (bs:pointer (delay (bs:struct `((head ,uint8)
-                                      (tail ,linked-uint8-list))))))
-
-Pointers also have a direct referencing and a direct assignment
-procedure.  Referencing the pointer bytestructure yields the
-pointed-to bytevector.  Assigning to it accepts a variety of values:
-an integer, that will be written directly (taken to be a memory
-address); a pointer object from Guile's FFI module, whose address
-value will be written; a bytevector, whose memory address will be
-written; or a one-element list, whose element will be assigned into
-the pointed-to bytevector, using the `content-descriptor`.
-
-    (define bs (bytestructure linked-uint8-list))
-    (bytestructure-set! bs some-address)
-    (bytestructure-ref bs)  ;=> a bytevector, containing the head/tail
-    (bytestructure-ref bs '* 'head)  ;=> some uint8 value
-    (bytestructure-ref bs 'head)  ;same as previous
-
-    (bytestructure-set! some-pointer #x012345678))
-    (bytestructure-set! some-pointer ffi-pointer))
-    (bytestructure-set! some-pointer bytevector))
-    (bytestructure-set! uint8-v3-ptr '(#(0 1 2)))
-
-Pointers don't accept variable-size descriptors as their content
-descriptor, because the bytevector for the content descriptor is
-created on the fly, so the size must be known in advance.
-(Bytevectors have fixed length; the constructor procedure from the FFI
-module that makes a bytevector from a memory address also needs the
-desired length to be specified.  A variable-size descriptor needs the
-bytevector to calculate that length, so there's a circular dependency
-between creating the bytevector, and calculating what its size should
-be.)
+Note that the `pointer` type (available on Guile) can be indexed
+through, but at the same time defines such direct referencing and
+assignment semantics.
 
 
-The bytestructure data type
----------------------------
+Specification
+-------------
+
+In this section the `descriptor` argument name signifies that an
+argument must be a bytestructure descriptor, and `offset` signifies
+that an argument must be an exact non-negative integer.
+
+A *dynamic descriptor* is a bytestructure descriptor whose `size`
+and/or `ref-helper` procedures reference their bytevector and/or
+offset arguments.
+
+
+### Bytestructure descriptors
+
+- `(make-bytestructure-descriptor size alignment ref-helper getter
+  setter)` *procedure*
+
+Low-level procedure for creating descriptors.  Usually one of the
+high-level procedures such as `bs:vector` should be used.
+
+`Size` must be an exact non-negative integer, or a procedure taking
+three arguments and returning a non-negative integer (this is for
+dynamic descriptors).  The first argument to the procedure is a
+Boolean indicating whether the call to the procedure is happening in
+the macro-expand phase.  If it's false, the other two arguments are a
+bytevector and an offset into the bytevector respectively.  If it's
+true, then the two arguments are instead syntax objects that would
+evaluate to a bytevector and an offset respectively.  The offset is
+the position in the bytevector at which the bytes belonging to the
+descriptor start.  The procedure should return the size of the
+structure described by the descriptor, or return a syntax object that
+would evaluate to the size.
+
+`Alignment` must be an exact non-negative non-zero integer specifying
+the type's preferred memory alignment.
+
+`Ref-helper` must be `#f` or a procedure taking four arguments: a
+Boolean indicating whether the call to the procedure is happening in
+the macro-expand phase, a bytevector (or syntax object thereof), an
+offset (or syntax object thereof), and an index object (or syntax
+object thereof).  The procedure must return three values: the same or
+another bytevector (or syntax object thereof), a new offset (or syntax
+object thereof), and a bytestructure descriptor (NOT a syntax object
+thereof).  This procedure implements the indexing semantics of
+compound types.  The bytevector argument is provided to satisfy
+dynamic descriptors; the `ref-helper` of non-dynamic descriptors
+should ignore its value and return it back untouched.
+
+`Getter` must be `#f` or a procedure taking three arguments: a Boolean
+indicating whether the call to the procedure is happening in the
+macro-expand phase, a bytevector (or syntax object thereof), and an
+offset (or syntax object thereof).  The procedure should decode the
+bytes at the given offset in the given bytevector (or return a syntax
+object whose evaluation would do this), thus implementing the
+referencing semantics of the descriptor.
+
+`Setter` must be `#f` or a procedure taking three arguments a Boolean
+indicating whether the call to the procedure is happening in the
+macro-expand phase, a bytevector (or syntax object thereof), an offset
+(or syntax object thereof), and a value (or syntax object thereof).
+The procedure should encode the given value into given offset in the
+given bytevector (or return a syntax object whose evaluation would do
+this), thus implementing the assignment semantics of the descriptor.
+
+- `(bytestructure-descriptor-size descriptor)` *procedure*
+- `(bytestructure-descriptor-size descriptor bytevector offset)`
+  *procedure*
+
+Returns the size of `descriptor`.  If `descriptor` is dynamic, then
+the `bytevector` and `offset` arguments must be provided, which will
+be passed to the `size` procedure of `descriptor`, with the
+macro-expand Boolean argument set to false.
+
+    (bytestructure-descriptor-size uint8-v3-v5)
+    => 15, because 3×5 8-bit integers in total.
+
+    (bytestructure-descriptor-size a-dynamic-descriptor)
+    ;;; error
+
+    (bytestructure-descriptor-size
+     a-dynamic-descriptor bytevector offset)
+    => 42
+
+- `(bytestructure-descriptor-size/syntax descriptor)` *procedure*
+- `(bytestructure-descriptor-size/syntax descriptor bytevector-syntax
+  offset-syntax)` *procedure*
+
+Returns a syntax object that would evaluate to the size of
+`descriptor`.  If `descriptor` is dynamic, then the
+`bytevector-syntax` and `offset-syntax` arguments must be provided,
+which will be passed to the `size` procedure of `descriptor`, with the
+macro-expand Boolean argument set to false.
+
+- `(bytestructure-descriptor-alignment descriptor)` *procedure*
+
+Returns the preferred memory alignment of the descriptor.
+
+
+### The bytestructure data type
 
 Any bytestructure descriptor can be used with any bytevector to work
-on that vector momentarily in accordance with the descriptor, but in
-the usual case a bytevector will be dedicated to a certain structure,
-so it is most convenient to be able to bundle a descriptor onto a
-bytevector and not be required to provide it explicitly at each access
-into the bytevector.  Similarly, a section of a bytevector starting
-from a certain offset might be dedicated to the structure, so being
-able to bundle this offset is also useful.
+on it momentarily in accordance with the descriptor, but in most cases
+a bytevector is dedicated to a certain structure, so it makes sense to
+bundle a descriptor with the bytevector.  Or only a portion of the
+bytevector, starting from a certain offset, might be dedicated to the
+structure, so being able to bundle that offset is also useful.
 
-    (define bs (make-bytestructure bytevector offset descriptor))
-    (bytestructure? bs)           => #t
-    (bytestructure-bytevector bs) => bytevector
-    (bytestructure-offset bs)     => offset
-    (bytestructure-descriptor bs) => descriptor
+- `(make-bytestructure bytevector offset descriptor)` *procedure*
 
-The `bytestructure` procedure can be used to create a bytestructure
-with a new bytevector of the right size for its descriptor, and
-optionally initialize it with values.
+Returns a bytestructure object with the given bytevector, offset into
+the bytevector, and bytestructure descriptor.
 
-E.g.
+- `(bytestructure? obj)` *procedure*
 
-    (define bs (bytestructure (bs:vector 3 int16)))
+Returns a Boolean indicating whether `obj` is a bytestructure.
+
+- `(bytestructure-bytevector bytestructure)` *procedure*
+
+Returns the bytevector of `bytestructure`.
+
+- `(bytestructure-offset bytestructure)` *procedure*
+
+Returns the offset of `bytestructure`.
+
+- `(bytestructure-descriptor bytestructure)` *procedure*
+
+Returns the descriptor of `bytestructure`.
+
+- `(bytestructure-size bytestructure)` *procedure*
+
+Returns the size of the structure contained within `bytestructure`.
+
+- `(bytestructure descriptor)` *procedure*
+- `(bytestructure descriptor initial-value)` *procedure*
+
+Creates a bytestructure with a newly allocated bytevector of the right
+size for the descriptor and an offset of 0, and optionally initializes
+it with values.
+
+I.e.
+
+    (define bs (bytestructure descriptor))
 
 is equivalent to
 
     (define bs (make-bytestructure
-                 (make-bytevector 6)
-                 0
-                 (bs:vector 3 int16)))
+                (make-bytevector (bytestructure-descriptor-size
+                                  descriptor))
+                0
+                descriptor))
 
-Providing the optional second argument to `bytestructure` will invoke
-the assignment procedure of the descriptor type.  See the
-documentation for vectors, structs, and unions for the detailed
-description; here's a quick overview again:
+The optional second argument will be passed to `bytestructure-set!` to
+assign the given values to the bytestructure.
 
-Vectors accept a (Scheme) vector of elements to be written:
+I.e.
 
-    (define bs (bytestructure uint8-v3 #(0 1 2)))
+    (define bs (bytestructure descriptor) values)
 
-Structs accept quasi-alists (the entries are two-element lists and not
-plain pairs), as well as vectors for sequential assignment:
+is equivalent to
 
-    (define a-simple-struct (bs:struct `((x ,uint8) (y ,uint8))))
+    (let ((bs (bytestructure descriptor)))
+      (bytestructure-set! bs values)
+      bs)
 
-    (define bs (bytestructure a-simple-struct '((x 0) (y 1))))
-
-    (define bs (bytestructure a-simple-struct #(0 1))) ;x = 0, y = 1
-
-Unions take a two-element list, whose first element is a field-name,
-and the second element the value:
-
-    (define a-simple-union (bs:union `((x ,uint8) (y ,uint16))))
-
-    (define bs (bytestructure a-simple-union '(y 42)))
-
-Vectors, structs, and unions also accept a bytevector, from which they
-will copy as many bytes as their size:
-
-    (define bs (bytestructure a-simple-struct #u8(0 1)))
-
-Pointers take integers, pointer objects (from the FFI module), or a
-bytevector (whose pointer will be used):
-
-    (define bs (bytestructure (bs:pointer uint8) ffi-pointer))
-
-    (define bs (bytestructure (bs:pointer uint8) bv))
-
-_**On Guile, having an address written into a bytevector does not
-protect it from garbage collection.**_ So using pointer descriptors
-can make your program memory unsafe.
-
-Note that pointers also accept a one-element list in their assignment
-procedure.  (See the pointer documentation.)  It doesn't make sense to
-use this during initialization, because there exists no bytevector
-that is being pointed to yet.  (And if we created it automatically, it
-would have no references to it as soon as it goes out of scope, and
-would be garbage collected promptly, leaving you with a dangling
-pointer in your bytestructure.)
-
-The initialization of the compound types can be done recursively,
-reflecting their structure, since the assignment procedures are
-implemented such that they again use the underlying descriptor's
-assignment procedure.
+Since the setter procedures of compound descriptors tend to delegate
+the assignment of individual elements to their respective descriptors,
+one can easily initialize structures to arbitrary depth.
 
     (define my-struct
       (bs:struct `((x ,uint16) (y ,(bs:vector 3 uint8)))))
@@ -429,65 +511,66 @@ assignment procedure.
     (define bs (bytestructure my-struct '((x 0) (y #(0 1 2)))))
 
 
-Referencing and assignment
---------------------------
+### Referencing and assignment
 
-- `(bytestructure-ref bytestructure index ...)` (syntax)
+- `(bytestructure-ref bytestructure index ...)` *syntax*
 
-References through the bytestructure with the given zero or more
-indices to arrive at a certain bytevector, byte-offset, and
-bytestructure descriptor (see the `ref-helper` argument of
-`make-bytestructure-descriptor`), then does a referencing operation
-there (see `getter` argument to `make-bytestructure-descriptor`).
+First references through `bytestructure` with the given zero or more
+`index` values to arrive at a certain bytevector, byte-offset, and
+bytestructure descriptor.  This is done by calling the `ref-helper` of
+the descriptor of `bytestructure` on the bytevector and offset of
+`bytestructure` and the first index, yielding an intermediate triple
+of a bytevector, offset and descriptor; then calling the `ref-helper`
+of that descriptor on that bytevector and offset and the second index,
+and so on until the indices are exhausted.  Finally, calls the
+`getter` of the finally arrived descriptor on the finally arrived
+bytevector and offset.
 
-If the descriptor at which we arrive has no `getter`, then a
-bytestructure object is created with the bytevector, offset, and
-descriptor at which we arrived, and this bytestructure returned.
+If the descriptor to which the indices lead has no `getter`, then a
+bytestructure consisting of the bytevector, offset, and descriptor at
+which the indexing arrived is created and returned.
 
-This is a macro and not a procedure so we needn't allocate a
-rest-argument list for the indices.
+- `(bytestructure-set! bytestructure index ... value)` *syntax*
 
-- `(bytestructure-set! bytestructure index ... value)` (syntax)
+First references through `bytestructure` in the same way as
+`bytestructure-ref` does.  Then, calls the `setter` of the finally
+arrived descriptor on the finally arrived bytevector and offset, and
+`value`.
 
-Reference through the bytestructure with the given zero or more
-indices to arrive at a certain bytevector, byte-offset, and
-bytestructure descriptor (see the `ref-helper` argument of
-`make-bytestructure-descriptor`), then does an assignment operation
-there (see `setter` argument to `make-bytestructure-descriptor`).
-
-If the descriptor at which we arrive has no `setter`, then the given
-value must be a bytevector; as many bytes as the size of the arrived
-descriptor will be copied into the arrived bytevector starting from
-the arrived offset.
-
-This is a macro and not a procedure so we needn't allocate a
-rest-argument list for the indices.
+If the descriptor to which the indices lead has no `setter`, then the
+given value must be a bytevector.  As many bytes as the size of the
+arrived descriptor will be copied into the arrived bytevector starting
+from the arrived offset.
 
 - `(bytestructure-ref* bytevector offset descriptor index ...)`
+  *syntax*
 - `(bytestructure-set!* bytevector offset descriptor index ... value)`
+  *syntax*
 
-These macros are like `bytestructure-ref` and `bytestructure-set!`,
-except that instead of a bytestructure, they directly take an initial
-bytevector, initial offset, and initial descriptor.
+These macros have the same semantics as `bytestructure-ref` and
+`bytestructure-set!` respectively, except that they start the
+referencing process with the given `bytevector`, `offset`, and
+`descriptor`, instead of the bytevector, offset, and descriptor of a
+given bytestructure.
 
-- `(bytestructure-ref-helper bytestructure index ...)`
+- `(bytestructure-ref-helper bytestructure index ...)` *syntax*
 - `(bytestructure-ref-helper* bytevector offset descriptor index ...)`
+  *syntax*
 
-These do the "referencing through" part of `bytestructure-ref` and
-`bytestructure-set!`, but instead of referencing or assigning a value
-at the end, they simply return the bytevector, offset, and descriptor
-at which they arrive, as three values.
+These macros have the same semantics as `bytestructure-ref` and
+`bytestructure-ref*` respectively, except that at the final step they
+don't call the `getter` of the arrived descriptor, and instead return
+the arrived bytevector, offset, and descriptor as three values.
 
-Note that you can use `bytestructure-ref-helper` with zero indices to
+Note that `bytestructure-ref-helper` can be used with zero indices to
 destructure a bytestructure into its contents.
 
     (let-values (((bytevector offset descriptor)
                   (bytestructure-ref-helper bytestructure)))
       ...)
 
-In `bytestructure-ref-helper*`, if you know that the bytevector is
-irrelevant to the calculation (i.e. all involved descriptors have
-fixed sizes), you can provide a bogus value and get it back as-is:
+When a descriptor is not dynamic, `bytestructure-ref-helper*` may be
+given a bogus `bytevector` argument.
 
     (bytestructure-ref-helper* #f 0 uint8-v3-v5 2)
     => #f, 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.
@@ -496,70 +579,60 @@ fixed sizes), you can provide a bogus value and get it back as-is:
     => #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
 
 
-Macro-based API
----------------
+### Macro-based API
 
-For when you need maximum performance in your code, a macro-based API
-is offered, which does the bulk of the work at macro-expand time, so
-there is zero or near-zero run-time overhead.  This API requires
-syntax-case.
+For when maximal efficiency is desired, a macro-based API is offered,
+so that the bulk of the work involved in offset calculation can be
+offloaded to the macro-expand phase.
 
-The main entry point of this API is `define-bytestructure-accessors`,
-which takes a bytestructure descriptor, and defines three macros: a
-referencing helper (to calculate offsets only), a referencer (to
-actually acquire values), and a setter.
+- `(define-bytestructure-accessors descriptor ref-helper getter
+  setter)` *syntax*
 
-    (define-bytestructure-accessors
-      (bs:vector 5 (bs:vector 3 uint8))
+The `descriptor` expression is evaluated during the macro-expand phase
+to yield a bytestructure descriptor.  The `ref-helper`, `getter`, and
+`setter` identifiers are bound to a triple of macros implementing the
+indexing, referencing, and assignment semantics of the given
+descriptor.
+
+    (define-bytestructure-accessors (bs:vector 5 (bs:vector 3 uint8))
       uint8-v3-v5-ref-helper uint8-v3-v5-getter uint8-v3-v5-setter)
 
     (uint8-v3-v5-ref-helper #f 0 3 2)  ;the #f is a bogus bytevector
                                        ;the 0 is the initial offset
     => 11 (3 * 3 + 2)
 
-    (define bv (bytevector 0 1 2 3 ...))
+    (define bv (apply bytevector (iota 15)))
     (uint8-v3-v5-getter bv 2 1) => 7
     (uint8-v3-v5-setter bv 2 1 42)
     (uint8-v3-v5-getter bv 2 1) => 42
 
-Don't forget that struct and union fields and the `*` symbol for
-pointers will be quoted implicitly when used with these macros.
+- `(bytestructure-ref-helper/syntax bytevector-syntax offset-syntax
+  descriptor indices-syntax)` *procedure*
 
-Referencing and assignment operations which can't be resolved to bare
-bytevector references or assignments are turned into copying
-operations.  E.g. if you have a vector of vectors, but you provide
-only one index while referencing, then you will get a fresh bytevector
-that is a copy of a slice of the original; the slice which contained
-the inner vector to which your one index pointed to.  While assigning,
-similarly, the value you provide is expected to be a bytevector, and
-its contents will be written over the part of the original bytevector
-which contains the inner vector.
+The semantics are akin to `bytestructure-ref-helper*`, except that
+some arguments are syntax objects, and the return value is a syntax
+object that would evaluate to two values: the bytevector and offset
+that are the result of the indexing process.
 
-The following procedures may be useful in the `ref-helper`, `getter`,
-and `setter` arguments to `make-bytestructure-descriptor`.
+- `(bytestructure-ref/syntax bytevector-syntax offset-syntax
+  descriptor indices-syntax)` *procedure*
 
-- `(bytestructure-ref-helper/syntax bytevector offset descriptor indices)`
+The semantics are akin to `bytestructure-ref*`, except that some
+arguments are syntax objects, and the return value is a syntax object
+that would evaluate to the decoded value.
 
-All the arguments except the descriptor are syntax objects.  The
-procedure returns a syntax object that will evaluate to two values:
-the bytevector and offset at which we arrived.
+- `(bytestructure-set!/syntax bytevector offset descriptor indices
+  values)` *procedure*
 
-- `(bytestructure-ref/syntax bytevector offset descriptor indices)`
-
-Like above, but returns a syntax object that will do the actual
-referencing instead of just yielding values.
-
-- `(bytestructure-set!/syntax bytevector offset descriptor indices values)`
-
-Like above, but returns a syntax object that will do the actual
-assignment instead of just yielding values.
+The semantics are akin to `bytestructure-set!*`, except that some
+arguments are syntax objects, and a syntax object is returned that
+would perform the actual assignment when evaluated.
 
 
 Performance
-===========
+-----------
 
-Macro API
----------
+### Macro API
 
 The macro API incurs zero run-time overhead for normal referencing and
 assignment operations, since most things happen in the macro-expand
@@ -595,8 +668,7 @@ plain bytevector referencing example, except there you would need to
 do said multiplications manually in your code.
 
 
-Procedural API
---------------
+### Procedural API
 
 When descriptors are statically apparent, an aggressively constant
 propagating and partial evaluating optimizer would be able to turn
