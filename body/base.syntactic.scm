@@ -62,20 +62,20 @@
                 (syntactic-ref-helper bytevector offset descriptor indices)))
     (if getter
         (getter #t bytevector* offset*)
-        (let ((size (bytestructure-descriptor-size/syntax
-                     bytevector* offset* descriptor*)))
-          #`(let ((bv (make-bytevector #,size)))
-              (bytevector-copy! bv 0 #,bytevector* #,offset* #,size)
-              bv)))))
+        (error "The indices given to bytestructure-ref/syntax do not lead to a
+bytestructure descriptor that can decode values.  You must have used the wrong
+getter macro, forgot to provide some of the indices, or meant to use the
+ref-helper instead of the getter.  The given indices follow." indices))))
 
 (define (bytestructure-set!/syntax bytevector offset descriptor indices value)
   (let-values (((bytevector* offset* descriptor* _getter setter)
                 (syntactic-ref-helper bytevector offset descriptor indices)))
     (if setter
         (setter #t bytevector* offset* value)
-        (let ((size (bytestructure-descriptor-size/syntax
-                     bytevector* offset* descriptor*)))
-          #`(bytevector-copy! #,bytevector* #,offset* #,value 0 #,size)))))
+        (error "The indices given to bytestructure-set!/syntax do not lead to a
+bytestructure descriptor that can encode values.  You must have used the wrong
+setter macro, or forgot to provide some of the indices.  The given indices
+follow." indices))))
 
 (define-syntax-rule (define-bytestructure-ref-helper <name> <descriptor>)
   (define-syntax <name>
