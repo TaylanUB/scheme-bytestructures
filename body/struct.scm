@@ -44,12 +44,12 @@
   (size field-size)
   (position field-position))
 
-(define (construct-fields alignment field-specs)
+(define (construct-fields pack field-specs)
   (define (limit-alignment a)
-    (case alignment
-      ((#f) 1)
-      ((#t) a)
-      (else (min alignment a))))
+    (case pack
+      ((#t) 1)
+      ((#f) a)
+      (else (min pack a))))
   (if (null? (cdr field-specs))
       (let* ((field-spec (car field-specs))
              (name (car field-spec))
@@ -86,13 +86,13 @@
   (case-lambda
     ((field-specs)
      (bs:struct #t field-specs))
-    ((%alignment field-specs)
-     (define fields (construct-fields %alignment field-specs))
+    ((pack field-specs)
+     (define fields (construct-fields pack field-specs))
      (define alignment
-       (case %alignment
-         ((#f) 1)
-         ((#t) (apply max (map field-size fields)))
-         (else (min %alignment (apply max (map field-size fields))))))
+       (case pack
+         ((#t) 1)
+         ((#f) (apply max (map field-size fields)))
+         (else (min pack (apply max (map field-size fields))))))
      (define size (align (apply + (map field-size fields)) alignment))
      (define (ref-helper syntax? bytevector offset index)
        (let* ((index (if syntax? (syntax->datum index) index))
@@ -144,12 +144,12 @@
          (error "Invalid value for writing into struct." value))))
      (make-bytestructure-descriptor size alignment ref-helper #f setter))))
 
-(define (debug-alignment %alignment fields)
-  (let* ((fields (construct-fields %alignment fields))
-         (alignment (case %alignment
-                      ((#f) 1)
-                      ((#t) (apply max (map field-size fields)))
-                      (else (min %alignment
+(define (debug-alignment pack fields)
+  (let* ((fields (construct-fields pack fields))
+         (alignment (case pack
+                      ((#t) 1)
+                      ((#f) (apply max (map field-size fields)))
+                      (else (min pack
                                  (apply max (map field-size fields))))))
          (size (align (apply + (map field-size fields)) alignment)))
     (format #t "{\n")
