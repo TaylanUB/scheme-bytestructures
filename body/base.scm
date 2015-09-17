@@ -76,6 +76,11 @@
       (bytestructure-primitive-set! bytevector 0 descriptor values))
     (make-bytestructure bytevector 0 descriptor)))
 
+(define (bytestructure-size bytestructure)
+  (bytestructure-descriptor-size (bytestructure-descriptor bytestructure)
+                                 (bytestructure-bytevector bytestructure)
+                                 (bytestructure-offset bytestructure)))
+
 (define-syntax-rule (bytestructure-ref-helper <bytestructure> <index> ...)
   (let ((bytestructure <bytestructure>))
     (let ((bytevector (bytestructure-bytevector bytestructure))

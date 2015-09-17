@@ -10,6 +10,7 @@
  bytestructure-bytevector
  bytestructure-offset
  bytestructure-descriptor
+ bytestructure-size
  bytestructure
  bytestructure-ref-helper
  bytestructure-ref-helper*
