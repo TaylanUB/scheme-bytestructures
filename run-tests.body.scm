@@ -38,54 +38,56 @@
 (test-group "numeric"
   (define-syntax test-numeric-descriptors
     (syntax-rules ()
-      ((_ (descriptor signed? size ref-proc set-proc) ...)
-       (let ()
-         (define (max s? sz)
+      ((_ (<descriptor-id> <signed?> <size> <ref-proc> <set-proc>) ...)
+       (begin
+         (let ((descriptor-id '<descriptor-id>)
+               (descriptor <descriptor-id>)
+               (signed? <signed?>)
+               (size <size>)
+               (ref-proc <ref-proc>)
+               (set-proc <set-proc>))
            ;; Not necessarily a "maximal" value; it's minimal for signed types.
            ;; It's also nonsensical for floating-point, but doesn't hurt; we
            ;; don't try to test their limits.
-           (if s?
-               (- (- (expt 256 sz) 1) (expt 256 sz))
-               (- (expt 256 sz) 1)))
-         (test-group "procedural"
-           (test-group (symbol->string 'descriptor)
-             (let ((max (max signed? size)))
-               (define bs (bytestructure descriptor))
-               (test-eqv "size" size (bytevector-length
-                                      (bytestructure-bytevector bs)))
-               (test-= "ref" 2
-                       (begin
-                         (set-proc (bytestructure-bytevector bs) 0 2)
-                         (bytestructure-ref bs)))
-               (test-= "set" 1
-                       (begin
-                         (bytestructure-set! bs 1)
-                         (ref-proc (bytestructure-bytevector bs) 0)))
-               (test-= "max" max
-                       (begin
-                         (bytestructure-set! bs max)
-                         (bytestructure-ref bs)))))
-           ...)
-         (maybe-skip-syntax)
-         (test-group "syntactic"
-           (test-group (symbol->string 'descriptor)
-             (let ((max (max signed? size)))
-               (define-bytestructure-accessors descriptor
-                 ref-helper getter setter)
-               (define bv (make-bytevector size))
-               (test-= "ref" 2
-                       (begin
-                         (set-proc bv 0 2)
-                         (getter bv)))
-               (test-= "set" 1
-                       (begin
-                         (setter bv 1)
-                         (ref-proc bv 0)))
-               (test-= "max" max
-                       (begin
-                         (setter bv max)
-                         (getter bv)))))
-           ...)))))
+           (let ((max (if signed?
+                          (- (- (expt 256 size) 1) (expt 256 size))
+                          (- (expt 256 size) 1))))
+             (test-group (symbol->string descriptor-id)
+               (test-group "procedural"
+                 (define bs (bytestructure descriptor))
+                 (test-eqv "size" size (bytevector-length
+                                        (bytestructure-bytevector bs)))
+                 (test-= "ref" 2
+                         (begin
+                           (set-proc (bytestructure-bytevector bs) 0 2)
+                           (bytestructure-ref bs)))
+                 (test-= "set" 1
+                         (begin
+                           (bytestructure-set! bs 1)
+                           (ref-proc (bytestructure-bytevector bs) 0)))
+                 (test-= "max" max
+                         (begin
+                           (bytestructure-set! bs max)
+                           (bytestructure-ref bs))))
+               (maybe-skip-syntax)
+               (test-group "syntactic"
+                 ;; Must insert the top-level reference <descriptor-id> here.
+                 (define-bytestructure-accessors <descriptor-id>
+                   ref-helper getter setter)
+                 (define bv (make-bytevector size))
+                 (test-= "ref" 2
+                         (begin
+                           (set-proc bv 0 2)
+                           (getter bv)))
+                 (test-= "set" 1
+                         (begin
+                           (setter bv 1)
+                           (ref-proc bv 0)))
+                 (test-= "max" max
+                         (begin
+                           (setter bv max)
+                           (getter bv)))))))
+         ...))))
   (test-numeric-descriptors
    (float32 #t 4
             bytevector-ieee-single-native-ref
