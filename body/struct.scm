@@ -85,7 +85,7 @@
 (define bs:struct
   (case-lambda
     ((field-specs)
-     (bs:struct #t field-specs))
+     (bs:struct #f field-specs))
     ((pack field-specs)
      (define fields (construct-fields pack field-specs))
      (define alignment
