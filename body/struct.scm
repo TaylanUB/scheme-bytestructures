@@ -55,7 +55,7 @@
              (name (car field-spec))
              (descriptor (cadr field-spec))
              (size (bytestructure-descriptor-size descriptor)))
-        (make-field name descriptor size 0))
+        (list (make-field name descriptor size 0)))
       (let loop ((field-spec (car field-specs))
                  (next (cadr field-specs))
                  (field-specs (cddr field-specs))
