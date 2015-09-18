@@ -30,10 +30,12 @@
            (symbol? (caar list))
            (alist? (cdr list)))))
 
-(define (align size alignment)
-  (let-values (((q r) (floor/ size alignment)))
+;;; Makes sure that a given position is a multiple of 'alignment', rounding to
+;;; the next multiple if it isn't.
+(define (align position alignment)
+  (let-values (((q r) (floor/ position alignment)))
     (if (zero? r)
-        size
+        position
         (* alignment (+ 1 q)))))
 
 (define-record-type <field>
@@ -44,12 +46,13 @@
   (size field-size)
   (position field-position))
 
+(define (pack-alignment pack alignment)
+  (case pack
+    ((#t) 1)
+    ((#f) alignment)
+    (else (min pack alignment))))
+
 (define (construct-fields pack field-specs)
-  (define (limit-alignment a)
-    (case pack
-      ((#t) 1)
-      ((#f) a)
-      (else (min pack a))))
   (if (null? (cdr field-specs))
       (let* ((field-spec (car field-specs))
              (name (car field-spec))
@@ -67,7 +70,8 @@
                (nname (car next))
                (ndescriptor (cadr next))
                (nsize (bytestructure-descriptor-size ndescriptor))
-               (nalignment (limit-alignment
+               (nalignment (pack-alignment
+                            pack
                             (bytestructure-descriptor-alignment ndescriptor)))
                (nposition (align (+ position size) nalignment)))
           (let* ((field (make-field name descriptor size position))
@@ -89,10 +93,7 @@
     ((pack field-specs)
      (define fields (construct-fields pack field-specs))
      (define alignment
-       (case pack
-         ((#t) 1)
-         ((#f) (apply max (map field-size fields)))
-         (else (min pack (apply max (map field-size fields))))))
+       (pack-alignment pack (apply max (map field-size fields))))
      (define size (align (apply + (map field-size fields)) alignment))
      (define (ref-helper syntax? bytevector offset index)
        (let* ((index (if syntax? (syntax->datum index) index))
@@ -146,11 +147,7 @@
 
 (define (debug-alignment pack fields)
   (let* ((fields (construct-fields pack fields))
-         (alignment (case pack
-                      ((#t) 1)
-                      ((#f) (apply max (map field-size fields)))
-                      (else (min pack
-                                 (apply max (map field-size fields))))))
+         (alignment (pack-alignment pack (apply max (map field-size fields))))
          (size (align (apply + (map field-size fields)) alignment)))
     (format #t "{\n")
     (for-each (lambda (field)
