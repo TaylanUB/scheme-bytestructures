@@ -1,5 +1,4 @@
-- Bit-fields.  Possible with (rnrs arithmetic bitwise), and with
-  non-portable APIs turning integers into bit arrays.
+- Complex numbers.
 
 - Allow working with ports (or other open-ended byte sequences) as an
   alternative to bytevectors.
