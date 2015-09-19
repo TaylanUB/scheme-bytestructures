@@ -3,7 +3,10 @@
  bytestructure-descriptor?
  bytestructure-descriptor-size
  bytestructure-descriptor-size/syntax
- bytestructure-descriptor-alignment
+ (rename bd-alignment bytestructure-descriptor-alignment)
+ (rename bd-ref-helper bytestructure-descriptor-ref-helper)
+ (rename bd-getter bytestructure-descriptor-getter)
+ (rename bd-setter bytestructure-descriptor-setter)
  make-bytestructure
  bytestructure?
  bytestructure-bytevector

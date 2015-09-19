@@ -13,6 +13,9 @@
  bytestructure-descriptor-size
  bytestructure-descriptor-size/syntax
  bytestructure-descriptor-alignment
+ bytestructure-descriptor-ref-helper
+ bytestructure-descriptor-getter
+ bytestructure-descriptor-setter
  make-bytestructure
  bytestructure?
  bytestructure-bytevector

@@ -29,7 +29,7 @@
   (make-bytestructure-descriptor size alignment ref-helper getter setter)
   bytestructure-descriptor?
   (size       bd-size)
-  (alignment  bytestructure-descriptor-alignment)
+  (alignment  bd-alignment)
   (ref-helper bd-ref-helper)
   (getter     bd-getter)
   (setter     bd-setter))

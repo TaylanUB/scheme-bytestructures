@@ -5,6 +5,9 @@
  bytestructure-descriptor-size
  bytestructure-descriptor-size/syntax
  bytestructure-descriptor-alignment
+ bytestructure-descriptor-ref-helper
+ bytestructure-descriptor-getter
+ bytestructure-descriptor-setter
  make-bytestructure
  bytestructure?
  bytestructure-bytevector
@@ -29,3 +32,7 @@
  (bytestructures guile utils)
  (bytestructures bytevectors))
 (include-from-path "bytestructures/body/base.scm")
+(define bytestructure-descriptor-alignment bd-alignment)
+(define bytestructure-descriptor-ref-helper bd-ref-helper)
+(define bytestructure-descriptor-getter bd-getter)
+(define bytestructure-descriptor-setter bd-setter)
