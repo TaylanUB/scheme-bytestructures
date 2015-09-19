@@ -28,7 +28,7 @@
 
 ;;; Rounds 'position' up to the next alignment boundary if necessary.
 (define (align position size alignment)
-  (let* ((prev-boundary (quotient (floor position) alignment))
+  (let* ((prev-boundary (* alignment (floor (/ position alignment))))
          (next-boundary (+ prev-boundary alignment)))
     (if (< next-boundary (+ position (min size alignment)))
         next-boundary
