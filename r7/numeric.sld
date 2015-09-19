@@ -2,11 +2,12 @@
   (import
    (scheme base)
    (bytestructures r7 base)
+   (bytestructures r7 explicit-endianness)
    (bytestructures r7 utils))
   (cond-expand
-   ((library (r6rs bytevectors))
-    (import (r6rs bytevectors)
-            (bytestructures r7 explicit-endianness)))
-   (else))
+   ((library (rnrs bytevectors))
+    (import (rnrs bytevectors)))
+   (else
+    (import (r6rs bytevectors))))
   (include-library-declarations "numeric.exports.sld")
   (include "../body/numeric.scm"))
