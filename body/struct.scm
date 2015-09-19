@@ -23,13 +23,6 @@
 
 ;;; Code:
 
-(define (alist? list)
-  (or (null? list)
-      (and (pair? list)
-           (pair? (car list))
-           (symbol? (caar list))
-           (alist? (cdr list)))))
-
 ;;; Makes sure that a given position is a multiple of 'alignment', rounding to
 ;;; the next multiple if it isn't.
 (define (align position alignment)
@@ -132,7 +125,8 @@
                         (offset (+ offset position)))
                    (bytestructure-set!* bytevector offset descriptor value)
                    (loop (cdr fields) (cdr values)))))))
-        ((alist? value)
+        ((pair? value)
+         ;; Assumed to be an alist.
          (for-each
           (lambda (pair)
             (let ((key (car pair))
