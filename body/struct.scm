@@ -62,9 +62,13 @@
                (size (if bitfield?
                          (* 1/8 (car (cddr field-spec)))
                          (bytestructure-descriptor-size descriptor)))
-               (alignment (bytestructure-descriptor-alignment descriptor))
-               (alignment (pack-alignment pack alignment))
-               (position (align position size alignment))
+               (real-alignment (bytestructure-descriptor-alignment descriptor))
+               (alignment (if (zero? size)
+                              1
+                              (pack-alignment pack real-alignment)))
+               (position (if (zero? size)
+                             (align position +inf.0 real-alignment)
+                             (align position size alignment)))
                (descriptor (if bitfield?
                                (bitfield-descriptor size position descriptor)
                                descriptor))
