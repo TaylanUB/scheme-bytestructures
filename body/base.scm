@@ -29,7 +29,7 @@
   (make-bytestructure-descriptor size alignment ref-helper getter setter)
   bytestructure-descriptor?
   (size       bd-size)
-  (alignment  bd-alignment)
+  (alignment  bytestructure-descriptor-alignment)
   (ref-helper bd-ref-helper)
   (getter     bd-getter)
   (setter     bd-setter))
@@ -48,12 +48,6 @@
     (if (procedure? size)
         (size #t bytevector offset)
         size)))
-
-(define (bytestructure-descriptor-alignment descriptor)
-  (let ((alignment (bd-alignment descriptor)))
-    (if (procedure? alignment)
-        (alignment)
-        alignment)))
 
 
 ;;; Bytestructures
