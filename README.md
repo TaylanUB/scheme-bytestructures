@@ -679,13 +679,6 @@ Bytestructure reference:
 
 (Ignoring the jitter for both.)
 
-Note that if we used variables instead of constant values for the
-vector indices, then *some* calculation would need to happen at
-run-time (multiplying the variables' value with the vectors' lengths),
-but that isn't really overhead either because the same goes for the
-plain bytevector referencing example, except there you would need to
-do said multiplications manually in your code.
-
 
 ### Procedural API
 
