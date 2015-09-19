@@ -128,14 +128,27 @@ on which they will be used.
 - `(bs:struct pack fields)` *procedure*
 
 This returns a descriptor for a struct as in C.  `Fields` must be a
-list of field specs, each of which is a list whose first element is a
-symbol (name of the field) and second element a bytestructure
-descriptor (type of the field).  Conventional C struct alignment is
-used if `pack` is omitted or `#f`.  When `#t`, there are no padding
-fields at all.  It can also be an integer specifying the maximum
-alignment value for the fields, akin to the `pack` directive of GCC.
+list of field specs.  `Pack` may be `#f`, `#t`, or an exact
+non-negative non-zero integer.  If `pack` is omitted or `#f`, normal C
+struct alignment is used.  If `pack` is `#t`, there are no padding
+fields (except for bit-fields).  If `pack` is an integer, it specifies
+the maximum alignment value for the fields, akin to the `pack`
+directive of GCC.
 
-    ;; typedef struct { uint8_t x; uint16_t y } my_struct_t;
+A field spec is a list of two or three elements.  The first element
+must be a symbol which names the field (or `#f`; see below).  Every
+field must have a distinct name.  The second element must be a
+bytestructure descriptor which is the type of the field.  The third
+element, if present, must be an exact non-negative integer; it
+signifies that the field is a bit-field of that width.  The descriptor
+of a bit-field must be one that decodes values to exact integers.
+
+The width of a bit-field may be zero, which means padding should be
+inserted in its place until the next alignment boundary of the type of
+that bit-field is reached.  A zero-width bit-field must have `#f` in
+place of the name symbol.
+
+    ;; typedef struct { uint8_t x; uint16_t y; } my_struct_t;
     (define my-struct (bs:struct `((x ,uint8) (y ,uint16))))
 
     ;; my_struct_t str = { 0, 1 };
@@ -149,6 +162,14 @@ alignment value for the fields, akin to the `pack` directive of GCC.
 
     ;; str.y = 42;
     (bytestructure-set! str 'y 42)
+
+    ;; Assuming 32-bit int:
+
+    ;; struct { int a:16; int b:16; }
+    (bs:struct `((a ,int32 16) (b ,int32 16)))
+
+    ;; struct { int a:16; int :0; int b:20; }
+    (bs:struct `((a ,int32 16) (#f ,int32 0) (b ,int32 20)))
 
 Similar to vectors, a direct assignment procedure is provided for
 convenience purposes.  This accepts a Scheme vector for assigning the
@@ -307,10 +328,8 @@ bytevector, and calculating what its size should be.)
 ### Numeric types
 
 Some descriptors for numeric types are readily provided in the
-`numeric` sub-library.  It contains, at the very least, `uint8`.  If
-your Scheme implementation supports the library `(rnrs bytevectors)`
-or `(r6rs bytevectors)`, then all of the following are available:
-`float32[le,be]`, `double64[le,be]`, `[u]int(8,16,32,64)[le,be]`.
+`numeric` sub-library: `float32[le,be]`, `double64[le,be]`,
+`[u]int(8,16,32,64)[le,be]`.
 
 On Guile, the following native types are also available:
 `[unsigned-](short,int,long)`, `size_t`, `ssize_t`, `ptrdiff_t`
