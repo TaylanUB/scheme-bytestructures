@@ -4,7 +4,8 @@
   (export
    endianness native-endianness bytevector?
    make-bytevector bytevector-length bytevector=? bytevector-fill!
-   bytevector-copy! bytevector-copy
+   (rename (r7rs-bytevector-copy! bytevector-copy!))
+   bytevector-copy
    uniform-array->bytevector
    bytevector-u8-ref bytevector-s8-ref
    bytevector-u8-set! bytevector-s8-set! bytevector->u8-list
@@ -45,13 +46,12 @@
   (import
    (rnrs base)
    (rnrs control)
-   (rename (rnrs bytevectors)
-           (bytevector-copy! %bytevector-copy!)))
-  (define bytevector-copy!
+   (rnrs bytevectors))
+  (define r7rs-bytevector-copy!
     (case-lambda
       ((to at from)
-       (%bytevector-copy! from 0 to at))
+       (bytevector-copy! from 0 to at (bytevector-length from)))
       ((to at from start)
-       (%bytevector-copy! from start to at))
+       (bytevector-copy! from start to at (- (bytevector-length from) start)))
       ((to at from start end)
-       (%bytevector-copy! from start to at (- end start))))))
+       (bytevector-copy! from start to at (- end start))))))
