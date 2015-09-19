@@ -60,8 +60,8 @@
   (descriptor bytestructure-descriptor))
 
 (define bytestructure
-  (case-lambda ((description)        (%bytestructure description #f #f))
-               ((description values) (%bytestructure description #t values))))
+  (case-lambda ((descriptor)        (%bytestructure descriptor #f #f))
+               ((descriptor values) (%bytestructure descriptor #t values))))
 
 (define (%bytestructure descriptor init? values)
   (let ((bytevector (make-bytevector
