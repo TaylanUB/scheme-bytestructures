@@ -2,9 +2,11 @@
 (export bs:struct)
 (import
  (bytestructures guile base)
+ (bytestructures guile numeric)
  (bytestructures guile utils)
  (bytestructures bytevectors)
  (srfi :1)
  (srfi :9)
- (srfi :11))
+ (srfi :11)
+ (srfi :60))
 (include-from-path "bytestructures/body/struct.scm")
