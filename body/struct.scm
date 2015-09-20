@@ -26,13 +26,20 @@
 
 ;;; Code:
 
-;;; Rounds 'position' up to the next alignment boundary if necessary.
+;;; Either remains at 'position' or rounds up to the next multiple of
+;;; 'alignment' depending on whether 'size' (if not greater than 'alignment')
+;;; would fit.  Returns three values: the chosen position, the start of the
+;;; alignment boundary of the chosen position, and the bit offset of the chosen
+;;; position from the start of the alignment boundary.
 (define (align position size alignment)
-  (let* ((prev-boundary (* alignment (floor (/ position alignment))))
-         (next-boundary (+ prev-boundary alignment)))
-    (if (< next-boundary (+ position (min size alignment)))
-        next-boundary
-        position)))
+  (let* ((integer (floor position))
+         (fraction (- position integer)))
+    (let-values (((prev-boundary-index offset) (floor/ integer alignment)))
+      (let* ((prev-boundary (* prev-boundary-index alignment))
+             (next-boundary (+ prev-boundary alignment)))
+        (if (< next-boundary (+ position (min size alignment)))
+            (values next-boundary next-boundary 0)
+            (values position prev-boundary (* 8 (+ offset fraction))))))))
 
 (define (pack-alignment pack alignment)
   (case pack
@@ -49,6 +56,32 @@
   (alignment field-alignment)
   (position field-position))
 
+(define (construct-field pack position name descriptor)
+  (let*-values
+      (((size)
+        (bytestructure-descriptor-size descriptor))
+       ((alignment)
+        (pack-alignment pack (bytestructure-descriptor-alignment descriptor)))
+       ((position _boundary _bit-offset)
+        (align position size alignment)))
+    (values (make-field name descriptor size alignment position)
+            (+ position size))))
+
+(define (construct-bit-field pack position name descriptor width)
+  (let*-values
+      (((int-size)
+        (bytestructure-descriptor-size descriptor))
+       ((size)
+        (* 1/8 width))
+       ((alignment)
+        (pack-alignment pack (bytestructure-descriptor-alignment descriptor)))
+       ((position boundary offset)
+        (align position size alignment))
+       ((descriptor)
+        (bitfield-descriptor descriptor offset width)))
+    (values (make-field name descriptor int-size alignment boundary)
+            (+ position size))))
+
 (define (construct-fields pack field-specs)
   (let loop ((field-specs field-specs)
              (position 0)
@@ -58,24 +91,25 @@
         (let* ((field-spec (car field-specs))
                (name (car field-spec))
                (descriptor (cadr field-spec))
-               (bitfield? (not (null? (cddr field-spec))))
-               (size (if bitfield?
-                         (* 1/8 (car (cddr field-spec)))
-                         (bytestructure-descriptor-size descriptor)))
-               (real-alignment (bytestructure-descriptor-alignment descriptor))
-               (alignment (if (zero? size)
-                              1
-                              (pack-alignment pack real-alignment)))
-               (position (if (zero? size)
-                             (align position +inf.0 real-alignment)
-                             (align position size alignment)))
-               (descriptor (if bitfield?
-                               (bitfield-descriptor size position descriptor)
-                               descriptor))
-               (field (make-field name descriptor size alignment position)))
-          (loop (cdr field-specs)
-                (+ position size)
-                (cons field fields))))))
+               (bitfield? (not (null? (cddr field-spec)))))
+          (if (and bitfield? (zero? (car (cddr field-spec))))
+              (let*-values
+                  (((alignment)
+                    (bytestructure-descriptor-alignment descriptor))
+                   ((position _boundary _bit-offset)
+                    (align position +inf.0 alignment)))
+                (loop (cdr field-specs)
+                      position
+                      fields))
+              (let-values
+                  (((field next-position)
+                    (if bitfield?
+                        (construct-bit-field
+                         pack position name descriptor (car (cddr field-spec)))
+                        (construct-field pack position name descriptor))))
+                (loop (cdr field-specs)
+                      next-position
+                      (cons field fields))))))))
 
 (define bs:struct
   (case-lambda

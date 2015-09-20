@@ -25,63 +25,74 @@
 
 ;;; Code:
 
-;;; Returns the bit-offset of 'position' from the nearest smaller multiple of
-;;; 'alignment'.
-(define (offsetof position alignment)
-  (remainder (* 8 position) (* 8 alignment)))
-
 ;;; Only a macro for efficiency reasons.
 (define-syntax bit-field/signed
   (syntax-rules ()
-    ((_ <num> <size> <start> <end> <signed?>)
+    ((_ <num> <width> <start> <end> <signed?>)
      (let ((unsigned-value (bit-field <num> <start> <end>)))
        (if (not <signed?>)
            unsigned-value
-           (let ((sign (bit-set? unsigned-value (- <size> 1))))
+           (let ((sign (bit-set? (- <width> 1) unsigned-value)))
              (if sign
-                 (- unsigned-value (expt 2 <size>))
+                 (- unsigned-value (expt 2 <width>))
                  unsigned-value)))))))
 
+;;; Only a macro for efficience reasons.
+(define signed-integer-descriptors
+  (list int8 int16 int32 int64
+        int16le int32le int64le
+        int16be int32be int64be))
+
+(define unsigned-integer-descriptors
+  (list uint8 uint16 uint32 uint64
+        uint16le uint32le uint64le
+        uint16be uint32be uint64be))
+
+(define integer-descriptors
+  (append signed-integer-descriptors unsigned-integer-descriptors))
+
+(define integer-descriptor-signed->unsigned-mapping
+  (map cons signed-integer-descriptors unsigned-integer-descriptors))
+
 (define (validate-integer-descriptor descriptor)
-  (when (not (memq descriptor (list int8 int16 int32 int64
-                                    uint8 uint16 uint32 uint64
-                                    int16le int32le int64le
-                                    uint16le uint32le uint64le
-                                    int16be int32be int64be
-                                    uint16be uint32be uint64be)))
+  (when (not (memq descriptor integer-descriptors))
     (error "Invalid descriptor for bitfield." descriptor)))
 
 (define (integer-descriptor-signed? descriptor)
-  (memq descriptor (list int8 int16 int32 int64
-                         int16le int32le int64le
-                         int16be int32be int64be)))
+  (memq descriptor signed-integer-descriptors))
 
-(define (bitfield-descriptor size position integer-descriptor)
+(define (integer-descriptor-signed->unsigned descriptor)
+  (cdr (assq descriptor integer-descriptor-signed->unsigned-mapping)))
+
+(define (unsigned-integer-descriptor integer-descriptor)
+  (if (integer-descriptor-signed? integer-descriptor)
+      (integer-descriptor-signed->unsigned integer-descriptor)
+      integer-descriptor))
+
+(define (bitfield-descriptor integer-descriptor bit-offset width)
   (validate-integer-descriptor integer-descriptor)
-  (let ((alignment (bytestructure-descriptor-alignment integer-descriptor))
-        (num-getter (bytestructure-descriptor-getter integer-descriptor))
-        (num-setter (bytestructure-descriptor-setter integer-descriptor))
-        (signed? (integer-descriptor-signed? integer-descriptor)))
-    (define bit-size (* 8 size))
-    (define bit-offset (offsetof position alignment))
-    (define start bit-offset)
-    (define end (+ start size))
-    (define (getter syntax? bytevector offset)
-      (let ((num (num-getter syntax? bytevector offset)))
-        (if syntax?
-            (quasisyntax
-             (bit-field/signed (unsyntax num) (unsyntax size)
-                               (unsyntax start) (unsyntax end)
-                               (unsyntax signed?)))
-            (bit-field/signed num size start end signed?))))
-    (define (setter syntax? bytevector offset value)
-      (let* ((oldnum (num-getter syntax? bytevector offset))
-             (newnum (if syntax?
-                         (quasisyntax
-                          (copy-bit-field (unsyntax oldnum) (unsyntax value)
-                                          (unsyntax start) (unsyntax end)))
-                         (copy-bit-field oldnum value start end))))
-        (num-setter syntax? bytevector offset newnum)))
-    (make-bytestructure-descriptor size alignment #f getter setter)))
+  (let ((integer-descriptor (unsigned-integer-descriptor integer-descriptor)))
+    (let ((num-getter (bytestructure-descriptor-getter integer-descriptor))
+          (num-setter (bytestructure-descriptor-setter integer-descriptor))
+          (signed? (integer-descriptor-signed? integer-descriptor)))
+      (define start bit-offset)
+      (define end (+ start width))
+      (define (getter syntax? bytevector offset)
+        (let ((num (num-getter syntax? bytevector offset)))
+          (if syntax?
+              (quasisyntax
+               (bit-field/signed (unsyntax num) (unsyntax width)
+                                 (unsyntax start) (unsyntax end)
+                                 (unsyntax signed?)))
+              (bit-field/signed num width start end signed?))))
+      (define (setter syntax? bytevector offset value)
+        (let* ((oldnum (num-getter syntax? bytevector offset))
+               (newnum (if syntax?
+                           (quasisyntax
+                            (copy-bit-field (unsyntax oldnum) (unsyntax value)
+                                            (unsyntax start) (unsyntax end)))
+                           (copy-bit-field oldnum value start end))))
+          (num-setter syntax? bytevector offset newnum)))
+      (make-bytestructure-descriptor #f #f #f getter setter))))
 
 ;;; bitfields.scm ends here
