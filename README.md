@@ -5,8 +5,8 @@ This library offers a system imitating the type system of the C
 programming language, to be used on bytevectors.  C's type system
 works on raw memory, and ours works on bytevectors which are an
 abstraction over raw memory in Scheme.  The system is in fact more
-powerful than the C type system, sporting a great deal of dynamicity
-and flexibility.
+powerful than the C type system, elevating types to first-class
+status.
 
 A C type corresponds to a "bytestructure descriptor" object in our
 system.
@@ -40,11 +40,13 @@ your purposes.
     (define-bytestructure-accessors my-struct
       my-struct-ref-helper my-struct-ref my-struct-set!)
 
+    (define foo (make-bytevector ...))
+
     ;; foo.y[2]
-    (my-struct-ref bytevector y 2)
+    (my-struct-ref foo y 2)
 
     ;; foo.y[2] = 42;
-    (my-struct-set! bytevector y 2 42)
+    (my-struct-set! foo y 2 42)
 
 (Note that we don't use the bytestructure data type anymore; we work
 directly on bytevectors.  The struct fields are also implicitly quoted
