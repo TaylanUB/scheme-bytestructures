@@ -11,7 +11,8 @@
 
 (export run-bitfield-tests)
 
-(use-modules (srfi srfi-9)
+(use-modules (srfi srfi-1)
+             (srfi srfi-9)
              (ice-9 rdelim)
              (bytestructures r6 bytevectors)
              (bytestructures guile))
@@ -36,17 +37,24 @@
   (test-structs (generate-structs count)))
 
 (define (generate-structs n)
-  (map random-struct (iota n)))
+  (remove-bad-structs (map random-struct (iota n))))
+
+(define (remove-bad-structs structs)
+  (filter (lambda (struct)
+            (find (lambda (field)
+                    (not (zero? (field-bit-size field))))
+                  (struct-fields struct)))
+          structs))
 
 (define (random-struct i)
-  (let ((field-count (+ 1 (random 20))))
+  (let ((field-count (+ 1 (random 50))))
     (make-struct (format #f "s~a" i)
                  (map random-field (iota field-count)))))
 
 (define (random-field i)
   (let* ((name (format #f "f~a" i))
          (int-size (* 8 (expt 2 (random 4))))
-         (bit-size (+ 1 (random int-size)))
+         (bit-size (random (+ 1 int-size)))
          (signed? (= 0 (random 2)))
          (value (random (expt 2 bit-size)))
          (value (if (and signed? (> value (+ -1 (expt 2 (- bit-size 1)))))
@@ -98,14 +106,17 @@
     (format #f "~aint~a_t ~a:~a; "
             (if signed? "" "u")
             int-size
-            name
+            (if (zero? bit-size) "" name)
             bit-size)))
 
 (define (c-assignment-for-field field)
   (let ((name (field-name field))
+        (bit-size (field-bit-size field))
         (signed? (field-signed? field))
         (value (field-value field)))
-    (format #f "foo.~a = ~a~a;\n" name value (if signed? "" "u"))))
+    (if (zero? bit-size)
+        ""
+        (format #f "foo.~a = ~a~a;\n" name value (if signed? "" "u")))))
 
 (define (get-c-output code)
   (let* ((port (mkstemp! (string-copy "/tmp/bitfield-XXXXXX")))
@@ -135,7 +146,7 @@
   (let* ((name (struct-name struct))
          (fields (struct-fields struct))
          (descriptor (struct->descriptor struct))
-         (values (map field-value fields))
+         (values (map field-value (filter-nonzero-fields fields)))
          (bs (bytestructure descriptor (list->vector values))))
     (string-concatenate
      (append
@@ -163,6 +174,11 @@
                                (if signed? "" "u")
                                int-size)))
           bit-size)))
+
+(define (filter-nonzero-fields fields)
+  (filter (lambda (field)
+            (not (zero? (field-bit-size field))))
+          fields))
 
 (define (get-scm-output code)
   (code))
