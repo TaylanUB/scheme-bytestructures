@@ -1,19 +1,20 @@
-;;; Couldn't get this to work from a script; run it from the REPL.
+;;; Use this in the REPL.  It produces wrong results when ran as a script.
 
-(let ((genhtml-path
-       (string-concatenate
-        (list (getenv "HOME") "/src/lcov-1.10/bin/genhtml")))
-      (output-directory
-       (string-concatenate
-        (list (getenv "HOME") "/srv/http/htdocs/lcov/scheme-bytestructures"))))
-  (call-with-values
-      (lambda () ((@ (system vm coverage) with-code-coverage)
-             ((@ (system vm vm) the-vm))
-             (@@ (bytestructures guile test) main)))
-    (lambda (data . values)
-      (let* ((file (tmpnam))
-             (port (open-file file "w")))
-        ((@ (system vm coverage) coverage-data->lcov) data port)
-        (system* genhtml-path file "-o" output-directory)
-        (close port)
-        (delete-file file)))))
+(use-modules (system vm coverage)
+             (system vm vm)
+             (srfi srfi-11))
+
+(let ((output-directory
+       (string-append
+        (getenv "HOME") "/srv/http/htdocs/lcov/scheme-bytestructures")))
+  (let-values (((data . values)
+                (with-code-coverage (the-vm)
+                  (lambda ()
+                    (load "run-tests.guile.scm")))))
+    (let* ((port (mkstemp! (string-copy "/tmp/bytestructures-coverage-XXXXXX")))
+           (file (port-filename port)))
+      (coverage-data->lcov data port)
+      (close port)
+      (when (not (zero? (system* "genhtml" file "-o" output-directory)))
+        (error  "genhtml failed"))
+      (delete-file file))))
