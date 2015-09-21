@@ -75,7 +75,7 @@
                       ...)
   (begin
     (define <name>
-      (if (equal? <endianness> native-endianness)
+      (if (equal? <endianness> (native-endianness))
           <native-name>
           (make-numeric-descriptor <size> <getter> <setter>)))
     ...
