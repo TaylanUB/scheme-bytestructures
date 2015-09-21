@@ -49,6 +49,11 @@
         (size #t bytevector offset)
         size)))
 
+(define bytestructure-descriptor-alignment bd-alignment)
+(define bytestructure-descriptor-ref-helper bd-ref-helper)
+(define bytestructure-descriptor-getter bd-getter)
+(define bytestructure-descriptor-setter bd-setter)
+
 
 ;;; Bytestructures
 
@@ -139,31 +144,15 @@
             (error "Cannot write value with this bytestructure descriptor."
                    value descriptor)))))
 
+(define-syntax-case-stubs
+  bytestructure-ref-helper/syntax
+  bytestructure-ref/syntax
+  bytestructure-set!/syntax
+  define-bytestructure-accessors)
+
 (cond-expand
- (guile
-
-  (include-from-path "bytestructures/body/base.syntactic.scm")
-
-  )
- ((or syntax-case)               ;redundant 'or' for proper indentation by Emacs
-
-  (include "base.syntactic.scm")
-
-  )
- (else
-
-  (define-syntax-rule (define-syntax-case-stubs <name> ...)
-    (begin
-      (define-syntax-rule (<name> . rest)
-        (syntax-error "Not implemented.  You need syntax-case."))
-      ...))
-
-  (define-syntax-case-stubs
-    bytestructure-ref-helper/syntax
-    bytestructure-ref/syntax
-    bytestructure-set!/syntax
-    define-bytestructure-accessors)
-
-  ))
+ (guile       (include-from-path "bytestructures/body/base.syntactic.scm"))
+ (syntax-case (include "base.syntactic.scm"))
+ (else))
 
 ;;; base.scm ends here

@@ -5,10 +5,6 @@
  (bytestructures r6 bytevectors)
  (bytestructures guile utils))
 (include-from-path "bytestructures/body/base.scm")
-(define bytestructure-descriptor-alignment bd-alignment)
-(define bytestructure-descriptor-ref-helper bd-ref-helper)
-(define bytestructure-descriptor-getter bd-getter)
-(define bytestructure-descriptor-setter bd-setter)
 (export
  make-bytestructure-descriptor
  bytestructure-descriptor?

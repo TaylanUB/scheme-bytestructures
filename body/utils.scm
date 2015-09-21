@@ -30,11 +30,27 @@
          ((_ . <args>)
           <expr>))))))
 
-(define-syntax-rule (if-syntax-case <then> <else>)
-  (cond-expand
-   ((or guile syntax-case)
-    <then>)
-   (else
+(cond-expand
+ ((or guile syntax-case)
+  (define-syntax-rule (if-syntax-case <then> <else>)
+    <then>))
+ (else
+  (define-syntax-rule (if-syntax-case <then> <else>)
     <else>)))
+
+(define-syntax-rule (define-syntax-case-stubs <name> ...)
+  (if-syntax-case
+   (begin)
+   (begin
+     (define (<name> . rest)
+       (error "Not supported.  You need syntax-case."))
+     ...)))
+
+(define-syntax-case-stubs
+  quasisyntax
+  unsyntax
+  unsyntax-splicing
+  syntax->datum
+  datum->syntax)
 
 ;;; utils.scm ends here
