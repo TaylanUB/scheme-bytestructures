@@ -50,7 +50,7 @@
            ;; It's also nonsensical for floating-point, but doesn't hurt; we
            ;; don't try to test their limits.
            (let ((max (if signed?
-                          (- (- (expt 256 size) 1) (expt 256 size))
+                          (- (expt 256 (- size 1)))
                           (- (expt 256 size) 1))))
              (test-group (symbol->string descriptor-id)
                (test-group "procedural"
