@@ -46,14 +46,12 @@
        ...))))
 
 (define-numeric-types
-  (uint8 1 bytevector-u8-ref bytevector-u8-set!))
-
-(define-numeric-types
   (float32
    4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
   (double64
    8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
   (int8   1 bytevector-s8-ref bytevector-s8-set!)
+  (uint8  1 bytevector-u8-ref bytevector-u8-set!)
   (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
   (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
   (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
