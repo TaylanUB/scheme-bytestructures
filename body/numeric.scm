@@ -24,103 +24,120 @@
 
 ;;; Code:
 
-(define-syntax define-numeric-types
-  (syntax-rules ()
-    ((_ (name size getter setter) ...)
-     (begin
-       (define name
-         (make-bytestructure-descriptor
-          size size
-          #f
-          (lambda (syntax? bytevector offset)
-            (if syntax?
-                (quasisyntax
-                 (getter (unsyntax bytevector) (unsyntax offset)))
-                (getter bytevector offset)))
-          (lambda (syntax? bytevector offset value)
-            (if syntax?
-                (quasisyntax
-                 (setter (unsyntax bytevector) (unsyntax offset)
-                         (unsyntax value)))
-                (setter bytevector offset value)))))
-       ...))))
+(define-syntax-rule (make-numeric-descriptor <size> <getter> <setter>)
+  (let ()
+    (define size <size>)
+    (define alignment <size>)
+    (define (getter syntax? bytevector offset)
+      (if syntax?
+          (quasisyntax
+           (<getter> (unsyntax bytevector) (unsyntax offset)))
+          (<getter> bytevector offset)))
+    (define (setter syntax? bytevector offset value)
+      (if syntax?
+          (quasisyntax
+           (<setter> (unsyntax bytevector) (unsyntax offset) (unsyntax value)))
+          (<setter> bytevector offset value)))
+    (make-bytestructure-descriptor size alignment #f getter setter)))
 
-(define-numeric-types
+(define-syntax-rule (define-numeric-descriptors <list>
+                      (<name> <size> <getter> <setter>)
+                      ...)
+  (begin
+    (define <name>
+      (make-numeric-descriptor <size> <getter> <setter>))
+    ...
+    (define <list> (list (list <name> '<name> <getter> <setter>) ...))))
+
+(define-numeric-descriptors
+  signed-integer-native-descriptors
+  (int8   1 bytevector-s8-ref bytevector-s8-set!)
+  (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
+  (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
+  (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!))
+
+(define-numeric-descriptors
+  unsigned-integer-native-descriptors
+  (uint8  1 bytevector-u8-ref bytevector-u8-set!)
+  (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
+  (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
+  (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
+
+(define-numeric-descriptors
+  float-native-descriptors
   (float32
    4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
   (double64
-   8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!)
-  (int8   1 bytevector-s8-ref bytevector-s8-set!)
-  (uint8  1 bytevector-u8-ref bytevector-u8-set!)
-  (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
-  (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
-  (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
-  (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
-  (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!)
-  (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
+   8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!))
 
-(define-syntax define-with-endianness
-  (syntax-rules ()
-    ((_ (name native-name size getter setter endianness) ...)
-     (begin
-       (define name
-         (if (equal? endianness native-endianness)
-             native-name
-             (make-bytestructure-descriptor
-              size size
-              #f
-              (lambda (syntax? bytevector offset)
-                (if syntax?
-                    (quasisyntax
-                     (getter (unsyntax bytevector) (unsyntax offset)))
-                    (getter bytevector offset)))
-              (lambda (syntax? bytevector offset value)
-                (if syntax?
-                    (quasisyntax
-                     (setter (unsyntax bytevector) (unsyntax offset)
-                             (unsyntax value)))
-                    (setter bytevector offset value))))))
-       ...))))
+(define-syntax-rule (define-with-endianness <list> <endianness>
+                      (<name> <size> <native-name> <getter> <setter>)
+                      ...)
+  (begin
+    (define <name>
+      (if (equal? <endianness> native-endianness)
+          <native-name>
+          (make-numeric-descriptor <size> <getter> <setter>)))
+    ...
+    (define <list> (list (list <name> '<name> <getter> <setter>) ...))))
 
-(define-syntax define-with-endianness*
-  (syntax-rules ()
-    ((_ (native-name size
-                     le-name le-getter le-setter
-                     be-name be-getter be-setter) ...)
-     (begin
-       (define-with-endianness
-         (le-name native-name size
-                  le-getter le-setter (endianness little))
-         (be-name native-name size
-                  be-getter be-setter (endianness big)))
-       ...))))
+(define-with-endianness
+  signed-integer-le-descriptors (endianness little)
+  (int16le 2 int16 bytevector-s16le-ref bytevector-s16le-set!)
+  (int32le 4 int32 bytevector-s32le-ref bytevector-s32le-set!)
+  (int64le 8 int64 bytevector-s64le-ref bytevector-s64le-set!))
 
-(define-with-endianness*
-  (float32
-   4
-   float32le bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!
-   float32be bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
-  (double64
-   8
-   double64le bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!
-   double64be bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!)
-  (int16 2
-         int16le bytevector-s16le-ref bytevector-s16le-set!
-         int16be bytevector-s16be-ref bytevector-s16be-set!)
-  (uint16 2
-          uint16le bytevector-u16le-ref bytevector-u16le-set!
-          uint16be bytevector-u16be-ref bytevector-u16be-set!)
-  (int32 4
-         int32le bytevector-s32le-ref bytevector-s32le-set!
-         int32be bytevector-s32be-ref bytevector-s32be-set!)
-  (uint32 4
-          uint32le bytevector-u32le-ref bytevector-u32le-set!
-          uint32be bytevector-u32be-ref bytevector-u32be-set!)
-  (int64 8
-         int64le bytevector-s64le-ref bytevector-s64le-set!
-         int64be bytevector-s64be-ref bytevector-s64be-set!)
-  (uint64 8
-          uint64le bytevector-u64le-ref bytevector-u64le-set!
-          uint64be bytevector-u64be-ref bytevector-u64be-set!))
+(define-with-endianness
+  signed-integer-be-descriptors (endianness big)
+  (int16be 2 int16 bytevector-s16be-ref bytevector-s16be-set!)
+  (int32be 4 int32 bytevector-s32be-ref bytevector-s32be-set!)
+  (int64be 8 int64 bytevector-s64be-ref bytevector-s64be-set!))
+
+(define-with-endianness
+  unsigned-integer-le-descriptors (endianness little)
+  (uint16le 2 uint16 bytevector-u16le-ref bytevector-u16le-set!)
+  (uint32le 4 uint32 bytevector-u32le-ref bytevector-u32le-set!)
+  (uint64le 8 uint64 bytevector-u64le-ref bytevector-u64le-set!))
+
+(define-with-endianness
+  unsigned-integer-be-descriptors (endianness big)
+  (uint16be 2 uint16 bytevector-u16be-ref bytevector-u16be-set!)
+  (uint32be 4 uint32 bytevector-u32be-ref bytevector-u32be-set!)
+  (uint64be 8 uint64 bytevector-u64be-ref bytevector-u64be-set!))
+
+(define-with-endianness
+  float-le-descriptors (endianness little)
+  (float32le
+   4 float32 bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!)
+  (double64le
+   8 double64 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
+
+(define-with-endianness
+  float-be-descriptors (endianness big)
+  (float32be
+   4 float32 bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
+  (double64be
+   8 double64 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
+
+(define signed-integer-descriptors
+  (append signed-integer-native-descriptors
+          signed-integer-le-descriptors
+          signed-integer-be-descriptors))
+
+(define unsigned-integer-descriptors
+  (append unsigned-integer-native-descriptors
+          unsigned-integer-le-descriptors
+          unsigned-integer-be-descriptors))
+
+(define integer-descriptors
+  (append signed-integer-descriptors unsigned-integer-descriptors))
+
+(define float-descriptors
+  (append float-native-descriptors
+          float-le-descriptors
+          float-be-descriptors))
+
+(define numeric-descriptors
+  (append integer-descriptors float-descriptors))
 
 ;;; numeric.scm ends here

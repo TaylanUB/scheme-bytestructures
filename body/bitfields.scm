@@ -37,29 +37,17 @@
                  (- unsigned-value (expt 2 <width>))
                  unsigned-value)))))))
 
-;;; Only a macro for efficience reasons.
-(define signed-integer-descriptors
-  (list int8 int16 int32 int64
-        int16le int32le int64le
-        int16be int32be int64be))
-
-(define unsigned-integer-descriptors
-  (list uint8 uint16 uint32 uint64
-        uint16le uint32le uint64le
-        uint16be uint32be uint64be))
-
-(define integer-descriptors
-  (append signed-integer-descriptors unsigned-integer-descriptors))
-
-(define integer-descriptor-signed->unsigned-mapping
-  (map cons signed-integer-descriptors unsigned-integer-descriptors))
-
 (define (validate-integer-descriptor descriptor)
   (when (not (memq descriptor integer-descriptors))
     (error "Invalid descriptor for bitfield." descriptor)))
 
 (define (integer-descriptor-signed? descriptor)
-  (memq descriptor signed-integer-descriptors))
+  (assq descriptor signed-integer-descriptors))
+
+(define integer-descriptor-signed->unsigned-mapping
+  (map cons
+       (map car signed-integer-descriptors)
+       (map car unsigned-integer-descriptors)))
 
 (define (integer-descriptor-signed->unsigned descriptor)
   (cdr (assq descriptor integer-descriptor-signed->unsigned-mapping)))

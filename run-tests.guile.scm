@@ -7,7 +7,7 @@
  ((system foreign) #:prefix ffi:)
  (bytestructures bytevectors)
  (bytestructures guile)
- (bytestructures guile utils)
- (bytestructures guile explicit-endianness))
+ (bytestructures guile numeric-metadata)
+ (bytestructures guile utils))
 
 (include-from-path "bytestructures/run-tests.body.scm")

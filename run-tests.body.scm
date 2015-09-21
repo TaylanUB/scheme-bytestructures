@@ -23,7 +23,7 @@
 ;;; Code:
 
 (define-syntax-rule (test-= name expected expr)
-  (test-assert name (= expected expr)))
+  (test-approximate name expected expr 0))
 
 (define (maybe-skip-syntax)
   (test-skip (if-syntax-case 0 1)))
@@ -31,223 +31,208 @@
 (test-begin "bytestructures")
 
 (test-group "numeric"
-  (for-each
-   (lambda)
-   integer-descriptors)
-  (define-syntax test-numeric-descriptors
-    (syntax-rules ()
-      ((_ (<descriptor-id> <signed?> <size> <getter> <setter>) ...)
-       (begin
-         (let ((descriptor-id '<descriptor-id>)
-               (descriptor <descriptor-id>)
-               (signed? <signed?>)
-               (size <size>)
-               (getter <getter>)
-               (setter <setter>))
-           ;; Not necessarily a "maximal" value; it's minimal for signed types.
-           ;; It's also nonsensical for floating-point, but doesn't hurt; we
-           ;; don't try to test their limits.
-           (let ((max (if signed?
-                          (- (expt 256 (- size 1)))
-                          (- (expt 256 size) 1))))
-             (test-group (symbol->string descriptor-id)
-               (test-group "procedural"
-                 (define bs (bytestructure descriptor))
-                 (test-eqv "size" size (bytevector-length
-                                        (bytestructure-bytevector bs)))
-                 (test-= "ref" 2
-                         (begin
-                           (setter (bytestructure-bytevector bs) 0 2)
-                           (bytestructure-ref bs)))
-                 (test-= "set" 1
-                         (begin
-                           (bytestructure-set! bs 1)
-                           (getter (bytestructure-bytevector bs) 0)))
-                 (test-= "max" max
-                         (begin
-                           (bytestructure-set! bs max)
-                           (bytestructure-ref bs))))
-               (maybe-skip-syntax)
-               (test-group "syntactic"
-                 ;; Must insert the top-level reference <descriptor-id> here.
-                 (define-bytestructure-accessors <descriptor-id>
-                   bs-ref-helper bs-getter bs-setter)
-                 (define bv (make-bytevector size))
-                 (test-= "ref" 2
-                         (begin
-                           (setter bv 0 2)
-                           (bs-getter bv)))
-                 (test-= "set" 1
-                         (begin
-                           (bs-setter bv 1)
-                           (getter bv 0)))
-                 (test-= "max" max
-                         (begin
-                           (bs-setter bv max)
-                           (bs-getter bv)))))))
-         ...))))
-  (test-numeric-descriptors
-   (float32 #t 4
-            bytevector-ieee-single-native-ref
-            bytevector-ieee-single-native-set!)
-   (float32le #t 4
-              bytevector-ieee-single-le-ref
-              bytevector-ieee-single-le-set!)
-   (float32be #t 4
-              bytevector-ieee-single-be-ref
-              bytevector-ieee-single-be-set!)
-   (double64 #t 8
-             bytevector-ieee-double-native-ref
-             bytevector-ieee-double-native-set!)
-   (double64le #t 8
-               bytevector-ieee-double-le-ref
-               bytevector-ieee-double-le-set!)
-   (double64be #t 8
-               bytevector-ieee-double-be-ref
-               bytevector-ieee-double-be-set!)
-   (int8     #t 1 bytevector-s8-ref         bytevector-s8-set!)
-   (uint8    #f 1 bytevector-u8-ref         bytevector-u8-set!)
-   (int16    #t 2 bytevector-s16-native-ref bytevector-s16-native-set!)
-   (int16le  #t 2 bytevector-s16le-ref      bytevector-s16le-set!)
-   (int16be  #t 2 bytevector-s16be-ref      bytevector-s16be-set!)
-   (uint16   #f 2 bytevector-u16-native-ref bytevector-u16-native-set!)
-   (uint16le #f 2 bytevector-u16le-ref      bytevector-u16le-set!)
-   (uint16be #f 2 bytevector-u16be-ref      bytevector-u16be-set!)
-   (int32    #t 4 bytevector-s32-native-ref bytevector-s32-native-set!)
-   (int32le  #t 4 bytevector-s32le-ref      bytevector-s32le-set!)
-   (int32be  #t 4 bytevector-s32be-ref      bytevector-s32be-set!)
-   (uint32   #f 4 bytevector-u32-native-ref bytevector-u32-native-set!)
-   (uint32le #f 4 bytevector-u32le-ref      bytevector-u32le-set!)
-   (uint32be #f 4 bytevector-u32be-ref      bytevector-u32be-set!)
-   (int64    #t 8 bytevector-s64-native-ref bytevector-s64-native-set!)
-   (int64le  #t 8 bytevector-s64le-ref      bytevector-s64le-set!)
-   (int64be  #t 8 bytevector-s64be-ref      bytevector-s64be-set!)
-   (uint64   #f 8 bytevector-u64-native-ref bytevector-u64-native-set!)
-   (uint64le #f 8 bytevector-u64le-ref      bytevector-u64le-set!)
-   (uint64be #f 8 bytevector-u64be-ref      bytevector-u64be-set!)))
-
-(test-group "vector"
-  (test-assert "create" (bs:vector 3 uint16))
+  (define (destructure-numeric-descriptor-entry descriptor-entry proc)
+    (define descriptor (list-ref descriptor-entry 0))
+    (define name (list-ref descriptor-entry 1))
+    (define getter (list-ref descriptor-entry 2))
+    (define setter (list-ref descriptor-entry 3))
+    (define size (bytestructure-descriptor-size descriptor))
+    (define float? (assq descriptor float-descriptors))
+    (define signed? (or float? (assq descriptor signed-integer-descriptors)))
+    (proc descriptor name getter setter size float? signed?))
+  (define (get-min/max float? signed? size)
+    (cond
+     (float?  (expt 2 (- size 9)))
+     (signed? (- (expt 256 (- size 1))))
+     (else    (- (expt 256 size) 1))))
   (test-group "procedural"
-    (define bs (bytestructure (bs:vector 3 uint16) #(321 123 321)))
-    (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
-    (test-eqv "ref" 321 (bytestructure-ref bs 1))
-    (test-eqv "set" 456 (begin (bytestructure-set! bs 1 456)
-                               (bytestructure-ref bs 1))))
+    (for-each
+     (lambda (descriptor-entry)
+       (destructure-numeric-descriptor-entry
+        descriptor-entry
+        (lambda (descriptor name getter setter size float? signed?)
+          (define min/max (get-min/max float? signed? size))
+          (test-group (symbol->string name)
+            (define bs (bytestructure descriptor))
+            (test-eqv "size" size (bytevector-length
+                                   (bytestructure-bytevector bs)))
+            (test-= "ref" 2
+                    (begin
+                      (setter (bytestructure-bytevector bs) 0 2)
+                      (bytestructure-ref bs)))
+            (test-= "set" 1
+                    (begin
+                      (bytestructure-set! bs 1)
+                      (getter (bytestructure-bytevector bs) 0)))
+            (test-= "min/max" min/max
+                    (begin
+                      (bytestructure-set! bs min/max)
+                      (bytestructure-ref bs)))))))
+     numeric-descriptors))
   (maybe-skip-syntax)
   (test-group "syntactic"
-    (define-bytestructure-accessors (bs:vector 3 uint16)
-      ref-helper getter setter)
-    (define bv (make-bytevector 6))
-    (bytevector-u16-native-set! bv 2 321)
-    (test-eqv "ref" 321 (getter bv 1))
-    (test-eqv "set" 456 (begin (setter bv 1 456)
-                               (getter bv 1)))))
+    ;; We need to use such a macro because 'define-bytestructure-accessors' only
+    ;; works when we pass it an identifier that's bound at the top-level.  On
+    ;; the other hand we want to keep its size minimal, because it inflates
+    ;; compilation time.  Therefore the procedural tests are separated.
+    (define-syntax test-numeric-descriptors/syntactic
+      (syntax-rules ()
+        ((_ <descriptor-id> ...)
+         (begin
+           (test-group (symbol->string '<descriptor-id>)
+             (destructure-numeric-descriptor-entry
+              (assq <descriptor-id> numeric-descriptors)
+              (lambda (descriptor name getter setter size float? signed?)
+                (define min/max (get-min/max float? signed? size))
+                ;; Must insert the top-level reference <descriptor-id> here.
+                (define-bytestructure-accessors <descriptor-id>
+                  bs-ref-helper bs-getter bs-setter)
+                (define bv (make-bytevector size))
+                (test-= "ref" 2
+                        (begin
+                          (setter bv 0 2)
+                          (bs-getter bv)))
+                (test-= "set" 1
+                        (begin
+                          (bs-setter bv 1)
+                          (getter bv 0)))
+                (test-= "min/max" min/max
+                        (begin
+                          (bs-setter bv min/max)
+                          (bs-getter bv))))))
+           ...))))
+    (test-numeric-descriptors/syntactic
+     float32 float32le float32be
+     double64 double64le double64be
+     int8 int16 int32 int64
+     int16le int32le int64le
+     int16be int32be int64be
+     uint8 uint16 uint32 uint64
+     uint16le uint32le uint64le
+     uint16be uint32be uint64be)))
 
-(test-group "struct"
-  (test-group "aligned"
-    (test-assert "create" (bs:struct `((x ,uint8) (y ,uint16))))
+  (test-group "vector"
+    (test-assert "create" (bs:vector 3 uint16))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct `((x ,uint8) (y ,uint16)))
-                                #(123 321)))
+      (define bs (bytestructure (bs:vector 3 uint16) #(321 123 321)))
       (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
+      (test-eqv "ref" 321 (bytestructure-ref bs 1))
+      (test-eqv "set" 456 (begin (bytestructure-set! bs 1 456)
+                                 (bytestructure-ref bs 1))))
+    (maybe-skip-syntax)
+    (test-group "syntactic"
+      (define-bytestructure-accessors (bs:vector 3 uint16)
+        ref-helper getter setter)
+      (define bv (make-bytevector 6))
+      (bytevector-u16-native-set! bv 2 321)
+      (test-eqv "ref" 321 (getter bv 1))
+      (test-eqv "set" 456 (begin (setter bv 1 456)
+                                 (getter bv 1)))))
+
+  (test-group "struct"
+    (test-group "aligned"
+      (test-assert "create" (bs:struct `((x ,uint8) (y ,uint16))))
+      (test-group "procedural"
+        (define bs (bytestructure (bs:struct `((x ,uint8) (y ,uint16)))
+                                  #(123 321)))
+        (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
+        (test-eqv "ref" 321 (bytestructure-ref bs 'y))
+        (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
+                                   (bytestructure-ref bs 'y))))
+      (maybe-skip-syntax)
+      (test-group "syntactic"
+        (define-bytestructure-accessors (bs:struct `((x ,uint8) (y ,uint16)))
+          ref-helper getter setter)
+        (define bv (make-bytevector 4))
+        (bytevector-u16-native-set! bv 2 321)
+        (test-eqv "ref" 321 (getter bv y))
+        (test-eqv "set" 456 (begin (setter bv y 456)
+                                   (getter bv y)))))
+    (test-group "packed"
+      (test-assert "create" (bs:struct #t `((x ,uint8) (y ,uint16))))
+      (test-group "procedural"
+        (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))
+                                  #(123 321)))
+        (bytevector-u16-native-set! (bytestructure-bytevector bs) 1 321)
+        (test-eqv "ref" 321 (bytestructure-ref bs 'y))
+        (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
+                                   (bytestructure-ref bs 'y))))
+      (maybe-skip-syntax)
+      (test-group "syntactic"
+        (define-bytestructure-accessors (bs:struct #t `((x ,uint8) (y ,uint16)))
+          ref-helper getter setter)
+        (define bv (make-bytevector 4))
+        (bytevector-u16-native-set! bv 1 321)
+        (test-eqv "ref" 321 (getter bv y))
+        (test-eqv "set" 456 (begin (setter bv y 456)
+                                   (getter bv y))))))
+
+  (test-group "union"
+    (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
+    (test-group "procedural"
+      (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))
+                                '(y 321)))
+      (bytevector-u16-native-set! (bytestructure-bytevector bs) 0 321)
       (test-eqv "ref" 321 (bytestructure-ref bs 'y))
       (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
                                  (bytestructure-ref bs 'y))))
     (maybe-skip-syntax)
     (test-group "syntactic"
-      (define-bytestructure-accessors (bs:struct `((x ,uint8) (y ,uint16)))
+      (define-bytestructure-accessors (bs:union `((x ,uint8) (y ,uint16)))
         ref-helper getter setter)
-      (define bv (make-bytevector 4))
-      (bytevector-u16-native-set! bv 2 321)
+      (define bv (make-bytevector 2))
+      (bytevector-u16-native-set! bv 0 321)
       (test-eqv "ref" 321 (getter bv y))
       (test-eqv "set" 456 (begin (setter bv y 456)
                                  (getter bv y)))))
-  (test-group "packed"
-    (test-assert "create" (bs:struct #t `((x ,uint8) (y ,uint16))))
+
+  (test-skip (cond-expand (guile 0) (else 1)))
+  (test-group "pointer"
+    (define (protect-from-gc-upto-here obj)
+      (with-output-to-file *null-device*
+        (lambda ()
+          (display (eq? #f obj)))))
+    (define pointer-size (ffi:sizeof '*))
+    (define bytevector-address-set!
+      (case pointer-size
+        ((1) bytevector-u8-set!)
+        ((2) bytevector-u16-native-set!)
+        ((4) bytevector-u32-native-set!)
+        ((8) bytevector-u64-native-set!)))
+    (test-assert "create" (bs:pointer uint16))
     (test-group "procedural"
-      (define bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))
-                                #(123 321)))
-      (bytevector-u16-native-set! (bytestructure-bytevector bs) 1 321)
-      (test-eqv "ref" 321 (bytestructure-ref bs 'y))
-      (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
-                                 (bytestructure-ref bs 'y))))
-    (maybe-skip-syntax)
+      (define bs (bytestructure (bs:pointer uint16)))
+      (define bv1 (make-bytevector 2))
+      (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
+      (bytevector-address-set! (bytestructure-bytevector bs) 0 address)
+      (bytevector-u16-native-set! bv1 0 321)
+      (test-eqv "ref" 321 (bytestructure-ref bs '*))
+      (test-eqv "set" 456 (begin (bytestructure-set! bs '* 456)
+                                 (bytestructure-ref bs '*)))
+      (test-eqv "ref2" address (bytestructure-ref bs))
+      (protect-from-gc-upto-here bv1)
+      (let* ((bv2 (make-bytevector 2 123))
+             (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
+        (test-eqv "set2" address (begin (bytestructure-set! bs address)
+                                        (bytestructure-ref bs)))
+        (protect-from-gc-upto-here bv2)))
     (test-group "syntactic"
-      (define-bytestructure-accessors (bs:struct #t `((x ,uint8) (y ,uint16)))
+      (define-bytestructure-accessors (bs:pointer uint16)
         ref-helper getter setter)
-      (define bv (make-bytevector 4))
-      (bytevector-u16-native-set! bv 1 321)
-      (test-eqv "ref" 321 (getter bv y))
-      (test-eqv "set" 456 (begin (setter bv y 456)
-                                 (getter bv y))))))
+      (define bv (make-bytevector pointer-size))
+      (define bv1 (make-bytevector 2))
+      (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
+      (bytevector-address-set! bv 0 address)
+      (bytevector-u16-native-set! bv1 0 321)
+      (test-eqv "ref" 321 (getter bv *))
+      (test-eqv "set" 456 (begin (setter bv * 456)
+                                 (getter bv *)))
+      (test-eqv "ref2" address (getter bv))
+      (protect-from-gc-upto-here bv1)
+      (let* ((bv2 (make-bytevector 2 123))
+             (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
+        (test-eqv "set2" address (begin (setter bv address)
+                                        (getter bv)))
+        (protect-from-gc-upto-here bv2))))
 
-(test-group "union"
-  (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
-  (test-group "procedural"
-    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))
-                              '(y 321)))
-    (bytevector-u16-native-set! (bytestructure-bytevector bs) 0 321)
-    (test-eqv "ref" 321 (bytestructure-ref bs 'y))
-    (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
-                               (bytestructure-ref bs 'y))))
-  (maybe-skip-syntax)
-  (test-group "syntactic"
-    (define-bytestructure-accessors (bs:union `((x ,uint8) (y ,uint16)))
-      ref-helper getter setter)
-    (define bv (make-bytevector 2))
-    (bytevector-u16-native-set! bv 0 321)
-    (test-eqv "ref" 321 (getter bv y))
-    (test-eqv "set" 456 (begin (setter bv y 456)
-                               (getter bv y)))))
-
-(test-skip (cond-expand (guile 0) (else 1)))
-(test-group "pointer"
-  (define (protect-from-gc-upto-here obj)
-    (with-output-to-file *null-device*
-      (lambda ()
-        (display (eq? #f obj)))))
-  (define pointer-size (ffi:sizeof '*))
-  (define bytevector-address-set!
-    (case pointer-size
-      ((1) bytevector-u8-set!)
-      ((2) bytevector-u16-native-set!)
-      ((4) bytevector-u32-native-set!)
-      ((8) bytevector-u64-native-set!)))
-  (test-assert "create" (bs:pointer uint16))
-  (test-group "procedural"
-    (define bs (bytestructure (bs:pointer uint16)))
-    (define bv1 (make-bytevector 2))
-    (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
-    (bytevector-address-set! (bytestructure-bytevector bs) 0 address)
-    (bytevector-u16-native-set! bv1 0 321)
-    (test-eqv "ref" 321 (bytestructure-ref bs '*))
-    (test-eqv "set" 456 (begin (bytestructure-set! bs '* 456)
-                               (bytestructure-ref bs '*)))
-    (test-eqv "ref2" address (bytestructure-ref bs))
-    (protect-from-gc-upto-here bv1)
-    (let* ((bv2 (make-bytevector 2 123))
-           (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
-      (test-eqv "set2" address (begin (bytestructure-set! bs address)
-                                      (bytestructure-ref bs)))
-      (protect-from-gc-upto-here bv2)))
-  (test-group "syntactic"
-    (define-bytestructure-accessors (bs:pointer uint16)
-      ref-helper getter setter)
-    (define bv (make-bytevector pointer-size))
-    (define bv1 (make-bytevector 2))
-    (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
-    (bytevector-address-set! bv 0 address)
-    (bytevector-u16-native-set! bv1 0 321)
-    (test-eqv "ref" 321 (getter bv *))
-    (test-eqv "set" 456 (begin (setter bv * 456)
-                               (getter bv *)))
-    (test-eqv "ref2" address (getter bv))
-    (protect-from-gc-upto-here bv1)
-    (let* ((bv2 (make-bytevector 2 123))
-           (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
-      (test-eqv "set2" address (begin (setter bv address)
-                                      (getter bv)))
-      (protect-from-gc-upto-here bv2))))
-
-(test-end "bytestructures")
+  (test-end "bytestructures")
