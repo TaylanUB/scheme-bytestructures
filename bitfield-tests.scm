@@ -3,16 +3,18 @@
 
 ;;; Warning: nasal demons.
 ;;;
-;;; Usage example: (test-structs (generate-structs 1000))
-;;;
 ;;; Will output differences between GCC's behavior and our behavior, but not in
 ;;; a very nice format.  Zero output is good.  The C code and Scheme procedure
 ;;; we generate are fairly straightforward so read the code to understand.
 
+(define-module (bytestructures bitfield-tests))
+
+(export run-bitfield-tests)
+
 (use-modules (srfi srfi-9)
              (ice-9 rdelim)
-             (bytestructures guile)
-             (bytestructures bytevectors))
+             (bytestructures r6 bytevectors)
+             (bytestructures guile))
 
 (define-record-type <struct>
   (make-struct name fields)
@@ -28,6 +30,10 @@
   (bit-size field-bit-size)
   (signed?  field-signed?)
   (value    field-value))
+
+(define (run-bitfield-tests count random-seed-string)
+  (set! *random-state* (seed->random-state random-seed-string))
+  (test-structs (generate-structs count)))
 
 (define (generate-structs n)
   (map random-struct (iota n)))
@@ -150,7 +156,8 @@
         (bit-size (field-bit-size field))
         (signed? (field-signed? field)))
     (list name
-          (module-ref (current-module)
+          (module-ref (resolve-module
+                       '(bytestructures bitfield-tests))
                       (string->symbol
                        (format #f "~aint~a"
                                (if signed? "" "u")
