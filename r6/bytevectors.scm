@@ -1,6 +1,6 @@
 ;;; Compatibility shim for R6RS systems, because R6RS and R7RS have different
 ;;; argument order for `bytevector-copy!'.
-(library (bytestructures bytevectors)
+(library (bytestructures r6 bytevectors)
   (export
    endianness native-endianness bytevector?
    make-bytevector bytevector-length bytevector=? bytevector-fill!
