@@ -1,6 +1,6 @@
 (define-module (bytestructures guile explicit-endianness))
 (import
- (bytestructures bytevectors)
+ (bytestructures r6 bytevectors)
  (bytestructures guile utils))
 (include-from-path "bytestructures/body/explicit-endianness.scm")
 (export

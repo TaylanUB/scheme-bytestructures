@@ -1,6 +1,6 @@
 (define-module (bytestructures guile numeric-all))
 (import
- (bytestructures bytevectors)
+ (bytestructures r6 bytevectors)
  (bytestructures guile utils)
  (bytestructures guile base)
  (bytestructures guile explicit-endianness))

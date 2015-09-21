@@ -26,7 +26,7 @@
 (define-module (bytestructures guile pointer))
 (import
  (srfi :9)
- (bytestructures bytevectors)
+ (bytestructures r6 bytevectors)
  (bytestructures guile utils)
  (bytestructures guile base)
  (prefix (system foreign) ffi:))

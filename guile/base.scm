@@ -2,7 +2,7 @@
 (import
  (srfi :9)
  (srfi :11)
- (bytestructures bytevectors)
+ (bytestructures r6 bytevectors)
  (bytestructures guile utils))
 (include-from-path "bytestructures/body/base.scm")
 (define bytestructure-descriptor-alignment bd-alignment)
