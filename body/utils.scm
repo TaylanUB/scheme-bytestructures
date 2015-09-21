@@ -24,11 +24,11 @@
 
 (define-syntax define-syntax-rule
   (syntax-rules ()
-    ((_ (<name> . <args>) . <body>)
+    ((_ (<name> . <args>) <expr>)
      (define-syntax <name>
        (syntax-rules ()
          ((_ . <args>)
-          (begin . <body>)))))))
+          <expr>))))))
 
 (define-syntax-rule (if-syntax-case <then> <else>)
   (cond-expand
@@ -36,24 +36,5 @@
     <then>)
    (else
     <else>)))
-
-(define-syntax-rule (define/sc (<name> . <args>) . <rest>)
-  (if-syntax-case
-   (define (<name> . <args>)
-     . <rest>)
-   (define (<name> . <args>)
-     (error "Not implemented.  You need syntax-case."))))
-
-(define-syntax-rule (define-syntax/sc <name> <expr>)
-  (if-syntax-case
-   (define-syntax <name> <expr>)
-   (define-syntax-rule (<name> . rest)
-     (syntax-error "Not implemented.  You need syntax-case."))))
-
-(define-syntax-rule (define-syntax-rule/sc <pattern> . <body>)
-  (if-syntax-case
-   (define-syntax-rule <pattern> . <body>)
-   (define-syntax-rule <pattern>
-     (syntax-error "Not implemented.  You need syntax-case."))))
 
 ;;; utils.scm ends here

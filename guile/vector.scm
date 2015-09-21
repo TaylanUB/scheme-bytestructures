@@ -1,8 +1,8 @@
 (define-module (bytestructures guile vector))
-(export bs:vector)
 (import
- (bytestructures guile base)
- (bytestructures guile utils)
+ (srfi :9)
  (bytestructures bytevectors)
- (srfi :9))
+ (bytestructures guile utils)
+ (bytestructures guile base))
 (include-from-path "bytestructures/body/vector.scm")
+(export bs:vector)

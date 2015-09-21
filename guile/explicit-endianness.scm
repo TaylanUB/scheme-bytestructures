@@ -1,4 +1,8 @@
 (define-module (bytestructures guile explicit-endianness))
+(import
+ (bytestructures bytevectors)
+ (bytestructures guile utils))
+(include-from-path "bytestructures/body/explicit-endianness.scm")
 (export
  bytevector-ieee-single-le-ref  bytevector-ieee-single-be-ref
  bytevector-ieee-single-le-set! bytevector-ieee-single-be-set!
@@ -17,7 +21,3 @@
  bytevector-u64le-ref           bytevector-u64be-ref
  bytevector-u64le-set!          bytevector-u64be-set!
  )
-(import
- (bytestructures guile utils)
- (bytestructures bytevectors))
-(include-from-path "bytestructures/body/explicit-endianness.scm")

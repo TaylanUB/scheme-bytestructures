@@ -24,14 +24,14 @@
 ;;; Code:
 
 (define-module (bytestructures guile numeric-native))
+(import
+ (bytestructures guile utils)
+ (bytestructures guile numeric)
+ (only (system foreign) sizeof))
 (export
  short unsigned-short int unsigned-int long unsigned-long
  size_t ssize_t ptrdiff_t
  )
-(import
- (bytestructures guile numeric)
- (bytestructures guile utils)
- (only (system foreign) sizeof))
 
 (define-syntax define-native-synonyms
   (syntax-rules ()

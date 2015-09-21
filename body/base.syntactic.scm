@@ -99,8 +99,9 @@ follow." indices))))
 
 (define-syntax-rule (define-bytestructure-accessors <descriptor>
                       <ref-helper> <getter> <setter>)
-  (define-bytestructure-ref-helper <ref-helper> <descriptor>)
-  (define-bytestructure-getter <getter> <descriptor>)
-  (define-bytestructure-setter <setter> <descriptor>))
+  (begin
+    (define-bytestructure-ref-helper <ref-helper> <descriptor>)
+    (define-bytestructure-getter <getter> <descriptor>)
+    (define-bytestructure-setter <setter> <descriptor>)))
 
 ;;; base.syntactic.scm ends here

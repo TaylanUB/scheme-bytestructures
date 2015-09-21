@@ -1,8 +1,8 @@
 (define-module (bytestructures guile bitfields))
-(export bitfield-descriptor)
 (import
- (bytestructures guile base)
- (bytestructures guile numeric-metadata)
+ (srfi :60)
  (bytestructures guile utils)
- (srfi :60))
+ (bytestructures guile base)
+ (bytestructures guile numeric-metadata))
 (include-from-path "bytestructures/body/bitfields.scm")
+(export bitfield-descriptor)

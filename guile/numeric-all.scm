@@ -1,4 +1,10 @@
 (define-module (bytestructures guile numeric-all))
+(import
+ (bytestructures bytevectors)
+ (bytestructures guile utils)
+ (bytestructures guile base)
+ (bytestructures guile explicit-endianness))
+(include-from-path "bytestructures/body/numeric.scm")
 (export
  int8 uint8 int16 uint16 int32 uint32 int64 uint64
  int16le uint16le int32le uint32le int64le uint64le
@@ -19,9 +25,3 @@
  float-descriptors
  numeric-descriptors
  )
-(import
- (bytestructures guile base)
- (bytestructures guile utils)
- (bytestructures bytevectors)
- (bytestructures guile explicit-endianness))
-(include-from-path "bytestructures/body/numeric.scm")

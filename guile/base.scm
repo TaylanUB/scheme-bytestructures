@@ -1,4 +1,14 @@
 (define-module (bytestructures guile base))
+(import
+ (srfi :9)
+ (srfi :11)
+ (bytestructures bytevectors)
+ (bytestructures guile utils))
+(include-from-path "bytestructures/body/base.scm")
+(define bytestructure-descriptor-alignment bd-alignment)
+(define bytestructure-descriptor-ref-helper bd-ref-helper)
+(define bytestructure-descriptor-getter bd-getter)
+(define bytestructure-descriptor-setter bd-setter)
 (export
  make-bytestructure-descriptor
  bytestructure-descriptor?
@@ -26,13 +36,3 @@
  bytestructure-set!/syntax
  define-bytestructure-accessors
  )
-(import
- (srfi :9)
- (srfi :11)
- (bytestructures guile utils)
- (bytestructures bytevectors))
-(include-from-path "bytestructures/body/base.scm")
-(define bytestructure-descriptor-alignment bd-alignment)
-(define bytestructure-descriptor-ref-helper bd-ref-helper)
-(define bytestructure-descriptor-getter bd-getter)
-(define bytestructure-descriptor-setter bd-setter)

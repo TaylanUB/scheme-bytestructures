@@ -24,13 +24,13 @@
 ;;; Code:
 
 (define-module (bytestructures guile pointer))
-(export bs:pointer)
 (import
- (bytestructures guile base)
  (srfi :9)
- (bytestructures guile utils)
  (bytestructures bytevectors)
+ (bytestructures guile utils)
+ (bytestructures guile base)
  (prefix (system foreign) ffi:))
+(export bs:pointer)
 
 (define pointer-size (ffi:sizeof '*))
 

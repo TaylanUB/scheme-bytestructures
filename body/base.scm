@@ -153,9 +153,10 @@
  (else
 
   (define-syntax-rule (define-syntax-case-stubs <name> ...)
-    (define-syntax-rule (<name> . rest)
-      (syntax-error "Not implemented.  You need syntax-case."))
-    ...)
+    (begin
+      (define-syntax-rule (<name> . rest)
+        (syntax-error "Not implemented.  You need syntax-case."))
+      ...))
 
   (define-syntax-case-stubs
     bytestructure-ref-helper/syntax
