@@ -685,21 +685,17 @@ Bytestructure reference:
 ### Procedural API
 
 When descriptors are statically apparent, an aggressively constant
-propagating and partial evaluating optimizer would be able to turn
-bytestructure references into direct bytevector references, which,
-through further optimization, could even end up identical to the
-results of hand-written C code.  That is the most optimal outcome,
-which would obsolete the macro API, but the opposite situation is that
-even offset calculation happens at run-time, let alone type and bound
-checks being removed.  In Guile 2.0, the latter is the case, so using
-a bytestructure reference will be much slower than a direct bytevector
-reference.
+propagating and partial evaluating optimizer might be able to turn
+bytestructure references into direct bytevector references, yielding
+identical results to the macro API.  That is the most optimal outcome,
+but more realistic is that most of the work happens at run-time, which
+is the case in Guile 2.0.
 
-Nevertheless, the offset calculation at least avoids the consing of
-rest-argument lists, so no heap allocation happens, which will make
-speed predictable, although offset calculation takes linear time with
-regard to the depth of a structure and, for structs and unions, the
-positions of referenced fields.
+The offset calculation avoids allocation, which will make its speed
+predictable.  It takes linear time with regard to the depth of a
+structure.  For structs and unions, it's also linear with regard to
+the position of the referenced field, but the constant factor involved
+in that is very small.
 
 When possible, the performance issues can be alleviated, without
 relying on compiler optimization or the macro API, by hoisting offset
@@ -723,7 +719,7 @@ Equivalent bytestructure reference:
     > (define bs (bytestructure (bs:vector 1 uint8)))
     > (define-inlinable (ref x) (bytestructure-ref bs 0))
     > ,time (for-each ref times)
-    ;; 0.656734s real time
+    ;; 0.721888s real time
 
 Showcasing the effect of a deeper structure:
 
@@ -732,16 +728,17 @@ Showcasing the effect of a deeper structure:
                                      (bs:vector 1 uint8)))))
     > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
     > ,time (for-each ref times)
-    ;; 1.043576s real time
+    ;; 1.079202s real time
 
 Showcasing the effect of referencing latter fields of a struct:
 
-    > (define bs (bytestructure (bs:struct `((x ,uint8)
-                                             (y ,uint8)
-                                             (z ,uint8)))))
-    > (define-inlinable (ref x) (bytestructure-ref bs 'x))
+    > (define bs (bytestructure (bs:struct `((a ,uint8) (b ,uint8)
+                                             (c ,uint8) (d ,uint8)
+                                             (e ,uint8) (f ,uint8)
+                                             (g ,uint8) (h ,uint8)))))
+    > (define-inlinable (ref x) (bytestructure-ref bs 'a))
     > ,time (for-each ref times)
-    ;; 0.920915s real time
-    > (define-inlinable (ref x) (bytestructure-ref bs 'z))
+    ;; 0.958906s real time
+    > (define-inlinable (ref x) (bytestructure-ref bs 'h))
     > ,time (for-each ref times)
-    ;; 1.934573s real time
+    ;; 0.983289s real time
