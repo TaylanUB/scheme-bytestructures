@@ -38,14 +38,14 @@
 (test-group "numeric"
   (define-syntax test-numeric-descriptors
     (syntax-rules ()
-      ((_ (<descriptor-id> <signed?> <size> <ref-proc> <set-proc>) ...)
+      ((_ (<descriptor-id> <signed?> <size> <getter> <setter>) ...)
        (begin
          (let ((descriptor-id '<descriptor-id>)
                (descriptor <descriptor-id>)
                (signed? <signed?>)
                (size <size>)
-               (ref-proc <ref-proc>)
-               (set-proc <set-proc>))
+               (getter <getter>)
+               (setter <setter>))
            ;; Not necessarily a "maximal" value; it's minimal for signed types.
            ;; It's also nonsensical for floating-point, but doesn't hurt; we
            ;; don't try to test their limits.
@@ -59,12 +59,12 @@
                                         (bytestructure-bytevector bs)))
                  (test-= "ref" 2
                          (begin
-                           (set-proc (bytestructure-bytevector bs) 0 2)
+                           (setter (bytestructure-bytevector bs) 0 2)
                            (bytestructure-ref bs)))
                  (test-= "set" 1
                          (begin
                            (bytestructure-set! bs 1)
-                           (ref-proc (bytestructure-bytevector bs) 0)))
+                           (getter (bytestructure-bytevector bs) 0)))
                  (test-= "max" max
                          (begin
                            (bytestructure-set! bs max)
@@ -73,20 +73,20 @@
                (test-group "syntactic"
                  ;; Must insert the top-level reference <descriptor-id> here.
                  (define-bytestructure-accessors <descriptor-id>
-                   ref-helper getter setter)
+                   bs-ref-helper bs-getter bs-setter)
                  (define bv (make-bytevector size))
                  (test-= "ref" 2
                          (begin
-                           (set-proc bv 0 2)
-                           (getter bv)))
+                           (setter bv 0 2)
+                           (bs-getter bv)))
                  (test-= "set" 1
                          (begin
-                           (setter bv 1)
-                           (ref-proc bv 0)))
+                           (bs-setter bv 1)
+                           (getter bv 0)))
                  (test-= "max" max
                          (begin
-                           (setter bv max)
-                           (getter bv)))))))
+                           (bs-setter bv max)
+                           (bs-getter bv)))))))
          ...))))
   (test-numeric-descriptors
    (float32 #t 4

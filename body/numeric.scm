@@ -26,7 +26,7 @@
 
 (define-syntax define-numeric-types
   (syntax-rules ()
-    ((_ (name size ref-proc set-proc) ...)
+    ((_ (name size getter setter) ...)
      (begin
        (define name
          (make-bytestructure-descriptor
@@ -35,14 +35,14 @@
           (lambda (syntax? bytevector offset)
             (if syntax?
                 (quasisyntax
-                 (ref-proc (unsyntax bytevector) (unsyntax offset)))
-                (ref-proc bytevector offset)))
+                 (getter (unsyntax bytevector) (unsyntax offset)))
+                (getter bytevector offset)))
           (lambda (syntax? bytevector offset value)
             (if syntax?
                 (quasisyntax
-                 (set-proc (unsyntax bytevector) (unsyntax offset)
-                           (unsyntax value)))
-                (set-proc bytevector offset value)))))
+                 (setter (unsyntax bytevector) (unsyntax offset)
+                         (unsyntax value)))
+                (setter bytevector offset value)))))
        ...))))
 
 (define-numeric-types
@@ -61,7 +61,7 @@
 
 (define-syntax define-with-endianness
   (syntax-rules ()
-    ((_ (name native-name size ref-proc set-proc endianness) ...)
+    ((_ (name native-name size getter setter endianness) ...)
      (begin
        (define name
          (if (equal? endianness native-endianness)
@@ -72,27 +72,27 @@
               (lambda (syntax? bytevector offset)
                 (if syntax?
                     (quasisyntax
-                     (ref-proc (unsyntax bytevector) (unsyntax offset)))
-                    (ref-proc bytevector offset)))
+                     (getter (unsyntax bytevector) (unsyntax offset)))
+                    (getter bytevector offset)))
               (lambda (syntax? bytevector offset value)
                 (if syntax?
                     (quasisyntax
-                     (set-proc (unsyntax bytevector) (unsyntax offset)
-                               (unsyntax value)))
-                    (set-proc bytevector offset value))))))
+                     (setter (unsyntax bytevector) (unsyntax offset)
+                             (unsyntax value)))
+                    (setter bytevector offset value))))))
        ...))))
 
 (define-syntax define-with-endianness*
   (syntax-rules ()
     ((_ (native-name size
-                     le-name le-ref-proc le-set-proc
-                     be-name be-ref-proc be-set-proc) ...)
+                     le-name le-getter le-setter
+                     be-name be-getter be-setter) ...)
      (begin
        (define-with-endianness
          (le-name native-name size
-                  le-ref-proc le-set-proc (endianness little))
+                  le-getter le-setter (endianness little))
          (be-name native-name size
-                  be-ref-proc be-set-proc (endianness big)))
+                  be-getter be-setter (endianness big)))
        ...))))
 
 (define-with-endianness*
