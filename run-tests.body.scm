@@ -30,12 +30,10 @@
 
 (test-begin "bytestructures")
 
-(cond-expand
- ((or guile (library (r6rs bytevectors)) (library (rnrs bytevectors)))
-  (values))
- (else
-  (test-skip "numeric")))
 (test-group "numeric"
+  (for-each
+   (lambda)
+   integer-descriptors)
   (define-syntax test-numeric-descriptors
     (syntax-rules ()
       ((_ (<descriptor-id> <signed?> <size> <getter> <setter>) ...)
