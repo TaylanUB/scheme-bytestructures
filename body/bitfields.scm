@@ -38,7 +38,7 @@
                  unsigned-value)))))))
 
 (define (validate-integer-descriptor descriptor)
-  (when (not (memq descriptor integer-descriptors))
+  (when (not (assq descriptor integer-descriptors))
     (error "Invalid descriptor for bitfield." descriptor)))
 
 (define (integer-descriptor-signed? descriptor)
