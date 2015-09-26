@@ -11,4 +11,6 @@
  (bytestructures guile)
  (bytestructures guile numeric-metadata))
 
+(define inexact exact->inexact)
+
 (include-from-path "bytestructures/run-tests.body.scm")

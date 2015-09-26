@@ -25,6 +25,9 @@
 (define-syntax-rule (test-= name expected expr)
   (test-approximate name expected expr 0))
 
+;;; Emacs indentation help:
+;;; (put 'test-= 'scheme-indent-function 2)
+
 (define-syntax-rule (maybe-skip-syntax . <body>)
   (if-syntax-case
    (begin . <body>)
@@ -44,7 +47,7 @@
     (proc descriptor name getter setter size float? signed?))
   (define (get-min/max float? signed? size)
     (cond
-     (float?  (expt 2 (- size 9)))
+     (float?  (inexact (expt 2 (- size 9))))
      (signed? (- (expt 256 (- size 1))))
      (else    (- (expt 256 size) 1))))
   (define-syntax test-numeric-descriptors
@@ -55,42 +58,44 @@
           (assq <descriptor-id> numeric-descriptors)
           (lambda (descriptor name getter setter size float? signed?)
             (test-group (symbol->string name)
-              (test-group "procedural"
-                (define min/max (get-min/max float? signed? size))
-                (define bs (bytestructure descriptor))
-                (test-eqv "size" size (bytevector-length
-                                       (bytestructure-bytevector bs)))
-                (test-= "ref" 2
-                        (begin
-                          (setter (bytestructure-bytevector bs) 0 2)
-                          (bytestructure-ref bs)))
-                (test-= "set" 1
-                        (begin
-                          (bytestructure-set! bs 1)
-                          (getter (bytestructure-bytevector bs) 0)))
-                (test-= "min/max" min/max
-                        (begin
-                          (bytestructure-set! bs min/max)
-                          (bytestructure-ref bs))))
-              (maybe-skip-syntax
-               (test-group "syntactic"
-                 (define min/max (get-min/max float? signed? size))
-                 ;; Must insert the top-level reference <descriptor-id> here.
-                 (define-bytestructure-accessors <descriptor-id>
-                   bs-ref-helper bs-getter bs-setter)
-                 (define bv (make-bytevector size))
-                 (test-= "ref" 2
-                         (begin
-                           (setter bv 0 2)
-                           (bs-getter bv)))
-                 (test-= "set" 1
-                         (begin
-                           (bs-setter bv 1)
-                           (getter bv 0)))
-                 (test-= "min/max" min/max
-                         (begin
-                           (bs-setter bv min/max)
-                           (bs-getter bv))))))))
+              (let ((test-value-1 (if float? 1.0 1))
+                    (test-value-2 (if float? 2.0 1)))
+                (test-group "procedural"
+                  (define min/max (get-min/max float? signed? size))
+                  (define bs (bytestructure descriptor))
+                  (test-eqv "size" size (bytevector-length
+                                         (bytestructure-bytevector bs)))
+                  (test-= "ref" test-value-1
+                    (begin
+                      (setter (bytestructure-bytevector bs) 0 test-value-1)
+                      (bytestructure-ref bs)))
+                  (test-= "set" test-value-2
+                    (begin
+                      (bytestructure-set! bs test-value-2)
+                      (getter (bytestructure-bytevector bs) 0)))
+                  (test-= "min/max" min/max
+                    (begin
+                      (bytestructure-set! bs min/max)
+                      (bytestructure-ref bs))))
+                (maybe-skip-syntax
+                 (test-group "syntactic"
+                   (define min/max (get-min/max float? signed? size))
+                   ;; Must insert the top-level reference <descriptor-id> here.
+                   (define-bytestructure-accessors <descriptor-id>
+                     bs-ref-helper bs-getter bs-setter)
+                   (define bv (make-bytevector size))
+                   (test-= "ref" test-value-1
+                     (begin
+                       (setter bv 0 test-value-1)
+                       (bs-getter bv)))
+                   (test-= "set" test-value-2
+                     (begin
+                       (bs-setter bv test-value-2)
+                       (getter bv 0)))
+                   (test-= "min/max" min/max
+                     (begin
+                       (bs-setter bv min/max)
+                       (bs-getter bv)))))))))
          ...))))
   (test-numeric-descriptors
    float32 float32le float32be
