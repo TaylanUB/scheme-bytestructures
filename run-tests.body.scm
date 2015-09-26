@@ -72,24 +72,25 @@
                         (begin
                           (bytestructure-set! bs min/max)
                           (bytestructure-ref bs))))
-              (test-group "syntactic"
-                (define min/max (get-min/max float? signed? size))
-                ;; Must insert the top-level reference <descriptor-id> here.
-                (define-bytestructure-accessors <descriptor-id>
-                  bs-ref-helper bs-getter bs-setter)
-                (define bv (make-bytevector size))
-                (test-= "ref" 2
-                        (begin
-                          (setter bv 0 2)
-                          (bs-getter bv)))
-                (test-= "set" 1
-                        (begin
-                          (bs-setter bv 1)
-                          (getter bv 0)))
-                (test-= "min/max" min/max
-                        (begin
-                          (bs-setter bv min/max)
-                          (bs-getter bv)))))))
+              (maybe-skip-syntax
+               (test-group "syntactic"
+                 (define min/max (get-min/max float? signed? size))
+                 ;; Must insert the top-level reference <descriptor-id> here.
+                 (define-bytestructure-accessors <descriptor-id>
+                   bs-ref-helper bs-getter bs-setter)
+                 (define bv (make-bytevector size))
+                 (test-= "ref" 2
+                         (begin
+                           (setter bv 0 2)
+                           (bs-getter bv)))
+                 (test-= "set" 1
+                         (begin
+                           (bs-setter bv 1)
+                           (getter bv 0)))
+                 (test-= "min/max" min/max
+                         (begin
+                           (bs-setter bv min/max)
+                           (bs-getter bv))))))))
          ...))))
   (test-numeric-descriptors
    float32 float32le float32be
