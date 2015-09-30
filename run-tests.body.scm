@@ -47,7 +47,7 @@
     (proc descriptor name getter setter size float? signed?))
   (define (get-min/max float? signed? size)
     (cond
-     (float?  (inexact (expt 2 (- size 9))))
+     (float?  (inexact (expt 2 (case size ((4) 24) ((8) 53)))))
      (signed? (- (expt 256 (- size 1))))
      (else    (- (expt 256 size) 1))))
   (define-syntax test-numeric-descriptors
