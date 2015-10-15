@@ -4,4 +4,4 @@
    (bytestructures r7 utils)
    (bytestructures r7 bytevectors))
   (include-library-declarations "explicit-endianness.exports.sld")
-  (include "../body/explicit-endianness.scm"))
+  (include "body/explicit-endianness.scm"))

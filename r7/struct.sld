@@ -8,4 +8,4 @@
    (bytestructures r7 base)
    (bytestructures r7 bitfields))
   (include-library-declarations "struct.exports.sld")
-  (include "../body/struct.scm"))
+  (include "body/struct.scm"))

@@ -7,4 +7,4 @@
    (bytestructures r7 explicit-endianness))
   (include-library-declarations "numeric.exports.sld")
   (include-library-declarations "numeric-metadata.exports.sld")
-  (include "../body/numeric.scm"))
+  (include "body/numeric.scm"))

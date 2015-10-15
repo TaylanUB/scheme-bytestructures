@@ -6,4 +6,4 @@
    (bytestructures r7 base)
    (bytestructures r7 numeric-metadata))
   (export bitfield-descriptor)
-  (include "../body/bitfields.scm"))
+  (include "body/bitfields.scm"))

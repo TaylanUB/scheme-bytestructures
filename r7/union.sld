@@ -4,4 +4,4 @@
    (bytestructures r7 utils)
    (bytestructures r7 base))
   (include-library-declarations "union.exports.sld")
-  (include "../body/union.scm"))
+  (include "body/union.scm"))

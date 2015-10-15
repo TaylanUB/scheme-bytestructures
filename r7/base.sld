@@ -4,4 +4,4 @@
    (scheme case-lambda)
    (bytestructures r7 utils))
   (include-library-declarations "base.exports.sld")
-  (include "../body/base.scm"))
+  (include "body/base.scm"))
