@@ -113,6 +113,25 @@ implementation follow.
 
 - Import `(bytestructures guile)`.
 
+### Kawa
+
+- Clone the Larceny source repository:
+  https://github.com/larcenists/larceny
+
+- Rename this repository directory to `bytestructures`.
+
+- Run Kawa with a command line flag such as the following to add
+  `$larceny_repo/tools/R6RS` and the parent directory of this
+  directory to the load path, and to make it look for `.sld` files:
+
+      -Dkawa.import.path="$bytestructures_parent_dir/*.sld:\
+      $larceny_repo/tools/R6RS/*.sld" \
+
+(The `*` stands for any number of directories, so sub-directories will
+also be searched for `.sld` files.)
+
+- Import `(bytestructures r7)`.
+
 ### Larceny
 
 - Rename this repository directory to `bytestructures`.
