@@ -62,16 +62,66 @@ lengths of following fields.  The system can express this cleanly.
 Supported platforms
 -------------------
 
-R7RS and GNU Guile are supported.  Import `(bytestructures r7)` in
-R7RS, and `(bytestructures guile)` in Guile.  These will import all of
-the supported sub-libraries, which you can see by peeking into the
-`r7/` and `guile/` directories.  They are mostly documented below.
+R7RS and GNU Guile are supported.  Detailed instructions per Scheme
+implementation follow.
 
-To make the library available to Guile, rename the repository
-directory to `bytestructures` (it will likely be
-`scheme-bytestructures` when you clone it), then add its parent
-directory to `GUILE_LOAD_PATH`.  Don't use the `-L` flag with a
-relative path because `include-from-path` doesn't work well with that.
+### Guile
+
+- Rename this repository directory to `bytestructures`.
+
+- Add the parent directory of this directory to `GUILE_LOAD_PATH`.
+
+- Import `(bytestructures guile)`.
+
+You can use the `-L` command line flag instead of augmenting
+`GUILE_LOAD_PATH`, but don't use it with a relative path (because
+`include-from-path` doesn't work well with that, which we use).
+
+### Larceny
+
+- Rename this repository directory to `bytestructures`.
+
+- Add the parent directory of this directory to `LARCENY_LIBPATH`.
+
+- Run Larceny with the `-r7rs` flag.
+
+- Import `(bytestructures r7)`.
+
+### Gauche
+
+- Clone the Larceny source repository:
+  https://github.com/larcenists/larceny
+
+- Go to its `tools/R6RS/r6rs/` sub-directory.
+
+- Run the following shell command in that directory and its
+  sub-directories:
+
+      for file in *.sld; do
+        name=${file%.sld}
+        ln -s $file $name.scm
+      done
+
+- Add `$larceny_repo/tools/R6RS` to `GAUCHE_LOAD_PATH`.
+
+- Rename this repository directory to `bytestructures`.
+
+- Add the parent directory of this directory to `GAUCHE_LOAD_PATH`.
+
+- Import `(bytestructures r7)`.
+
+### Chibi
+
+- Clone the Larceny source repository:
+  https://github.com/larcenists/larceny
+
+- Append `$larceny_repo/tools/R6RS` to the Chibi load-path via the
+  `-A` command-line flag.
+
+- Rename this repository directory to `bytestructures`.
+  
+- Append the parent directory of this directory to the Chibi load-path
+  via the `-A` command-line flag.
 
 
 Quick overview with examples
