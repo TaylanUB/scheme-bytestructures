@@ -65,27 +65,18 @@ Supported platforms
 R7RS and GNU Guile are supported.  Detailed instructions per Scheme
 implementation follow.
 
-### Guile
+### Chibi
+
+- Clone the Larceny source repository:
+  https://github.com/larcenists/larceny
+
+- Append `$larceny_repo/tools/R6RS` to the Chibi load-path via the
+  `-A` command-line flag.
 
 - Rename this repository directory to `bytestructures`.
 
-- Add the parent directory of this directory to `GUILE_LOAD_PATH`.
-
-- Import `(bytestructures guile)`.
-
-You can use the `-L` command line flag instead of augmenting
-`GUILE_LOAD_PATH`, but don't use it with a relative path (because
-`include-from-path` doesn't work well with that, which we use).
-
-### Larceny
-
-- Rename this repository directory to `bytestructures`.
-
-- Add the parent directory of this directory to `LARCENY_LIBPATH`.
-
-- Run Larceny with the `-r7rs` flag.
-
-- Import `(bytestructures r7)`.
+- Append the parent directory of this directory to the Chibi load-path
+  via the `-A` command-line flag.
 
 ### Gauche
 
@@ -110,18 +101,27 @@ You can use the `-L` command line flag instead of augmenting
 
 - Import `(bytestructures r7)`.
 
-### Chibi
-
-- Clone the Larceny source repository:
-  https://github.com/larcenists/larceny
-
-- Append `$larceny_repo/tools/R6RS` to the Chibi load-path via the
-  `-A` command-line flag.
+### Guile
 
 - Rename this repository directory to `bytestructures`.
-  
-- Append the parent directory of this directory to the Chibi load-path
-  via the `-A` command-line flag.
+
+- Add the parent directory of this directory to `GUILE_LOAD_PATH`.
+
+(You can use the `-L` command line flag instead of augmenting
+`GUILE_LOAD_PATH`, but don't use it with a relative path, because
+`include-from-path` doesn't work well with that, which we use.)
+
+- Import `(bytestructures guile)`.
+
+### Larceny
+
+- Rename this repository directory to `bytestructures`.
+
+- Add the parent directory of this directory to `LARCENY_LIBPATH`.
+
+- Run Larceny with the `-r7rs` flag.
+
+- Import `(bytestructures r7)`.
 
 
 Quick overview with examples
