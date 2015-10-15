@@ -745,20 +745,38 @@ The offset calculation avoids allocation, which will make its speed
 predictable.  It takes linear time with regard to the depth of a
 structure.  For structs and unions, it's also linear with regard to
 the position of the referenced field, but the constant factor involved
-in that is very small.
+in that is so small that this should usually not be noticed unless you
+have a very large number of struct or union fields.
 
-When possible, the performance issues can be alleviated, without
-relying on compiler optimization or the macro API, by hoisting offset
-calculations to outside of speed-critical sections by using the
-ref-helper forms, only leaving bare bytevector references at
-bottlenecks.  This way a big part of the convenience offered by the
-procedural API can still be used.
+If performance becomes an issue but you can't or don't want to switch
+to the macro API, you can improve performance by hoisting as much work
+to outside of your tight loops or other performance critical sections
+of your code.  E.g. if you were doing `(bytestructure-ref bs x y z)`
+within a loop, you can instead do
 
-Following are some figures from Guile 2.0.11.
+    (let-values (((bytevector offset descriptor)
+                  (bytestructure-ref-helper bs x y z)))
+      (loop
+        (bytestructure-ref* bytevector offset descriptor)))
 
-Plain bytevector reference, for comparison:
+or if for instance the last index in that example, `z`, changes at
+every iteration of the loop, you can do
 
-    > (define times (iota 1000000)) ;A million
+    (let-values (((bytevector offset descriptor)
+                  (bytestructure-ref-helper bs x y)))
+      (loop (for z in blah)
+        (bytestructure-ref* bytevector offset descriptor z)))
+
+so at least you don't repeat the indexing of `x` and `y` at every
+iteration.
+
+
+Following are some benchmark figures from Guile.  (These are only
+meant for a broad comparison against plain bytevector reference.)
+
+Plain bytevector reference:
+
+    > (define times (iota 1000000)) ;a million
     > (define bv (make-bytevector 1))
     > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
     > ,time (for-each ref times)
@@ -766,6 +784,7 @@ Plain bytevector reference, for comparison:
 
 Equivalent bytestructure reference:
 
+    > (define times (iota 1000000)) ;a million
     > (define bs (bytestructure (bs:vector 1 uint8)))
     > (define-inlinable (ref x) (bytestructure-ref bs 0))
     > ,time (for-each ref times)
@@ -773,22 +792,10 @@ Equivalent bytestructure reference:
 
 Showcasing the effect of a deeper structure:
 
+    > (define times (iota 1000000)) ;a million
     > (define bs (bytestructure (bs:vector 1
                                    (bs:vector 1
                                      (bs:vector 1 uint8)))))
     > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
     > ,time (for-each ref times)
     ;; 1.079202s real time
-
-Showcasing the effect of referencing latter fields of a struct:
-
-    > (define bs (bytestructure (bs:struct `((a ,uint8) (b ,uint8)
-                                             (c ,uint8) (d ,uint8)
-                                             (e ,uint8) (f ,uint8)
-                                             (g ,uint8) (h ,uint8)))))
-    > (define-inlinable (ref x) (bytestructure-ref bs 'a))
-    > ,time (for-each ref times)
-    ;; 0.958906s real time
-    > (define-inlinable (ref x) (bytestructure-ref bs 'h))
-    > ,time (for-each ref times)
-    ;; 0.983289s real time
