@@ -36,24 +36,24 @@
 (test-begin "bytestructures")
 
 (test-group "numeric"
-  (define (destructure-numeric-descriptor-entry descriptor-entry proc)
-    (define descriptor (list-ref descriptor-entry 0))
-    (define name (list-ref descriptor-entry 1))
-    (define getter (list-ref descriptor-entry 2))
-    (define setter (list-ref descriptor-entry 3))
-    (define size (bytestructure-descriptor-size descriptor))
-    (define float? (assq descriptor float-descriptors))
-    (define signed? (or float? (assq descriptor signed-integer-descriptors)))
-    (proc descriptor name getter setter size float? signed?))
-  (define (get-min/max float? signed? size)
-    (cond
-     (float?  (inexact (expt 2 (case size ((4) 24) ((8) 53)))))
-     (signed? (- (expt 256 (- size 1))))
-     (else    (- (expt 256 size) 1))))
   (define-syntax test-numeric-descriptors
     (syntax-rules ()
       ((_ <descriptor-id> ...)
-       (begin
+       (let ()
+         (define (destructure-numeric-descriptor-entry descriptor-entry proc)
+           (define descriptor (list-ref descriptor-entry 0))
+           (define name (list-ref descriptor-entry 1))
+           (define getter (list-ref descriptor-entry 2))
+           (define setter (list-ref descriptor-entry 3))
+           (define size (bytestructure-descriptor-size descriptor))
+           (define float? (assq descriptor float-descriptors))
+           (define signed? (or float? (assq descriptor signed-integer-descriptors)))
+           (proc descriptor name getter setter size float? signed?))
+         (define (get-min/max float? signed? size)
+           (cond
+            (float?  (inexact (expt 2 (case size ((4) 24) ((8) 53)))))
+            (signed? (- (expt 256 (- size 1))))
+            (else    (- (expt 256 size) 1))))
          (destructure-numeric-descriptor-entry
           (assq <descriptor-id> numeric-descriptors)
           (lambda (descriptor name getter setter size float? signed?)
