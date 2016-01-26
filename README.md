@@ -78,6 +78,8 @@ implementation follow.
 - Append the parent directory of this directory to the Chibi load-path
   via the `-A` command-line flag.
 
+- Import `(bytestructures r7)`.
+
 ### Gauche
 
 - Clone the Larceny source repository:
