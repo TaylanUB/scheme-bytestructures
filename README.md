@@ -73,10 +73,8 @@ implementation follow.
 - Append `$larceny_repo/tools/R6RS` to the Chibi load-path via the
   `-A` command-line flag.
 
-- Rename this repository directory to `bytestructures`.
-
-- Append the parent directory of this directory to the Chibi load-path
-  via the `-A` command-line flag.
+- Append this directory to the Chibi load-path via the `-A`
+  command-line flag.
 
 - Import `(bytestructures r7)`.
 
@@ -97,17 +95,13 @@ implementation follow.
 
 - Add `$larceny_repo/tools/R6RS` to `GAUCHE_LOAD_PATH`.
 
-- Rename this repository directory to `bytestructures`.
-
-- Add the parent directory of this directory to `GAUCHE_LOAD_PATH`.
+- Add this directory to `GAUCHE_LOAD_PATH`.
 
 - Import `(bytestructures r7)`.
 
 ### Guile
 
-- Rename this repository directory to `bytestructures`.
-
-- Add the parent directory of this directory to `GUILE_LOAD_PATH`.
+- Add this directory to `GUILE_LOAD_PATH`.
 
 (You can use the `-L` command line flag instead of augmenting
 `GUILE_LOAD_PATH`, but don't use it with a relative path, because
@@ -120,14 +114,12 @@ implementation follow.
 - Clone the Larceny source repository:
   https://github.com/larcenists/larceny
 
-- Rename this repository directory to `bytestructures`.
-
 - Run Kawa with a command line flag such as the following to add
-  `$larceny_repo/tools/R6RS` and the parent directory of this
-  directory to the load path, and to make it look for `.sld` files:
+  `$larceny_repo/tools/R6RS` and this directory to the load path, and
+  to make it look for `.sld` files:
 
-      -Dkawa.import.path="$bytestructures_parent_dir/*.sld:\
-      $larceny_repo/tools/R6RS/*.sld" \
+      -Dkawa.import.path="$bytestructures_repo/*.sld:\
+      $larceny_repo/tools/R6RS/*.sld"
 
 (The `*` stands for any number of directories, so sub-directories will
 also be searched for `.sld` files.)
@@ -136,9 +128,7 @@ also be searched for `.sld` files.)
 
 ### Larceny
 
-- Rename this repository directory to `bytestructures`.
-
-- Add the parent directory of this directory to `LARCENY_LIBPATH`.
+- Add this directory to `LARCENY_LIBPATH`.
 
 - Run Larceny with the `-r7rs` flag.
 
