@@ -41,6 +41,11 @@
             (values next-boundary next-boundary 0)
             (values position prev-boundary (* 8 (+ offset fraction))))))))
 
+;;; Returns 'position' if it's already a multiple of 'alignment'; otherwise
+;;; returns the next multiple.
+(define (next-boundary position alignment)
+  (align position +inf.0 alignment))
+
 (define (pack-alignment pack alignment)
   (case pack
     ((#t) 1)
@@ -68,21 +73,26 @@
             (+ position size))))
 
 (define (construct-bit-field pack position name descriptor width)
-  (let*-values
-      (((int-size)
-        (bytestructure-descriptor-size descriptor))
-       ((size)
-        (* 1/8 width))
-       ((int-alignment)
-        (bytestructure-descriptor-alignment descriptor))
-       ((alignment)
-        (pack-alignment pack int-alignment))
-       ((position boundary offset)
-        (align position size alignment))
-       ((descriptor)
-        (bitfield-descriptor descriptor offset width)))
-    (values (make-field name descriptor int-size alignment boundary)
-            (+ position size))))
+  (if (zero? width)
+      (let* ((alignment (bytestructure-descriptor-alignment descriptor))
+             (position (next-boundary position alignment)))
+        (values (make-field #f descriptor 0 1 position)
+                position))
+      (let*-values
+          (((int-size)
+            (bytestructure-descriptor-size descriptor))
+           ((size)
+            (* 1/8 width))
+           ((int-alignment)
+            (bytestructure-descriptor-alignment descriptor))
+           ((alignment)
+            (pack-alignment pack int-alignment))
+           ((position boundary offset)
+            (align position size alignment))
+           ((descriptor)
+            (bitfield-descriptor descriptor offset width)))
+        (values (make-field name descriptor int-size alignment boundary)
+                (+ position size)))))
 
 (define (construct-fields pack field-specs)
   (let loop ((field-specs field-specs)
@@ -91,46 +101,36 @@
     (if (null? field-specs)
         (reverse fields)
         (let* ((field-spec (car field-specs))
+               (field-specs (cdr field-specs))
                (name (car field-spec))
                (descriptor (cadr field-spec))
                (bitfield? (not (null? (cddr field-spec))))
                (width (if bitfield?
                           (car (cddr field-spec))
                           #f)))
-          (if (and bitfield? (zero? width))
-              (let*-values
-                  (((alignment)
-                    (bytestructure-descriptor-alignment descriptor))
-                   ((position _boundary _bit-offset)
-                    (align position +inf.0 alignment)))
-                (loop (cdr field-specs)
-                      position
-                      fields))
-              (let-values
-                  (((field next-position)
-                    (if bitfield?
-                        (construct-bit-field
-                         pack position name descriptor width)
-                        (construct-field pack position name descriptor))))
-                (loop (cdr field-specs)
-                      next-position
-                      (cons field fields))))))))
+          (let-values
+              (((field next-position)
+                (if bitfield?
+                    (construct-bit-field pack position name descriptor width)
+                    (construct-field pack position name descriptor))))
+            (loop field-specs
+                  next-position
+                  (cons field fields)))))))
 
 (define bs:struct
   (case-lambda
     ((field-specs)
      (bs:struct #f field-specs))
     ((pack field-specs)
-     (define fields (construct-fields pack field-specs))
+     (define %fields (construct-fields pack field-specs))
+     (define fields (filter field-name %fields))
      (define field-alist (map (lambda (field)
                                 (cons (field-name field) field))
                               fields))
      (define alignment (apply max (map field-alignment fields)))
-     (define size (let* ((field (last fields))
+     (define size (let* ((field (last %fields))
                          (end (+ (field-position field) (field-size field))))
-                    (let-values (((position _boundary _bit-offset)
-                                  (align end +inf.0 alignment)))
-                      position)))
+                    (next-boundary end alignment)))
      (define (ref-helper syntax? bytevector offset index)
        (let* ((index (if syntax? (syntax->datum index) index))
               (field-entry (assq index field-alist))
@@ -186,7 +186,7 @@
          (alignment (apply max (map field-alignment fields)))
          (size (let* ((field (last fields))
                       (end (+ (field-position field) (field-size field))))
-                 (align end +inf.0 alignment))))
+                 (next-boundary end alignment))))
     (format #t "{\n")
     (for-each (lambda (field)
                 (let ((name (field-name field))
