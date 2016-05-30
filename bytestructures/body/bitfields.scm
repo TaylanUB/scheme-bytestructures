@@ -1,6 +1,6 @@
 ;;; bitfields.scm --- Struct bitfield constructor.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -57,12 +57,12 @@
       (integer-descriptor-signed->unsigned integer-descriptor)
       integer-descriptor))
 
-(define (bitfield-descriptor integer-descriptor bit-offset width)
-  (validate-integer-descriptor integer-descriptor)
-  (let ((integer-descriptor (unsigned-integer-descriptor integer-descriptor)))
-    (let ((num-getter (bytestructure-descriptor-getter integer-descriptor))
-          (num-setter (bytestructure-descriptor-setter integer-descriptor))
-          (signed? (integer-descriptor-signed? integer-descriptor)))
+(define (bitfield-descriptor int-descriptor bit-offset width)
+  (validate-integer-descriptor int-descriptor)
+  (let ((signed? (integer-descriptor-signed? int-descriptor))
+        (uint-descriptor (unsigned-integer-descriptor int-descriptor)))
+    (let ((num-getter (bytestructure-descriptor-getter uint-descriptor))
+          (num-setter (bytestructure-descriptor-setter uint-descriptor)))
       (define start bit-offset)
       (define end (+ start width))
       (define (getter syntax? bytevector offset)
