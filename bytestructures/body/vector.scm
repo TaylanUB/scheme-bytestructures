@@ -27,16 +27,16 @@
 ;;; Code:
 
 (define (bs:vector length descriptor)
-  (define content-size (bytestructure-descriptor-size descriptor))
-  (define size (* length content-size))
-  (define alignment content-size)
+  (define element-size (bytestructure-descriptor-size descriptor))
+  (define size (* length element-size))
+  (define alignment element-size)
   (define (ref-helper syntax? bytevector offset index)
     (values bytevector
             (if syntax?
                 (quasisyntax
                  (+ (unsyntax offset)
-                    (* (unsyntax index) (unsyntax content-size))))
-                (+ offset (* index content-size)))
+                    (* (unsyntax index) (unsyntax element-size))))
+                (+ offset (* index element-size)))
             descriptor))
   (define (setter syntax? bytevector offset value)
     (cond
@@ -44,7 +44,7 @@
       (bytevector-copy! bytevector offset value 0 size))
      ((vector? value)
       (do ((i 0 (+ i 1))
-           (offset offset (+ offset content-size)))
+           (offset offset (+ offset element-size)))
           ((= i (vector-length value)))
         (bytestructure-set!*
          bytevector offset descriptor (vector-ref value i))))
