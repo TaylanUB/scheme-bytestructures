@@ -5,4 +5,4 @@
  (bytestructures guile base)
  (bytestructures guile numeric-metadata))
 (include-from-path "bytestructures/body/bitfields.scm")
-(export bitfield-descriptor)
+(include-from-path "bytestructures/r7/bitfields.exports.sld")

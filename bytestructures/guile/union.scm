@@ -6,4 +6,4 @@
  (bytestructures guile utils)
  (bytestructures guile base))
 (include-from-path "bytestructures/body/union.scm")
-(export bs:union)
+(include-from-path "bytestructures/r7/union.exports.sld")

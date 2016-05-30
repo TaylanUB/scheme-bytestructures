@@ -5,4 +5,4 @@
  (bytestructures guile utils)
  (bytestructures guile base))
 (include-from-path "bytestructures/body/vector.scm")
-(export bs:vector)
+(include-from-path "bytestructures/r7/vector.exports.sld")

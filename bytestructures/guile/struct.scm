@@ -8,4 +8,4 @@
  (bytestructures guile base)
  (bytestructures guile bitfields))
 (include-from-path "bytestructures/body/struct.scm")
-(export bs:struct)
+(include-from-path "bytestructures/r7/struct.exports.sld")
