@@ -1,6 +1,3 @@
-#!/usr/bin/env guile
-!#
-
 ;;; Warning: nasal demons.
 ;;;
 ;;; Will output differences between GCC's behavior and our behavior, but not in
@@ -88,14 +85,14 @@
       (map c-decl-for-field fields)
       (list "};\n"
             (format #f "{ struct ~a foo;\n" name)
-            (format #f "  bzero((void*)&foo, sizeof(foo));"))
+            (format #f "  bzero((void*)&foo, sizeof(foo));\n"))
       (map c-assignment-for-field fields)
-      (list (format #f "printf(\"struct ~a:\\n\");\n" name)
+      (list (format #f "  printf(\"struct ~a:\\n\");\n" name)
             "  uint8_t *ptr = (void*)&foo;\n"
             "  for (int i = 0; i < sizeof(foo); ++i) {\n"
             "    printf(\"%d \", *(ptr+i));\n"
             "  }\n"
-            "  printf(\"\\n\");"
+            "  printf(\"\\n\");\n"
             "}\n")))))
 
 (define (c-decl-for-field field)
@@ -103,7 +100,7 @@
         (int-size (field-int-size field))
         (bit-size (field-bit-size field))
         (signed? (field-signed? field)))
-    (format #f "~aint~a_t ~a:~a; "
+    (format #f "  ~aint~a_t ~a:~a;\n"
             (if signed? "" "u")
             int-size
             (if (zero? bit-size) "" name)
@@ -116,7 +113,7 @@
         (value (field-value field)))
     (if (zero? bit-size)
         ""
-        (format #f "foo.~a = ~a~a;\n" name value (if signed? "" "u")))))
+        (format #f "  foo.~a = ~a~a;\n" name value (if signed? "" "u")))))
 
 (define (get-c-output code)
   (let* ((port (mkstemp! (string-copy "/tmp/bitfield-XXXXXX")))
