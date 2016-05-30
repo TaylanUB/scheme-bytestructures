@@ -1,6 +1,6 @@
 ;;; bytestructures --- Structured access to bytevector contents.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,13 +26,14 @@
 ;;; Descriptors
 
 (define-record-type <bytestructure-descriptor>
-  (make-bytestructure-descriptor size alignment ref-helper getter setter)
+  (make-bytestructure-descriptor size alignment ref-helper getter setter meta)
   bytestructure-descriptor?
   (size       bd-size)
   (alignment  bd-alignment)
   (ref-helper bd-ref-helper)
   (getter     bd-getter)
-  (setter     bd-setter))
+  (setter     bd-setter)
+  (meta       bd-meta))
 
 (define bytestructure-descriptor-size
   (case-lambda
@@ -53,6 +54,7 @@
 (define bytestructure-descriptor-ref-helper bd-ref-helper)
 (define bytestructure-descriptor-getter bd-getter)
 (define bytestructure-descriptor-setter bd-setter)
+(define bytestructure-descriptor-metadata bd-meta)
 
 
 ;;; Bytestructures

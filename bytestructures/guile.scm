@@ -16,6 +16,7 @@
  bytestructure-descriptor-ref-helper
  bytestructure-descriptor-getter
  bytestructure-descriptor-setter
+ bytestructure-descriptor-metadata
  make-bytestructure
  bytestructure?
  bytestructure-bytevector
@@ -34,7 +35,17 @@
  bytestructure-set!/syntax
  define-bytestructure-accessors
 
- bs:vector bs:struct bs:union bs:pointer
+ bs:vector
+ vector-metadata? vector-metadata-length vector-metadata-element-descriptor
+
+ bs:struct
+ struct-metadata? struct-metadata-field-alist
+
+ bs:union
+ union-metadata? union-metadata-field-alist
+
+ bs:pointer
+ pointer-metadata? pointer-metadata-content-descriptor
 
  int8 int16 int32 int64
  int16le int32le int64le

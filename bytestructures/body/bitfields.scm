@@ -57,6 +57,12 @@
       (integer-descriptor-signed->unsigned integer-descriptor)
       integer-descriptor))
 
+(define-record-type <bitfield-metadata>
+  (make-bitfield-metadata int-descriptor width)
+  bitfield-metadata?
+  (int-descriptor bitfield-metadata-int-descriptor)
+  (width          bitfield-metadata-width))
+
 (define (bitfield-descriptor int-descriptor bit-offset width)
   (validate-integer-descriptor int-descriptor)
   (let ((signed? (integer-descriptor-signed? int-descriptor))
@@ -81,6 +87,7 @@
                                             (unsyntax start) (unsyntax end)))
                            (copy-bit-field oldnum value start end))))
           (num-setter syntax? bytevector offset newnum)))
-      (make-bytestructure-descriptor #f #f #f getter setter))))
+      (define meta (make-bitfield-metadata int-descriptor width))
+      (make-bytestructure-descriptor #f #f #f getter setter meta))))
 
 ;;; bitfields.scm ends here

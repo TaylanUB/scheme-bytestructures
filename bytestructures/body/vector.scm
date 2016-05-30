@@ -1,6 +1,6 @@
 ;;; vector.scm --- Vector descriptor constructor.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,6 +26,12 @@
 
 ;;; Code:
 
+(define-record-type <vector-metadata>
+  (make-vector-metadata length element-descriptor)
+  vector-metadata?
+  (length             vector-metadata-length)
+  (element-descriptor vector-metadata-element-descriptor))
+
 (define (bs:vector length descriptor)
   (define element-size (bytestructure-descriptor-size descriptor))
   (define size (* length element-size))
@@ -50,6 +56,7 @@
          bytevector offset descriptor (vector-ref value i))))
      (else
       (error "Invalid value for writing into vector." value))))
-  (make-bytestructure-descriptor size alignment ref-helper #f setter))
+  (define meta (make-vector-metadata length descriptor))
+  (make-bytestructure-descriptor size alignment ref-helper #f setter meta))
 
 ;;; vector.scm ends here

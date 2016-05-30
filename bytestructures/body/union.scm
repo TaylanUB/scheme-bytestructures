@@ -1,6 +1,6 @@
 ;;; union.scm --- Union descriptor constructor.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,6 +33,11 @@
          (make-field (car field) (cadr field)))
        fields))
 
+(define-record-type <union-metadata>
+  (make-union-metadata field-alist)
+  union-metadata?
+  (field-alist union-metadata-field-alist))
+
 (define (bs:union %fields)
   (define fields (construct-fields %fields))
   (define size (apply max (map (lambda (field)
@@ -55,6 +60,7 @@
         (bytestructure-set!* bytevector* offset* descriptor (cadr value))))
      (else
       (error "Invalid value for writing into union." value))))
-  (make-bytestructure-descriptor size alignment ref-helper #f setter))
+  (define meta (make-union-metadata fields))
+  (make-bytestructure-descriptor size alignment ref-helper #f setter meta))
 
 ;;; union.scm ends here

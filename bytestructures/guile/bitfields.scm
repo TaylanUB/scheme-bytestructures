@@ -1,5 +1,6 @@
 (define-module (bytestructures guile bitfields))
 (import
+ (srfi :9)
  (srfi :60)
  (bytestructures guile utils)
  (bytestructures guile base)

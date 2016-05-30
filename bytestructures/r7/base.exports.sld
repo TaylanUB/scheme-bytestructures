@@ -7,6 +7,7 @@
  bytestructure-descriptor-ref-helper
  bytestructure-descriptor-getter
  bytestructure-descriptor-setter
+ bytestructure-descriptor-metadata
  make-bytestructure
  bytestructure?
  bytestructure-bytevector

@@ -1,6 +1,6 @@
 ;;; numeric.scm --- Numeric types as supported by (rnrs bytevectors).
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
           (quasisyntax
            (<setter> (unsyntax bytevector) (unsyntax offset) (unsyntax value)))
           (<setter> bytevector offset value)))
-    (make-bytestructure-descriptor size alignment #f getter setter)))
+    (make-bytestructure-descriptor size alignment #f getter setter #f)))
 
 (define-syntax-rule (define-numeric-descriptors <list>
                       (<name> <size> <getter> <setter>)

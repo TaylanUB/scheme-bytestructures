@@ -117,6 +117,11 @@
                   next-position
                   (cons field fields)))))))
 
+(define-record-type <struct-metadata>
+  (make-struct-metadata field-alist)
+  struct-metadata?
+  (field-alist struct-metadata-field-alist))
+
 (define bs:struct
   (case-lambda
     ((field-specs)
@@ -179,7 +184,13 @@
           value))
         (else
          (error "Invalid value for writing into struct." value))))
-     (make-bytestructure-descriptor size alignment ref-helper #f setter))))
+     (define meta
+       (let ((simple-field-alist (map (lambda (field)
+                                        (cons (field-name field)
+                                              (field-descriptor field)))
+                                      fields)))
+         (make-struct-metadata simple-field-alist)))
+     (make-bytestructure-descriptor size alignment ref-helper #f setter meta))))
 
 (define (debug-alignment pack fields)
   (let* ((fields (construct-fields pack fields))

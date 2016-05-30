@@ -30,7 +30,10 @@
  (bytestructures guile utils)
  (bytestructures guile base)
  (prefix (system foreign) ffi:))
-(export bs:pointer)
+(export
+ bs:pointer
+ pointer-metadata? pointer-metadata-content-descriptor
+ )
 
 (define pointer-size (ffi:sizeof '*))
 
@@ -53,6 +56,11 @@
     (if (zero? address)
         (error "Tried to dereference null-pointer.")
         (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
+
+(define-record-type <pointer-metadata>
+  (make-pointer-metadata content-descriptor)
+  pointer-metadata?
+  (content-descriptor pointer-metadata-content-descriptor))
 
 (define (bs:pointer %descriptor)
   (define (get-descriptor)
@@ -99,6 +107,7 @@
           (if syntax?
               #`(bytevector-address-set! #,bytevector #,offset #,value)
               (bytevector-address-set! bytevector offset value)))))
-  (make-bytestructure-descriptor size alignment ref-helper getter setter))
+  (define meta (make-pointer-metadata %descriptor))
+  (make-bytestructure-descriptor size alignment ref-helper getter setter meta))
 
 ;;; pointer.scm ends here
