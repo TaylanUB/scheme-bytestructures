@@ -1,6 +1,6 @@
 ;;; struct.scm --- Struct descriptor constructor.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -73,8 +73,10 @@
         (bytestructure-descriptor-size descriptor))
        ((size)
         (* 1/8 width))
+       ((int-alignment)
+        (bytestructure-descriptor-alignment descriptor))
        ((alignment)
-        (pack-alignment pack (bytestructure-descriptor-alignment descriptor)))
+        (pack-alignment pack int-alignment))
        ((position boundary offset)
         (align position size alignment))
        ((descriptor)
@@ -91,8 +93,11 @@
         (let* ((field-spec (car field-specs))
                (name (car field-spec))
                (descriptor (cadr field-spec))
-               (bitfield? (not (null? (cddr field-spec)))))
-          (if (and bitfield? (zero? (car (cddr field-spec))))
+               (bitfield? (not (null? (cddr field-spec))))
+               (width (if bitfield?
+                          (car (cddr field-spec))
+                          #f)))
+          (if (and bitfield? (zero? width))
               (let*-values
                   (((alignment)
                     (bytestructure-descriptor-alignment descriptor))
@@ -105,7 +110,7 @@
                   (((field next-position)
                     (if bitfield?
                         (construct-bit-field
-                         pack position name descriptor (car (cddr field-spec)))
+                         pack position name descriptor width)
                         (construct-field pack position name descriptor))))
                 (loop (cdr field-specs)
                       next-position
