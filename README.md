@@ -158,9 +158,9 @@ This returns a descriptor for vectors (arrays in C terms) of length
     ;; vec[1] = 42;
     (bytestructure-set! vec 1 42)
 
-The elements are indexed with non-negative integers as usual, and no
-bounds checking is done; an off-bounds index will either raise an
-error due to an off-bounds bytevector index, or attempt to decode
+The elements are indexed with exact non-negative integers as usual,
+and no bounds checking is done; an off-bounds index will either raise
+an error due to an off-bounds bytevector index, or attempt to decode
 whatever bytes are found at the relevant place in the bytevector,
 which might just result in a valid value without raising an error.
 
@@ -191,12 +191,11 @@ on which they will be used.
 - `(bs:struct pack fields)` *procedure*
 
 This returns a descriptor for a struct as in C.  `Fields` must be a
-list of field specs.  `Pack` may be `#f`, `#t`, or an exact
-non-negative non-zero integer.  If `pack` is omitted or `#f`, normal C
-struct alignment is used.  If `pack` is `#t`, there are no padding
-fields (except for bit-fields).  If `pack` is an integer, it specifies
-the maximum alignment value for the fields, akin to the `pack`
-directive of GCC.
+list of field specs.  `Pack` may be `#f`, `#t`, or an exact positive
+integer.  If `pack` is omitted or `#f`, normal C struct alignment is
+used.  If `pack` is `#t`, there are no padding fields (except for
+bit-fields).  If `pack` is an integer, it specifies the maximum
+alignment value for the fields, akin to the `pack` directive of GCC.
 
 A field spec is a list of two or three elements.  The first element
 must be a symbol which names the field (or `#f`; see below).  Every
@@ -440,8 +439,8 @@ Low-level procedure for creating descriptors.  Usually one of the
 high-level procedures such as `bs:vector` should be used.
 
 `Size` must be an exact non-negative integer, or a procedure taking
-three arguments and returning a non-negative integer (this is for
-dynamic descriptors).  The first argument to the procedure is a
+three arguments and returning an exact non-negative integer (this is
+for dynamic descriptors).  The first argument to the procedure is a
 Boolean indicating whether the call to the procedure is happening in
 the macro-expand phase.  If it's false, the other two arguments are a
 bytevector and an offset into the bytevector respectively.  If it's
@@ -452,8 +451,8 @@ descriptor start.  The procedure should return the size of the
 structure described by the descriptor, or return a syntax object that
 would evaluate to the size.
 
-`Alignment` must be an exact non-negative non-zero integer specifying
-the type's preferred memory alignment.
+`Alignment` must be an exact positive integer specifying the type's
+preferred memory alignment.
 
 `Unwrapper` must be `#f` or a procedure taking four arguments: a
 Boolean indicating whether the call to the procedure is happening in
