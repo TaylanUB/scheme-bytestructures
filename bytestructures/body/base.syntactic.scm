@@ -30,7 +30,7 @@
       ((_ . <pattern>)
        <body>))))
 
-(define (syntactic-ref-helper bytevector offset descriptor indices)
+(define (syntactic-unwrap bytevector offset descriptor indices)
   (define (syntax-car stx)
     (syntax-case stx () ((car . cdr) #'car)))
   (define (syntax-cdr stx)
@@ -42,34 +42,34 @@
              (descriptor descriptor)
              (indices indices))
     (if (not (syntax-null? indices))
-        (let ((ref-helper (bd-ref-helper descriptor)))
-          (when (not ref-helper)
+        (let ((unwrapper (bd-unwrapper descriptor)))
+          (when (not unwrapper)
             (error "Cannot index through this descriptor." descriptor))
           (let-values (((bytevector* offset* descriptor*)
-                        (ref-helper #t bytevector offset (syntax-car indices))))
+                        (unwrapper #t bytevector offset (syntax-car indices))))
             (loop bytevector* offset* descriptor* (syntax-cdr indices))))
         (let ((getter (bd-getter descriptor))
               (setter (bd-setter descriptor)))
           (values bytevector offset descriptor getter setter)))))
 
-(define (bytestructure-ref-helper/syntax bytevector offset descriptor indices)
+(define (bytestructure-unwrap/syntax bytevector offset descriptor indices)
   (let-values (((bytevector* offset* _descriptor _getter _setter)
-                (syntactic-ref-helper bytevector offset descriptor indices)))
+                (syntactic-unwrap bytevector offset descriptor indices)))
     #`(values #,bytevector* #,offset*)))
 
 (define (bytestructure-ref/syntax bytevector offset descriptor indices)
   (let-values (((bytevector* offset* descriptor* getter _setter)
-                (syntactic-ref-helper bytevector offset descriptor indices)))
+                (syntactic-unwrap bytevector offset descriptor indices)))
     (if getter
         (getter #t bytevector* offset*)
         (error "The indices given to bytestructure-ref/syntax do not lead to a
 bytestructure descriptor that can decode values.  You must have used the wrong
 getter macro, forgot to provide some of the indices, or meant to use the
-ref-helper instead of the getter.  The given indices follow." indices))))
+unwrapper instead of the getter.  The given indices follow." indices))))
 
 (define (bytestructure-set!/syntax bytevector offset descriptor indices value)
   (let-values (((bytevector* offset* descriptor* _getter setter)
-                (syntactic-ref-helper bytevector offset descriptor indices)))
+                (syntactic-unwrap bytevector offset descriptor indices)))
     (if setter
         (setter #t bytevector* offset* value)
         (error "The indices given to bytestructure-set!/syntax do not lead to a
@@ -77,11 +77,11 @@ bytestructure descriptor that can encode values.  You must have used the wrong
 setter macro, or forgot to provide some of the indices.  The given indices
 follow." indices))))
 
-(define-syntax-rule (define-bytestructure-ref-helper <name> <descriptor>)
+(define-syntax-rule (define-bytestructure-unwrapper <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
       (syntax-case-lambda stx (<bytevector> <offset> . <indices>)
-        (bytestructure-ref-helper/syntax
+        (bytestructure-unwrap/syntax
          #'<bytevector> #'<offset> descriptor #'<indices>)))))
 
 (define-syntax-rule (define-bytestructure-getter <name> <descriptor>)
@@ -98,9 +98,9 @@ follow." indices))))
          #'<bytevector> 0 descriptor #'(<index> (... ...)) #'<value>)))))
 
 (define-syntax-rule (define-bytestructure-accessors <descriptor>
-                      <ref-helper> <getter> <setter>)
+                      <unwrapper> <getter> <setter>)
   (begin
-    (define-bytestructure-ref-helper <ref-helper> <descriptor>)
+    (define-bytestructure-unwrapper <unwrapper> <descriptor>)
     (define-bytestructure-getter <getter> <descriptor>)
     (define-bytestructure-setter <setter> <descriptor>)))
 

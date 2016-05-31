@@ -136,7 +136,7 @@
      (define size (let* ((field (last %fields))
                          (end (+ (field-position field) (field-size field))))
                     (next-boundary end alignment)))
-     (define (ref-helper syntax? bytevector offset index)
+     (define (unwrapper syntax? bytevector offset index)
        (let* ((index (if syntax? (syntax->datum index) index))
               (field-entry (assq index field-alist))
               (field (if field-entry
@@ -179,7 +179,7 @@
             (let ((key (car pair))
                   (value (cadr pair)))
               (let-values (((bytevector offset descriptor)
-                            (ref-helper #f bytevector offset key)))
+                            (unwrapper #f bytevector offset key)))
                 (bytestructure-set!* bytevector offset descriptor value))))
           value))
         (else
@@ -190,7 +190,7 @@
                                               (field-descriptor field)))
                                       fields)))
          (make-struct-metadata simple-field-alist)))
-     (make-bytestructure-descriptor size alignment ref-helper #f setter meta))))
+     (make-bytestructure-descriptor size alignment unwrapper #f setter meta))))
 
 (define (debug-alignment pack fields)
   (let* ((fields (construct-fields pack fields))

@@ -38,7 +38,7 @@ API is available as well, for when the procedural API is too slow for
 your purposes.
 
     (define-bytestructure-accessors my-struct
-      my-struct-ref-helper my-struct-ref my-struct-set!)
+      my-struct-unwrap my-struct-ref my-struct-set!)
 
     (define foo (make-bytevector ...))
 
@@ -51,7 +51,7 @@ your purposes.
 (Note that we don't use the bytestructure data type anymore; we work
 directly on bytevectors.  The struct fields are also implicitly quoted
 and can't be variable references, since their look-up will happen at
-compile time.  The ref-helper will be explained later.)
+compile time.  The unwrapper will be explained later.)
 
 There are also "dynamic" bytestructure descriptors, whose behavior
 depends on the bytevector on which they're used.  For instance a
@@ -259,7 +259,7 @@ When using the macro API, the field names are implicitly quoted and
 looked up at macro-expand time.
 
     (define-bytestructure-accessors my-struct
-      my-struct-ref-helper my-struct-ref my-struct-set!)
+      my-struct-unwrap my-struct-ref my-struct-set!)
 
     ;; foo.y
     (my-struct-ref foo-bytevector y)
@@ -427,13 +427,13 @@ argument must be a bytestructure descriptor, and `offset` signifies
 that an argument must be an exact non-negative integer.
 
 A *dynamic descriptor* is a bytestructure descriptor whose `size`
-and/or `ref-helper` procedures reference their bytevector and/or
-offset arguments.
+and/or `unwrapper` procedures reference their bytevector and/or offset
+arguments.
 
 
 ### Bytestructure descriptors
 
-- `(make-bytestructure-descriptor size alignment ref-helper getter
+- `(make-bytestructure-descriptor size alignment unwrapper getter
   setter)` *procedure*
 
 Low-level procedure for creating descriptors.  Usually one of the
@@ -455,7 +455,7 @@ would evaluate to the size.
 `Alignment` must be an exact non-negative non-zero integer specifying
 the type's preferred memory alignment.
 
-`Ref-helper` must be `#f` or a procedure taking four arguments: a
+`Unwrapper` must be `#f` or a procedure taking four arguments: a
 Boolean indicating whether the call to the procedure is happening in
 the macro-expand phase, a bytevector (or syntax object thereof), an
 offset (or syntax object thereof), and an index object (or syntax
@@ -464,8 +464,8 @@ another bytevector (or syntax object thereof), a new offset (or syntax
 object thereof), and a bytestructure descriptor (NOT a syntax object
 thereof).  This procedure implements the indexing semantics of
 compound types.  The bytevector argument is provided to satisfy
-dynamic descriptors; the `ref-helper` of non-dynamic descriptors
-should ignore its value and return it back untouched.
+dynamic descriptors; the `unwrapper` of non-dynamic descriptors should
+ignore its value and return it back untouched.
 
 `Getter` must be `#f` or a procedure taking three arguments: a Boolean
 indicating whether the call to the procedure is happening in the
@@ -599,10 +599,10 @@ one can easily initialize structures to arbitrary depth.
 
 First references through `bytestructure` with the given zero or more
 `index` values to arrive at a certain bytevector, byte-offset, and
-bytestructure descriptor.  This is done by calling the `ref-helper` of
+bytestructure descriptor.  This is done by calling the `unwrapper` of
 the descriptor of `bytestructure` on the bytevector and offset of
 `bytestructure` and the first index, yielding an intermediate triple
-of a bytevector, offset and descriptor; then calling the `ref-helper`
+of a bytevector, offset and descriptor; then calling the `unwrapper`
 of that descriptor on that bytevector and offset and the second index,
 and so on until the indices are exhausted.  Finally, calls the
 `getter` of the finally arrived descriptor on the finally arrived
@@ -635,8 +635,8 @@ referencing process with the given `bytevector`, `offset`, and
 `descriptor`, instead of the bytevector, offset, and descriptor of a
 given bytestructure.
 
-- `(bytestructure-ref-helper bytestructure index ...)` *syntax*
-- `(bytestructure-ref-helper* bytevector offset descriptor index ...)`
+- `(bytestructure-unwrap bytestructure index ...)` *syntax*
+- `(bytestructure-unwrap* bytevector offset descriptor index ...)`
   *syntax*
 
 These macros have the same semantics as `bytestructure-ref` and
@@ -644,20 +644,20 @@ These macros have the same semantics as `bytestructure-ref` and
 don't call the `getter` of the arrived descriptor, and instead return
 the arrived bytevector, offset, and descriptor as three values.
 
-Note that `bytestructure-ref-helper` can be used with zero indices to
+Note that `bytestructure-unwrap` can be used with zero indices to
 destructure a bytestructure into its contents.
 
     (let-values (((bytevector offset descriptor)
-                  (bytestructure-ref-helper bytestructure)))
+                  (bytestructure-unwrap bytestructure)))
       ...)
 
-When a descriptor is not dynamic, `bytestructure-ref-helper*` may be
+When a descriptor is not dynamic, `bytestructure-unwrap*` may be
 given a bogus `bytevector` argument.
 
-    (bytestructure-ref-helper* #f 0 uint8-v3-v5 2)
+    (bytestructure-unwrap* #f 0 uint8-v3-v5 2)
     => #f, 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.
 
-    (bytestructure-ref-helper* #f 0 uint8-v3-v5 2 1)
+    (bytestructure-unwrap* #f 0 uint8-v3-v5 2 1)
     => #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
 
 
@@ -667,34 +667,34 @@ For when maximal efficiency is desired, a macro-based API is offered,
 so that the bulk of the work involved in offset calculation can be
 offloaded to the macro-expand phase.
 
-- `(define-bytestructure-accessors descriptor ref-helper getter
+- `(define-bytestructure-accessors descriptor unwrapper getter
   setter)` *syntax*
 
 The `descriptor` expression is evaluated during the macro-expand phase
-to yield a bytestructure descriptor.  The `ref-helper`, `getter`, and
+to yield a bytestructure descriptor.  The `unwrapper`, `getter`, and
 `setter` identifiers are bound to a triple of macros implementing the
 indexing, referencing, and assignment semantics of the given
 descriptor.
 
     (define-bytestructure-accessors (bs:vector 5 (bs:vector 3 uint8))
-      uint8-v3-v5-ref-helper uint8-v3-v5-getter uint8-v3-v5-setter)
+      uint8-v3-v5-unwrap uint8-v3-v5-ref uint8-v3-v5-set!)
 
-    (uint8-v3-v5-ref-helper #f 0 3 2)  ;the #f is a bogus bytevector
-                                       ;the 0 is the initial offset
+    (uint8-v3-v5-unwrap #f 0 3 2)  ;the #f is a bogus bytevector
+                                   ;the 0 is the initial offset
     => 11 (3 * 3 + 2)
 
     (define bv (apply bytevector (iota 15)))
-    (uint8-v3-v5-getter bv 2 1) => 7
-    (uint8-v3-v5-setter bv 2 1 42)
-    (uint8-v3-v5-getter bv 2 1) => 42
+    (uint8-v3-v5-ref bv 2 1) => 7
+    (uint8-v3-v5-set! bv 2 1 42)
+    (uint8-v3-v5-ref bv 2 1) => 42
 
-- `(bytestructure-ref-helper/syntax bytevector-syntax offset-syntax
+- `(bytestructure-unwrap/syntax bytevector-syntax offset-syntax
   descriptor indices-syntax)` *procedure*
 
-The semantics are akin to `bytestructure-ref-helper*`, except that
-some arguments are syntax objects, and the return value is a syntax
-object that would evaluate to two values: the bytevector and offset
-that are the result of the indexing process.
+The semantics are akin to `bytestructure-unwrap*`, except that some
+arguments are syntax objects, and the return value is a syntax object
+that would evaluate to two values: the bytevector and offset that are
+the result of the indexing process.
 
 - `(bytestructure-ref/syntax bytevector-syntax offset-syntax
   descriptor indices-syntax)` *procedure*
@@ -735,7 +735,7 @@ Bytestructure reference:
         (bs:vector 5 (bs:vector 5 (bs:struct `((x ,uint8)
                                                (y ,uint8)
                                                (z ,uint8)))))
-        bs-ref-helper bs-ref bs-set)
+        bs-unwrap bs-ref bs-set!)
     > (define-inlinable (ref x) (bs-ref bv 4 4 z))
     > ,time (for-each ref times)
     ;; ~0.14s real time
@@ -766,7 +766,7 @@ of your code.  E.g. if you were doing `(bytestructure-ref bs x y z)`
 within a loop, you can instead do
 
     (let-values (((bytevector offset descriptor)
-                  (bytestructure-ref-helper bs x y z)))
+                  (bytestructure-unwrap bs x y z)))
       (loop
         (bytestructure-ref* bytevector offset descriptor)))
 
@@ -774,7 +774,7 @@ or if for instance the last index in that example, `z`, changes at
 every iteration of the loop, you can do
 
     (let-values (((bytevector offset descriptor)
-                  (bytestructure-ref-helper bs x y)))
+                  (bytestructure-unwrap bs x y)))
       (loop (for z in blah)
         (bytestructure-ref* bytevector offset descriptor z)))
 

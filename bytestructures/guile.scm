@@ -13,7 +13,7 @@
  bytestructure-descriptor-size
  bytestructure-descriptor-size/syntax
  bytestructure-descriptor-alignment
- bytestructure-descriptor-ref-helper
+ bytestructure-descriptor-unwrapper
  bytestructure-descriptor-getter
  bytestructure-descriptor-setter
  bytestructure-descriptor-metadata
@@ -24,13 +24,13 @@
  bytestructure-descriptor
  bytestructure-size
  bytestructure
- bytestructure-ref-helper
- bytestructure-ref-helper*
+ bytestructure-unwrap
+ bytestructure-unwrap*
  bytestructure-ref
  bytestructure-ref*
  bytestructure-set!
  bytestructure-set!*
- bytestructure-ref-helper/syntax
+ bytestructure-unwrap/syntax
  bytestructure-ref/syntax
  bytestructure-set!/syntax
  define-bytestructure-accessors

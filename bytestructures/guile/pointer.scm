@@ -69,7 +69,7 @@
         %descriptor))
   (define size pointer-size)
   (define alignment size)
-  (define (ref-helper syntax? bytevector offset index)
+  (define (unwrapper syntax? bytevector offset index)
     (define (syntax-list id . elements)
       (datum->syntax id (map syntax->datum elements)))
     (let* ((descriptor (get-descriptor))
@@ -81,9 +81,9 @@
       (if (eq? '* index-datum)
           (values bytevector* 0 descriptor)
           (if syntax?
-              (bytestructure-ref-helper/syntax
+              (bytestructure-unwrap/syntax
                bytevector* 0 descriptor (syntax-list index index))
-              (bytestructure-ref-helper*
+              (bytestructure-unwrap*
                bytevector* 0 descriptor index)))))
   (define (getter syntax? bytevector offset)
     (if syntax?
@@ -108,6 +108,6 @@
               #`(bytevector-address-set! #,bytevector #,offset #,value)
               (bytevector-address-set! bytevector offset value)))))
   (define meta (make-pointer-metadata %descriptor))
-  (make-bytestructure-descriptor size alignment ref-helper getter setter meta))
+  (make-bytestructure-descriptor size alignment unwrapper getter setter meta))
 
 ;;; pointer.scm ends here

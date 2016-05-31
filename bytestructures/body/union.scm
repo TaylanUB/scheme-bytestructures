@@ -45,7 +45,7 @@
                                   (field-content field)))
                                fields)))
   (define alignment size)
-  (define (ref-helper syntax? bytevector offset index)
+  (define (unwrapper syntax? bytevector offset index)
     (let ((index (if syntax? (syntax->datum index) index)))
       (values bytevector
               offset
@@ -56,11 +56,11 @@
       (bytevector-copy! bytevector offset value 0 size))
      ((and (list? value) (= 2 (length value)))
       (let-values (((bytevector* offset* descriptor)
-                    (ref-helper #f bytevector offset (car value))))
+                    (unwrapper #f bytevector offset (car value))))
         (bytestructure-set!* bytevector* offset* descriptor (cadr value))))
      (else
       (error "Invalid value for writing into union." value))))
   (define meta (make-union-metadata fields))
-  (make-bytestructure-descriptor size alignment ref-helper #f setter meta))
+  (make-bytestructure-descriptor size alignment unwrapper #f setter meta))
 
 ;;; union.scm ends here

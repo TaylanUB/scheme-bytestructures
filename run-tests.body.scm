@@ -82,7 +82,7 @@
                    (define min/max (get-min/max float? signed? size))
                    ;; Must insert the top-level reference <descriptor-id> here.
                    (define-bytestructure-accessors <descriptor-id>
-                     bs-ref-helper bs-getter bs-setter)
+                     bs-unwrapper bs-getter bs-setter)
                    (define bv (make-bytevector size))
                    (test-= "ref" test-value-1
                      (begin
@@ -121,7 +121,7 @@
   (maybe-skip-syntax
    (test-group "syntactic"
      (define-bytestructure-accessors (bs:vector 3 uint16)
-       ref-helper getter setter)
+       unwrapper getter setter)
      (define bv (make-bytevector 6))
      (bytevector-u16-native-set! bv 2 321)
      (test-eqv "ref" 321 (getter bv 1))
@@ -144,7 +144,7 @@
     (maybe-skip-syntax
      (test-group "syntactic"
        (define-bytestructure-accessors (bs:struct `((x ,uint8) (y ,uint16)))
-         ref-helper getter setter)
+         unwrapper getter setter)
        (define bv (make-bytevector 4))
        (bytevector-u16-native-set! bv 2 321)
        (test-eqv "ref" 321 (getter bv y))
@@ -167,7 +167,7 @@
     (maybe-skip-syntax
      (test-group "syntactic"
        (define-bytestructure-accessors (bs:struct #t `((x ,uint8) (y ,uint16)))
-         ref-helper getter setter)
+         unwrapper getter setter)
        (define bv (make-bytevector 4))
        ;; u16-native-set! may error on non-aligned access.
        (guard (err (else (test-skip 2)))
@@ -188,7 +188,7 @@
   (maybe-skip-syntax
    (test-group "syntactic"
      (define-bytestructure-accessors (bs:union `((x ,uint8) (y ,uint16)))
-       ref-helper getter setter)
+       unwrapper getter setter)
      (define bv (make-bytevector 2))
      (bytevector-u16-native-set! bv 0 321)
      (test-eqv "ref" 321 (getter bv y))
@@ -228,7 +228,7 @@
         (protect-from-gc-upto-here bv2)))
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:pointer uint16)
-        ref-helper getter setter)
+        unwrapper getter setter)
       (define bv (make-bytevector pointer-size))
       (define bv1 (make-bytevector 2))
       (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))

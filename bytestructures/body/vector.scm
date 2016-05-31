@@ -36,7 +36,7 @@
   (define element-size (bytestructure-descriptor-size descriptor))
   (define size (* length element-size))
   (define alignment element-size)
-  (define (ref-helper syntax? bytevector offset index)
+  (define (unwrapper syntax? bytevector offset index)
     (values bytevector
             (if syntax?
                 (quasisyntax
@@ -57,6 +57,6 @@
      (else
       (error "Invalid value for writing into vector." value))))
   (define meta (make-vector-metadata length descriptor))
-  (make-bytestructure-descriptor size alignment ref-helper #f setter meta))
+  (make-bytestructure-descriptor size alignment unwrapper #f setter meta))
 
 ;;; vector.scm ends here

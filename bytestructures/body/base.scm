@@ -26,11 +26,11 @@
 ;;; Descriptors
 
 (define-record-type <bytestructure-descriptor>
-  (make-bytestructure-descriptor size alignment ref-helper getter setter meta)
+  (make-bytestructure-descriptor size alignment unwrapper getter setter meta)
   bytestructure-descriptor?
   (size       bd-size)
   (alignment  bd-alignment)
-  (ref-helper bd-ref-helper)
+  (unwrapper  bd-unwrapper)
   (getter     bd-getter)
   (setter     bd-setter)
   (meta       bd-meta))
@@ -51,7 +51,7 @@
         size)))
 
 (define bytestructure-descriptor-alignment bd-alignment)
-(define bytestructure-descriptor-ref-helper bd-ref-helper)
+(define bytestructure-descriptor-unwrapper bd-unwrapper)
 (define bytestructure-descriptor-getter bd-getter)
 (define bytestructure-descriptor-setter bd-setter)
 (define bytestructure-descriptor-metadata bd-meta)
@@ -82,14 +82,14 @@
                                  (bytestructure-bytevector bytestructure)
                                  (bytestructure-offset bytestructure)))
 
-(define-syntax-rule (bytestructure-ref-helper <bytestructure> <index> ...)
+(define-syntax-rule (bytestructure-unwrap <bytestructure> <index> ...)
   (let ((bytestructure <bytestructure>))
     (let ((bytevector (bytestructure-bytevector bytestructure))
           (offset     (bytestructure-offset     bytestructure))
           (descriptor (bytestructure-descriptor bytestructure)))
-      (bytestructure-ref-helper* bytevector offset descriptor <index> ...))))
+      (bytestructure-unwrap* bytevector offset descriptor <index> ...))))
 
-(define-syntax bytestructure-ref-helper*
+(define-syntax bytestructure-unwrap*
   (syntax-rules ()
     ((_ <bytevector> <offset> <descriptor>)
      (values <bytevector> <offset> <descriptor>))
@@ -97,23 +97,23 @@
      (let ((bytevector <bytevector>)
            (offset <offset>)
            (descriptor <descriptor>))
-       (let ((ref-helper (bd-ref-helper descriptor)))
-         (when (not ref-helper)
+       (let ((unwrapper (bd-unwrapper descriptor)))
+         (when (not unwrapper)
            (error "Cannot index through this descriptor." descriptor))
          (let-values (((bytevector* offset* descriptor*)
-                       (ref-helper #f bytevector offset <index>)))
-           (bytestructure-ref-helper*
+                       (unwrapper #f bytevector offset <index>)))
+           (bytestructure-unwrap*
             bytevector* offset* descriptor* <indices> ...)))))))
 
 (define-syntax-rule (bytestructure-ref <bytestructure> <index> ...)
   (let-values (((bytevector offset descriptor)
-                (bytestructure-ref-helper <bytestructure> <index> ...)))
+                (bytestructure-unwrap <bytestructure> <index> ...)))
     (bytestructure-primitive-ref bytevector offset descriptor)))
 
 (define-syntax-rule (bytestructure-ref*
                      <bytevector> <offset> <descriptor> <index> ...)
   (let-values (((bytevector offset descriptor)
-                (bytestructure-ref-helper*
+                (bytestructure-unwrap*
                  <bytevector> <offset> <descriptor> <index> ...)))
     (bytestructure-primitive-ref bytevector offset descriptor)))
 
@@ -125,13 +125,13 @@
 
 (define-syntax-rule (bytestructure-set! <bytestructure> <index> ... <value>)
   (let-values (((bytevector offset descriptor)
-                (bytestructure-ref-helper <bytestructure> <index> ...)))
+                (bytestructure-unwrap <bytestructure> <index> ...)))
     (bytestructure-primitive-set! bytevector offset descriptor <value>)))
 
 (define-syntax-rule (bytestructure-set!*
                      <bytevector> <offset> <descriptor> <index> ... <value>)
   (let-values (((bytevector offset descriptor)
-                (bytestructure-ref-helper*
+                (bytestructure-unwrap*
                  <bytevector> <offset> <descriptor> <index> ...)))
     (bytestructure-primitive-set! bytevector offset descriptor <value>)))
 
@@ -147,7 +147,7 @@
                    value descriptor)))))
 
 (define-syntax-case-stubs
-  bytestructure-ref-helper/syntax
+  bytestructure-unwrap/syntax
   bytestructure-ref/syntax
   bytestructure-set!/syntax
   define-bytestructure-accessors)
