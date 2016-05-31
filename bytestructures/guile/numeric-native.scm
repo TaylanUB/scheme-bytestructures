@@ -1,6 +1,6 @@
 ;;; numeric-native.scm --- Native numeric types, via Guile's FFI module.
 
-;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,11 +31,12 @@
 (export
  short unsigned-short int unsigned-int long unsigned-long
  size_t ssize_t ptrdiff_t
+ float double
  )
 
 (define-syntax define-native-synonyms
   (syntax-rules ()
-    ((_ (signed ...) (unsigned ...))
+    ((_ (signed ...) (unsigned ...) (float ...))
      (begin
        (define signed
          (case (sizeof (@ (system foreign) signed))
@@ -50,10 +51,16 @@
            ((2) uint16)
            ((4) uint32)
            ((8) uint64)))
+       ...
+       (define float
+         (case (sizeof (@ (system foreign) float))
+           ((4) float32)
+           ((8) float64)))
        ...))))
 
 (define-native-synonyms
   (short int long ssize_t ptrdiff_t)
-  (unsigned-short unsigned-int unsigned-long size_t))
+  (unsigned-short unsigned-int unsigned-long size_t)
+  (float double))
 
 ;;; numeric-native.scm ends here

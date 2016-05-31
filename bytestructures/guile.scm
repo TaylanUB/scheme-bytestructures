@@ -59,4 +59,5 @@
 
  short unsigned-short int unsigned-int long unsigned-long
  size_t ssize_t ptrdiff_t
+ float double
  )

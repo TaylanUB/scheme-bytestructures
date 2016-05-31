@@ -394,7 +394,8 @@ Some descriptors for numeric types are readily provided in the
 `[u]int(8,16,32,64)[le,be]`.
 
 On Guile, the following native types are also available:
-`[unsigned-](short,int,long)`, `size_t`, `ssize_t`, `ptrdiff_t`
+`[unsigned-](short,int,long)`, `size_t`, `ssize_t`, `ptrdiff_t`,
+`float`, `double`
 
 These descriptors cannot be indexed through as vectors and structs
 can; they can only be used to directly reference or assign values.
