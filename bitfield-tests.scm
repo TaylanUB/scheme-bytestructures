@@ -29,9 +29,12 @@
   (signed?  field-signed?)
   (value    field-value))
 
-(define (run-bitfield-tests count random-seed-string)
+(define *keep-files* (make-parameter #f))
+
+(define (run-bitfield-tests count random-seed-string keep-files)
   (set! *random-state* (seed->random-state random-seed-string))
-  (test-structs (generate-structs count)))
+  (parameterize ((*keep-files* keep-files))
+    (test-structs (generate-structs count))))
 
 (define (generate-structs n)
   (remove-bad-structs (map random-struct (iota n))))
@@ -131,7 +134,8 @@
     (unless (zero? (system (format #f "~a > ~a" exe-file output-file)))
       (error "exe failed"))
     (let ((out (read-string (open output-file O_RDONLY))))
-      (for-each delete-file (list file exe-file output-file))
+      (unless (*keep-files*)
+        (for-each delete-file (list file exe-file output-file)))
       out)))
 
 (define (scm-code-for-structs structs)
@@ -190,4 +194,7 @@
     (flush-all-ports)
     (close-port p1)
     (close-port p2)
-    (system* "diff" "-y" "--suppress-common" f1 f2)))
+    (let ((retval (system* "diff" "-y" "--suppress-common" f1 f2)))
+      (unless (*keep-files*)
+        (for-each delete-file (list f1 f2)))
+      retval)))
