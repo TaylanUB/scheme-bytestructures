@@ -391,7 +391,7 @@ bytevector, and calculating what its size should be.)
 ### Numeric types
 
 Some descriptors for numeric types are readily provided in the
-`numeric` sub-library: `float32[le,be]`, `double64[le,be]`,
+`numeric` sub-library: `float32[le,be]`, `float64[le,be]`,
 `[u]int(8,16,32,64)[le,be]`.
 
 On Guile, the following native types are also available:

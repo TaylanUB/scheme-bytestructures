@@ -51,7 +51,7 @@
     (,int64 . ,ffi:int64)
     (,uint64 . ,ffi:uint64)
     (,float32 . ,ffi:float)
-    (,double64 . ,ffi:double)))
+    (,float64 . ,ffi:double)))
 
 (define (bytestructure-descriptor->ffi-descriptor descriptor)
   (define (convert descriptor top-level?)

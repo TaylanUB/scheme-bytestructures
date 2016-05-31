@@ -99,7 +99,7 @@
          ...))))
   (test-numeric-descriptors
    float32 float32le float32be
-   double64 double64le double64be
+   float64 float64le float64be
    int8 int16 int32 int64
    int16le int32le int64le
    int16be int32be int64be

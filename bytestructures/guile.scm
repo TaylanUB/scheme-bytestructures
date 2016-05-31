@@ -53,8 +53,9 @@
  uint8 uint16 uint32 uint64
  uint16le uint32le uint64le
  uint16be uint32be uint64be
- float32 double64 float32le
- double64le float32be double64be
+ float32 float64
+ float32le float64le
+ float32be float64be
 
  short unsigned-short int unsigned-int long unsigned-long
  size_t ssize_t ptrdiff_t

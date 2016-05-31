@@ -67,7 +67,7 @@
   float-native-descriptors
   (float32
    4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
-  (double64
+  (float64
    8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!))
 
 (define-syntax-rule (define-with-endianness <list> <endianness>
@@ -109,15 +109,15 @@
   float-le-descriptors (endianness little)
   (float32le
    4 float32 bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!)
-  (double64le
-   8 double64 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
+  (float64le
+   8 float64 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
 
 (define-with-endianness
   float-be-descriptors (endianness big)
   (float32be
    4 float32 bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
-  (double64be
-   8 double64 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
+  (float64be
+   8 float64 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
 
 (define signed-integer-descriptors
   (append signed-integer-native-descriptors
