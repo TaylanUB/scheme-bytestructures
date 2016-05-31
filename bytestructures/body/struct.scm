@@ -168,11 +168,11 @@
                    (bytestructure-set!* bytevector offset descriptor value)
                    (loop (cdr fields) (cdr values)))))))
         ((pair? value)
-         ;; Assumed to be an alist.
+         ;; Assumed to be a pseudo-alist like ((k1 v1) (k2 v2) ...).
          (for-each
           (lambda (pair)
             (let ((key (car pair))
-                  (value (cdr pair)))
+                  (value (cadr pair)))
               (let-values (((bytevector offset descriptor)
                             (ref-helper #f bytevector offset key)))
                 (bytestructure-set!* bytevector offset descriptor value))))
