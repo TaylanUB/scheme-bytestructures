@@ -8,4 +8,10 @@
  float32 float64
  float32le float64le
  float32be float64be
+ short unsigned-short
+ int unsigned-int
+ long unsigned-long
+ long-long unsigned-long-long
+ size_t ssize_t ptrdiff_t
+ float double
  )

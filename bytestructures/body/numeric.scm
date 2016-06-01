@@ -140,4 +140,36 @@
 (define numeric-descriptors
   (append integer-descriptors float-descriptors))
 
+(define short int16)
+(define unsigned-short uint16)
+
+(define int int32)
+(define unsigned-int uint32)
+
+(define long (cond-expand
+              (lp64 int64)
+              (else int32)))
+
+(define unsigpend-long (cond-expand
+                        (lp64 uint64)
+                        (else uint32)))
+
+(define long-long int64)
+(define unsigned-long-long uint64)
+
+(define size_t (cond-expand
+                (ilp32 uint32)
+                (else uint64)))
+
+(define ssize_t (cond-expand
+                 (ilp32 int32)
+                 (else int64)))
+
+(define ptrdiff_t (cond-expand
+                   (ilp32 int32)
+                   (else int64)))
+
+(define float float32)
+(define double float64)
+
 ;;; numeric.scm ends here
