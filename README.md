@@ -449,6 +449,11 @@ otherwise memory safe.
 The following descriptors for numeric types are provided:
 `[u]int(8,16,32,64)[le,be]`, `float32[le,be]`, `float64[le,be]`
 
+On platforms with little-endian byte order, the descriptors whose name
+ends in `le` are equivalent as per `eqv?` to their variant without an
+explicit endianness marker.  The same applies for the big-endian
+descriptors on big-endian platforms.
+
 The following are each equivalent as per `eqv?` to one of the above
 listed descriptors, depending on the platform on which the Scheme
 program is run: `[unsigned-](short,int,long,long-long)`, `size_t`,
