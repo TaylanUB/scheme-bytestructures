@@ -51,11 +51,23 @@
     ((4) bytevector-u32-native-set!)
     ((8) bytevector-u64-native-set!)))
 
-(define (%pointer-ref bytevector offset content-size)
+(define (pointer-ref bytevector offset content-size)
   (let ((address (bytevector-address-ref bytevector offset)))
     (if (zero? address)
         (error "Tried to dereference null-pointer.")
         (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
+
+(define (pointer-set! bytevector offset value)
+  (cond
+   ((exact-integer? value)
+    (bytevector-address-set! bytevector offset value))
+   ((bytevector? value)
+    (bytevector-address-set! bytevector offset
+                             (ffi:bytevector->pointer value)))
+   ((bytestructure? value)
+    (bytevector-address-set! bytevector offset
+                             (ffi:bytevector->pointer
+                              (bytestructure-bytevector value))))))
 
 (define-record-type <pointer-metadata>
   (make-pointer-metadata content-descriptor)
@@ -75,8 +87,8 @@
     (let* ((descriptor (get-descriptor))
            (size (bytestructure-descriptor-size descriptor))
            (bytevector* (if syntax?
-                            #`(%pointer-ref #,bytevector #,offset #,size)
-                            (%pointer-ref bytevector offset size)))
+                            #`(pointer-ref #,bytevector #,offset #,size)
+                            (pointer-ref bytevector offset size)))
            (index-datum (if syntax? (syntax->datum index) index)))
       (if (eq? '* index-datum)
           (values bytevector* 0 descriptor)
@@ -90,23 +102,9 @@
         #`(bytevector-address-ref #,bytevector #,offset)
         (bytevector-address-ref bytevector offset)))
   (define (setter syntax? bytevector offset value)
-    (define (syntax-car stx)
-      (syntax-case stx () ((car . cdr) #'car)))
-    (let ((value-datum (if syntax? (syntax->datum value) value)))
-      (if (and (pair? value-datum) (null? (cdr value-datum)))
-          (let* ((descriptor (get-descriptor))
-                 (size (bytestructure-descriptor-size descriptor))
-                 (bytevector* (if syntax?
-                                  #`(%pointer-ref #,bytevector #,offset #,size)
-                                  (%pointer-ref bytevector offset size))))
-            (if syntax?
-                (bytestructure-set!/syntax
-                 bytevector* 0 descriptor '() (syntax-car value))
-                (bytestructure-set!*
-                 bytevector* 0 descriptor (car value))))
-          (if syntax?
-              #`(bytevector-address-set! #,bytevector #,offset #,value)
-              (bytevector-address-set! bytevector offset value)))))
+    (if syntax?
+        #`(pointer-set! #,bytevector #,offset #,value)
+        (pointer-set! bytevector offset value)))
   (define meta (make-pointer-metadata %descriptor))
   (make-bytestructure-descriptor size alignment unwrapper getter setter meta))
 
