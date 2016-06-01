@@ -664,6 +664,15 @@ given a bogus `bytevector` argument.
     (bytestructure-unwrap* #f 0 uint8-v3-v5 2 1)
     => #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
 
+- `(bytestructure-ref/dynamic bytestructure index ...)` *procedure*
+- `(bytestructure-set!/dynamic bytestructure index ... value)`
+  *procedure*
+
+These procedures are equivalent to the macros `bytestructure-ref` and
+`bytestructure-set!` respectively.  Since they take a variable number
+of arguments, they allocate rest-arguments lists, which is why they're
+unpreferable to the macro variants in general use.
+
 
 ### Macro-based API
 
@@ -708,7 +717,7 @@ arguments are syntax objects, and the return value is a syntax object
 that would evaluate to the decoded value.
 
 - `(bytestructure-set!/syntax bytevector offset descriptor indices
-  values)` *procedure*
+  value)` *procedure*
 
 The semantics are akin to `bytestructure-set!*`, except that some
 arguments are syntax objects, and a syntax object is returned that

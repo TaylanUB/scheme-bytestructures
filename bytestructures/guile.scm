@@ -30,6 +30,8 @@
  bytestructure-ref*
  bytestructure-set!
  bytestructure-set!*
+ bytestructure-ref/dynamic
+ bytestructure-set!/dynamic
  bytestructure-unwrap/syntax
  bytestructure-ref/syntax
  bytestructure-set!/syntax

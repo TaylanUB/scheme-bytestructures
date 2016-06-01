@@ -146,6 +146,40 @@
             (error "Cannot write value with this bytestructure descriptor."
                    value descriptor)))))
 
+(define (bytestructure-ref/dynamic bytestructure . indices)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-unwrap bytestructure)))
+    (let loop ((bytevector bytevector)
+               (offset offset)
+               (descriptor descriptor)
+               (indices indices))
+      (if (null? indices)
+          (bytestructure-primitive-ref bytevector offset descriptor)
+          (let-values (((bytevector* offset* descriptor*)
+                        (bytestructure-unwrap*
+                         bytevector offset descriptor (car indices))))
+            (loop bytevector*
+                  offset*
+                  descriptor*
+                  (cdr indices)))))))
+
+(define (bytestructure-set!/dynamic bytestructure . args)
+  (let-values (((bytevector offset descriptor)
+                (bytestructure-unwrap bytestructure)))
+    (let loop ((bytevector bytevector)
+               (offset offset)
+               (descriptor descriptor)
+               (args args))
+      (if (null? (cdr args))
+          (bytestructure-primitive-set! bytevector offset descriptor (car args))
+          (let-values (((bytevector* offset* descriptor*)
+                        (bytestructure-unwrap*
+                         bytevector offset descriptor (car args))))
+            (loop bytevector*
+                  offset*
+                  descriptor*
+                  (cdr args)))))))
+
 (define-syntax-case-stubs
   bytestructure-unwrap/syntax
   bytestructure-ref/syntax
