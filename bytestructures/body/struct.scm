@@ -153,6 +153,8 @@
        (define (count-error fields values)
          (error "Mismatch between number of struct fields and given values."
                 fields values))
+       (when syntax?
+         (error "Writing into struct not supported with macro API."))
        (cond
         ((bytevector? value)
          (bytevector-copy! bytevector offset value 0 size))

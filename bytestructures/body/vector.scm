@@ -45,6 +45,8 @@
                 (+ offset (* index element-size)))
             descriptor))
   (define (setter syntax? bytevector offset value)
+    (when syntax?
+      (error "Writing into vector not supported with macro API."))
     (cond
      ((bytevector? value)
       (bytevector-copy! bytevector offset value 0 size))

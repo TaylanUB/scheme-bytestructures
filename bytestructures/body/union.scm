@@ -51,6 +51,8 @@
               offset
               (field-content (find-field index fields)))))
   (define (setter syntax? bytevector offset value)
+    (when syntax?
+      (error "Writing into union not supported with macro API."))
     (cond
      ((bytevector? value)
       (bytevector-copy! bytevector offset value 0 size))
