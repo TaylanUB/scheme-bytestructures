@@ -513,8 +513,12 @@ which will be passed to the `size` procedure of `descriptor`, with the
 macro-expand Boolean argument set to false.
 
 - `(bytestructure-descriptor-alignment descriptor)` *procedure*
+- `(bytestructure-descriptor-unwrapper descriptor)` *procedure*
+- `(bytestructure-descriptor-getter descriptor)` *procedure*
+- `(bytestructure-descriptor-setter descriptor)` *procedure*
 
-Returns the preferred memory alignment of the descriptor.
+These procedures return the `alignment`, `unwrapper`, `getter`, and
+`setter` values respectively, with which the descriptor was created.
 
 
 ### The bytestructure data type
