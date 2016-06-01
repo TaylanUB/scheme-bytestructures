@@ -475,7 +475,7 @@ bytes at the given offset in the given bytevector (or return a syntax
 object whose evaluation would do this), thus implementing the
 referencing semantics of the descriptor.
 
-`Setter` must be `#f` or a procedure taking three arguments a Boolean
+`Setter` must be `#f` or a procedure taking four arguments: a Boolean
 indicating whether the call to the procedure is happening in the
 macro-expand phase, a bytevector (or syntax object thereof), an offset
 (or syntax object thereof), and a value (or syntax object thereof).
