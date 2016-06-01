@@ -119,6 +119,84 @@
   (float64be
    8 float64 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
 
+(define-syntax-rule (make-complex-descriptor
+                     <float-size> <float-getter> <float-setter>)
+  (let ()
+    (define size (* 2 <float-size>))
+    (define alignment <float-size>)
+    (define (getter syntax? bytevector offset)
+      (if syntax?
+          (quasisyntax
+           (let ((real (<float-getter> (unsyntax bytevector)
+                                       (unsyntax offset)))
+                 (imag (<float-getter> (unsyntax bytevector)
+                                       (+ (unsyntax offset) <float-size>))))
+             (make-rectangular real imag)))
+          (let ((real (<float-getter> bytevector offset))
+                (imag (<float-getter> bytevector (+ offset <float-size>))))
+            (make-rectangular real imag))))
+    (define (setter syntax? bytevector offset value)
+      (if syntax?
+          (quasisyntax
+           (let ((val (unsyntax value)))
+             (let ((real (real-part val))
+                   (imag (imag-part val)))
+               (<float-setter> (unsyntax bytevector)
+                               (unsyntax offset)
+                               real)
+               (<float-setter> (unsyntax bytevector)
+                               (+ (unsyntax offset) <float-size>)
+                               imag))))
+          (let ((real (real-part value))
+                (imag (imag-part value)))
+            (<float-setter> bytevector offset real)
+            (<float-setter> bytevector (+ offset <float-size>) imag))))
+    (make-bytestructure-descriptor size alignment #f getter setter #f)))
+
+(define-syntax-rule (define-complex-descriptors <list>
+                      (<name> <float-size> <float-getter> <float-setter>)
+                      ...)
+  (begin
+    (define <name>
+      (make-complex-descriptor <float-size> <float-getter> <float-setter>))
+    ...
+    (define <list> (list (list <name> '<name> <float-getter> <float-setter>)
+                         ...))))
+
+(define-complex-descriptors
+  complex-native-descriptors
+  (complex64
+   4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
+  (complex128
+   8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!))
+
+(define-syntax-rule (define-complex-with-endianness <list> <endianness>
+                      (<name> <float-size> <native-name>
+                              <float-getter> <float-setter>)
+                      ...)
+  (begin
+    (define <name>
+      (if (equal? <endianness> (native-endianness))
+          <native-name>
+          (make-complex-descriptor <float-size> <float-getter> <float-setter>)))
+    ...
+    (define <list> (list (list <name> '<name> <float-getter> <float-setter>)
+                         ...))))
+
+(define-complex-with-endianness
+  complex-le-descriptors (endianness little)
+  (complex64le
+   4 complex64  bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!)
+  (complex128le
+   8 complex128 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
+
+(define-complex-with-endianness
+  complex-be-descriptors (endianness big)
+  (complex64be
+   4 complex64  bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
+  (complex128be
+   8 complex128 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
+
 (define signed-integer-descriptors
   (append signed-integer-native-descriptors
           signed-integer-le-descriptors
@@ -137,8 +215,13 @@
           float-le-descriptors
           float-be-descriptors))
 
+(define complex-descriptors
+  (append complex-native-descriptors
+          complex-le-descriptors
+          complex-be-descriptors))
+
 (define numeric-descriptors
-  (append integer-descriptors float-descriptors))
+  (append integer-descriptors float-descriptors complex-descriptors))
 
 (define short int16)
 (define unsigned-short uint16)

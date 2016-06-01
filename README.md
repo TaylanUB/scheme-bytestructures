@@ -447,7 +447,8 @@ otherwise memory safe.
 #### Numeric descriptors
 
 The following descriptors for numeric types are provided:
-`[u]int(8,16,32,64)[le,be]`, `float32[le,be]`, `float64[le,be]`
+`[u]int(8,16,32,64)[le,be]`, `float(32,64)[le,be]`,
+`complex(64,128)[le,be]`
 
 On platforms with little-endian byte order, the descriptors whose name
 ends in `le` are equivalent as per `eqv?` to their variant without an

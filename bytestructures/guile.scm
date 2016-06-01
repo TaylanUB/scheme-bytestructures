@@ -82,4 +82,8 @@
  long-long unsigned-long-long
  size_t ssize_t ptrdiff_t
  float double
+
+ complex64 complex128
+ complex64le complex128le
+ complex64be complex128be
  )
