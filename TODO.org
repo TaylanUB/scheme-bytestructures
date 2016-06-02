@@ -1,5 +1,3 @@
-- Complex numbers.
-
 - Allow working with ports (or other open-ended byte sequences) as an
   alternative to bytevectors.
 
