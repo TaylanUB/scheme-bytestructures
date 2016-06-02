@@ -38,7 +38,7 @@
           (quasisyntax
            (<setter> (unsyntax bytevector) (unsyntax offset) (unsyntax value)))
           (<setter> bytevector offset value)))
-    (make-bytestructure-descriptor size alignment #f getter setter #f)))
+    (make-bytestructure-descriptor size alignment #f getter setter)))
 
 (define-syntax-rule (define-numeric-descriptors <list>
                       (<name> <size> <getter> <setter>)
@@ -151,7 +151,7 @@
                 (imag (imag-part value)))
             (<float-setter> bytevector offset real)
             (<float-setter> bytevector (+ offset <float-size>) imag))))
-    (make-bytestructure-descriptor size alignment #f getter setter #f)))
+    (make-bytestructure-descriptor size alignment #f getter setter)))
 
 (define-syntax-rule (define-complex-descriptors <list>
                       (<name> <float-size> <float-getter> <float-setter>)

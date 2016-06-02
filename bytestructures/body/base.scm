@@ -26,7 +26,7 @@
 ;;; Descriptors
 
 (define-record-type <bytestructure-descriptor>
-  (make-bytestructure-descriptor size alignment unwrapper getter setter meta)
+  (%make-bytestructure-descriptor size alignment unwrapper getter setter meta)
   bytestructure-descriptor?
   (size       bd-size)
   (alignment  bd-alignment)
@@ -34,6 +34,15 @@
   (getter     bd-getter)
   (setter     bd-setter)
   (meta       bd-meta))
+
+(define make-bytestructure-descriptor
+  (case-lambda
+    ((size alignment unwrapper getter setter)
+     (%make-bytestructure-descriptor
+      size alignment unwrapper getter setter #f))
+    ((size alignment unwrapper getter setter meta)
+     (%make-bytestructure-descriptor
+      size alignment unwrapper getter setter meta))))
 
 (define bytestructure-descriptor-size
   (case-lambda
