@@ -25,9 +25,6 @@
 (define-syntax-rule (test-= name expected expr)
   (test-approximate name expected expr 0))
 
-;;; Emacs indentation help:
-;;; (put 'test-= 'scheme-indent-function 2)
-
 (define-syntax-rule (maybe-skip-syntax . <body>)
   (if-syntax-case
    (begin . <body>)
@@ -248,3 +245,8 @@
   ))
 
 (test-end "bytestructures")
+
+;; Local Variables:
+;; eval: (put (quote test-group) (quote scheme-indent-function) 1)
+;; eval: (put (quote test-=) (quote scheme-indent-function) 2)
+;; End:
