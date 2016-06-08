@@ -101,4 +101,8 @@ follow." indices))))
     (define-bytestructure-getter <getter> <descriptor>)
     (define-bytestructure-setter <setter> <descriptor>)))
 
+;; Local Variables:
+;; eval: (put (quote syntax-case-lambda) (quote scheme-indent-function) 1)
+;; End:
+
 ;;; base.syntactic.scm ends here
