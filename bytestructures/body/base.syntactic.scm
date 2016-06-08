@@ -24,19 +24,16 @@
 
 ;;; Code:
 
-(define-syntax-rule (syntax-case-lambda <stx> <pattern> <body>)
-  (lambda (<stx>)
-    (syntax-case <stx> ()
-      ((_ . <pattern>)
-       <body>))))
+(define-syntax-rule (syntax-case-lambda <pattern> <body>)
+  (lambda (stx)
+    (syntax-case stx ()
+      (<pattern> <body>))))
+
+(define syntax-car (syntax-case-lambda (car . cdr) #'car))
+(define syntax-cdr (syntax-case-lambda (car . cdr) #'cdr))
+(define syntax-null? (syntax-case-lambda stx (null? (syntax->datum #'stx))))
 
 (define (syntactic-unwrap bytevector offset descriptor indices)
-  (define (syntax-car stx)
-    (syntax-case stx () ((car . cdr) #'car)))
-  (define (syntax-cdr stx)
-    (syntax-case stx () ((car . cdr) #'cdr)))
-  (define (syntax-null? stx)
-    (syntax-case stx () (() #t) (_ #f)))
   (let loop ((bytevector bytevector)
              (offset offset)
              (descriptor descriptor)
@@ -80,20 +77,20 @@ follow." indices))))
 (define-syntax-rule (define-bytestructure-unwrapper <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
-      (syntax-case-lambda stx (<bytevector> <offset> . <indices>)
+      (syntax-case-lambda (_ <bytevector> <offset> . <indices>)
         (bytestructure-unwrap/syntax
          #'<bytevector> #'<offset> descriptor #'<indices>)))))
 
 (define-syntax-rule (define-bytestructure-getter <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
-      (syntax-case-lambda stx (<bytevector> . <indices>)
+      (syntax-case-lambda (_ <bytevector> . <indices>)
         (bytestructure-ref/syntax #'<bytevector> 0 descriptor #'<indices>)))))
 
 (define-syntax-rule (define-bytestructure-setter <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
-      (syntax-case-lambda stx (<bytevector> <index> (... ...) <value>)
+      (syntax-case-lambda (_ <bytevector> <index> (... ...) <value>)
         (bytestructure-set!/syntax
          #'<bytevector> 0 descriptor #'(<index> (... ...)) #'<value>)))))
 
