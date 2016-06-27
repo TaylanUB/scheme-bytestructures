@@ -1,6 +1,7 @@
 (define-library (bytestructures r7 numeric-all)
   (import
    (scheme base)
+   (scheme complex)
    (bytestructures r7 utils)
    (bytestructures r7 base)
    (bytestructures r7 bytevectors)
