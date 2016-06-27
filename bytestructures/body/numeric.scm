@@ -233,7 +233,7 @@
               (lp64 int64)
               (else int32)))
 
-(define unsigpend-long (cond-expand
+(define unsigned-long (cond-expand
                         (lp64 uint64)
                         (else uint32)))
 
