@@ -170,6 +170,8 @@ descriptor API directly, which is explained further below.
 
 #### Constructors for compound descriptors
 
+##### bs:vector
+
 - `(bs:vector length descriptor)` *procedure*
 
 Returns a descriptor for vectors, also called a *vector descriptor*,
@@ -216,6 +218,8 @@ Vector descriptors don't accept dynamic descriptors as their element
 descriptor, because they calculate their total size eagerly and thus
 need to know the size of their element descriptor independently from
 the bytevector on which they will be used.
+
+##### bs:struct
 
 - `(bs:struct fields)` *procedure*
 - `(bs:struct pack fields)` *procedure*
@@ -305,6 +309,8 @@ looked up at macro-expand time.
     ;; foo.y = 42;
     (my-struct-set! foo-bytevector y 42)
 
+##### bs:union
+
 - `(bs:union fields)` *procedure*
 
 Returns a descriptor for unions, also called a *union descriptor*.
@@ -347,6 +353,8 @@ These assignment semantics may not be used with the macro API.
 
 Union descriptors don't accept dynamic descriptors as field
 descriptors, because they calculate their total size eagerly.
+
+##### bs:pointer
 
 - `(bs:pointer descriptor)` *procedure*
 
