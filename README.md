@@ -559,7 +559,7 @@ one can easily initialize structures to arbitrary depth.
 Traverses through `bytestructure` using `bytestructure-unwrap` with
 the given indices to acquire a triple of a bytevector, offset, and
 descriptor.  Then, applies the `getter` of that descriptor to the
-bytevector and offset.  Or if the getter if `#f`, then a bytestructure
+bytevector and offset.  Or if the getter is `#f`, then a bytestructure
 encapsulating that bytevector, offset, and descriptor is returned.
 
 - `(bytestructure-set! bytestructure index ... value)` *syntax*
@@ -567,7 +567,7 @@ encapsulating that bytevector, offset, and descriptor is returned.
 Traverses through `bytestructure` using `bytestructure-unwrap` with
 the given indices to acquire a triple of a bytevector, offset, and
 descriptor.  Then, applies the `setter` of that descriptor to the
-bytevector, offset, and `value`.  Or if the setter if `#f`, then
+bytevector, offset, and `value`.  Or if the setter is `#f`, then
 `value` must be a bytevector; as many bytes as the size of the
 descriptor are copied from it into the bytevector, starting from the
 offset.
