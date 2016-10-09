@@ -68,7 +68,7 @@ bytestructures/guile.scm"
 	   (mkdir-p (string-append module-dir "/bytestructures/guile"))
 	   (mkdir-p (string-append module-dir "/bytestructures/r6"))
 	   (mkdir-p (string-append module-dir "/bytestructures/body")) 
-  (mkdir-p doc)
+	   (mkdir-p doc)
 
 	   ;; Compile .scm files and install.
 	   (chdir source)
