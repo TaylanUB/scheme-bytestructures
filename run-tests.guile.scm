@@ -13,4 +13,4 @@
 
 (define inexact exact->inexact)
 
-(include-from-path "bytestructures/run-tests.body.scm")
+(include-from-path "run-tests.body.scm")
