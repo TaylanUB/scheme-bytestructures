@@ -1,5 +1,4 @@
-Structured access to bytevector contents
-========================================
+# Structured access to bytevector contents
 
 This library offers a system imitating the type system of the C
 programming language, to be used on bytevectors.  C's type system
@@ -11,42 +10,48 @@ status.
 A C type corresponds to a "bytestructure descriptor" object in our
 system.
 
-    ;; typedef uint8_t uint8_v3_t[3];
-    (define uint8-v3 (bs:vector 3 uint8))
+```scheme
+;; typedef uint8_t uint8_v3_t[3];
+(define uint8-v3 (bs:vector 3 uint8))
 
-    ;; typedef struct { uint16_t x; uint8_v3_t y; } my_struct_t;
-    (define my-struct (bs:struct `((x ,uint16) (y ,uint8-v3))))
+;; typedef struct { uint16_t x; uint8_v3_t y; } my_struct_t;
+(define my-struct (bs:struct `((x ,uint16) (y ,uint8-v3))))
+```
 
 These can then be bundled with a bytevector, yielding a
 "bytestructure" object on which referencing and assignment work in
 accordance with the types declared in the descriptor.
 
-    ;; my_struct_t str;
-    (define str (bytestructure my-struct))
+```scheme
+;; my_struct_t str;
+(define str (bytestructure my-struct))
 
-    ;; my_struct_t str = { 0, 1 };
-    (define str (bytestructure my-struct #(0 1)))
+;; my_struct_t str = { 0, 1 };
+(define str (bytestructure my-struct #(0 1)))
 
-    ;; str.y[2]
-    (bytestructure-ref str 'y 2)
+;; str.y[2]
+(bytestructure-ref str 'y 2)
 
-    ;; str.y[2] = 42;
-    (bytestructure-set! str 'y 2 42)
+;; str.y[2] = 42;
+(bytestructure-set! str 'y 2 42)
+```
 
 If your Scheme implementation supports syntax-case, then a macro-based
 API is available as well, for when the procedural API is too slow for
 your purposes.
 
-    (define-bytestructure-accessors my-struct
-      my-struct-unwrap my-struct-ref my-struct-set!)
+```scheme
+(define-bytestructure-accessors my-struct
+   my-struct-unwrap my-struct-ref my-struct-set!)
 
-    (define foo (make-bytevector ...))
+(define foo (make-bytevector ...))
 
-    ;; foo.y[2]
-    (my-struct-ref foo y 2)
+;; foo.y[2]
+(my-struct-ref foo y 2)
 
-    ;; foo.y[2] = 42;
-    (my-struct-set! foo y 2 42)
+;; foo.y[2] = 42;
+(my-struct-set! foo y 2 42)
+```
 
 (Note that we don't use the bytestructure data type anymore; we work
 directly on bytevectors.  The struct fields are also implicitly quoted
@@ -59,8 +64,7 @@ binary file format may specify that there are tag bytes declaring the
 lengths of following fields.  The system can express this cleanly.
 
 
-Supported platforms
--------------------
+## Supported platforms
 
 R7RS and GNU Guile are supported.  Detailed instructions per Scheme
 implementation follow.
@@ -68,7 +72,10 @@ implementation follow.
 ### Chibi
 
 - Clone the Larceny source repository:
-  https://github.com/larcenists/larceny
+
+  ```
+  git clone https://github.com/larcenists/larceny
+  ```
 
 - Append `$larceny_repo/tools/R6RS` to the Chibi load-path via the
   `-A` command-line flag.
@@ -81,17 +88,22 @@ implementation follow.
 ### Gauche
 
 - Clone the Larceny source repository:
-  https://github.com/larcenists/larceny
+
+  ```
+  git clone https://github.com/larcenists/larceny
+  ```
 
 - Go to its `tools/R6RS/r6rs/` sub-directory.
 
 - Run the following shell command in that directory and its
   sub-directories:
 
-      for file in *.sld; do
-        name=${file%.sld}
-        ln -s $file $name.scm
-      done
+  ```bash
+  for file in *.sld; do
+     name=${file%.sld}
+     ln -s $file $name.scm
+  done
+  ```
 
 - Add `$larceny_repo/tools/R6RS` to `GAUCHE_LOAD_PATH`.
 
@@ -112,14 +124,18 @@ implementation follow.
 ### Kawa
 
 - Clone the Larceny source repository:
-  https://github.com/larcenists/larceny
+
+  ```
+  git clone  https://github.com/larcenists/larceny
+  ```
 
 - Run Kawa with a command line flag such as the following to add
   `$larceny_repo/tools/R6RS` and this directory to the load path, and
   to make it look for `.sld` files:
 
-      -Dkawa.import.path="$bytestructures_repo/*.sld:\
-      $larceny_repo/tools/R6RS/*.sld"
+  ```
+  -Dkawa.import.path="$bytestructures_repo/*.sld:$larceny_repo/tools/R6RS/*.sld"
+  ```
 
 (The `*` stands for any number of directories, so sub-directories will
 also be searched for `.sld` files.)
@@ -135,8 +151,7 @@ also be searched for `.sld` files.)
 - Import `(bytestructures r7)`.
 
 
-Specification
--------------
+## Specification
 
 A *bytestructure descriptor*, also called simply a descriptor within
 this specification, is an object encapsulating information about the
@@ -178,14 +193,16 @@ Returns a descriptor for vectors, also called a *vector descriptor*,
 of length `length` and the *element descriptor* `descriptor`.  This
 corresponds to an *array type* in the C programming language.
 
-    ;; uint16_t vec[3] = { 0, 1, 2 };
-    (define vec (bytestructure (bs:vector 3 uint16) #(0 1 2)))
+```scheme
+;; uint16_t vec[3] = { 0, 1, 2 };
+(define vec (bytestructure (bs:vector 3 uint16) #(0 1 2)))
 
-    ;; vec[1]
-    (bytestructure-ref vec 1)
+;; vec[1]
+(bytestructure-ref vec 1)
 
-    ;; vec[1] = 42;
-    (bytestructure-set! vec 1 42)
+;; vec[1] = 42;
+(bytestructure-set! vec 1 42)
+```
 
 The elements are indexed with exact non-negative integers, and no
 bounds checking is done; an off-bounds index will either raise an
@@ -200,17 +217,21 @@ Each element of that vector is assigned to the corresponding element
 of the vector bytestructure, using the assignment semantics of the
 element descriptor.
 
-    ;; (Reusing 'vec' from the previous example.)
+```scheme
+;; (Reusing 'vec' from the previous example.)
 
-    ;; Uses bytevector-u16-set! three times.
-    (bytestructure-set! vec #(21 42 84))
+;; Uses bytevector-u16-set! three times.
+(bytestructure-set! vec #(21 42 84))
+```
 
 One may also provide a bytevector, in which case as many bytes as
 the size of the bytestructure will be copied into it.
 
-    ;; The results of this depend on endianness.
-    ;; Only the first 6 bytes from the bytevector will be copied.
-    (bytestructure-set! vec #u8(0 1 2 3 4 5 6 7 8))
+```scheme
+;; The results of this depend on endianness.
+;; Only the first 6 bytes from the bytevector will be copied.
+(bytestructure-set! vec #u8(0 1 2 3 4 5 6 7 8))
+```
 
 These assignment semantics may not be used with the macro API.
 
@@ -247,28 +268,30 @@ inserted in its place until the next alignment boundary of the
 descriptor of that bit-field is reached.  A zero-width bit-field must
 have `#f` as its name.
 
-    ;; typedef struct { uint8_t x; uint16_t y; } my_struct_t;
-    (define my-struct (bs:struct `((x ,uint8) (y ,uint16))))
+```scheme
+;; typedef struct { uint8_t x; uint16_t y; } my_struct_t;
+(define my-struct (bs:struct `((x ,uint8) (y ,uint16))))
 
-    ;; my_struct_t str = { 0, 1 };
-    (define str (bytestructure my-struct #(0 1)))
+;; my_struct_t str = { 0, 1 };
+(define str (bytestructure my-struct #(0 1)))
 
-    ;; my_struct_t str = { .y = 1, .x = 0 };
-    (define str (bytestructure my-struct '((y 1) (x 0))))
+;; my_struct_t str = { .y = 1, .x = 0 };
+(define str (bytestructure my-struct '((y 1) (x 0))))
 
-    ;; str.y
-    (bytestructure-ref str 'y)
+;; str.y
+(bytestructure-ref str 'y)
 
-    ;; str.y = 42;
-    (bytestructure-set! str 'y 42)
+;; str.y = 42;
+(bytestructure-set! str 'y 42)
 
-    ;; Assuming a 32-bit platform:
+;; Assuming a 32-bit platform:
 
-    ;; struct { unsigned int a:16; unsigned int b:16; }
-    (bs:struct `((a ,uint32 16) (b ,uint32 16)))
+;; struct { unsigned int a:16; unsigned int b:16; }
+(bs:struct `((a ,uint32 16) (b ,uint32 16)))
 
-    ;; struct { unsigned int a:16; int :0; signed int b:20; }
-    (bs:struct `((a ,uint32 16) (#f ,int32 0) (b ,int32 20)))
+;; struct { unsigned int a:16; int :0; signed int b:20; }
+(bs:struct `((a ,uint32 16) (#f ,int32 0) (b ,int32 20)))
+```
 
 Struct descriptors are normally meant for indexing through, but also
 allow direct assignment.  The value provided for assignment may be a
@@ -276,21 +299,24 @@ Scheme vector as long as there are fields in the struct descriptor,
 which will assign all fields sequentially; or a list of two-element
 lists, which will assign any number of fields by name.
 
-    ;; (Reusing 'str' from the previous example.)
+```scheme
+;; (Reusing 'str' from the previous example.)
 
-    ;; str = (my_struct_t){ 0, 1 };
-    (bytestructure-set! str #(0 1))
+;; str = (my_struct_t){ 0, 1 };
+(bytestructure-set! str #(0 1))
 
-    ;; str = (my_struct_t){ .y = 2, .x = 1 };
-    (bytestructure-set! str '((y 2) (x 1)))
-
+;; str = (my_struct_t){ .y = 2, .x = 1 };
+(bytestructure-set! str '((y 2) (x 1)))
+```
 One may also provide a bytevector, in which case as many bytes as
 the size of the bytestructure will be copied into it.
 
-    ;; The field 'x' is set to 0; the value of the field 'y' will
-    ;; depend on endianness.
-    ;; Only the first 3 bytes from the bytevector will be copied.
-    (bytestructure-set! str #u8(0 1 2 3 4 5))
+```scheme
+;; The field 'x' is set to 0; the value of the field 'y' will
+;; depend on endianness.
+;; Only the first 3 bytes from the bytevector will be copied.
+(bytestructure-set! str #u8(0 1 2 3 4 5))
+```
 
 These assignment semantics may not be used with the macro API.
 
@@ -300,14 +326,16 @@ descriptors, because they calculate their total size eagerly.
 When using the macro API, the field names are implicitly quoted and
 looked up at macro-expand time.
 
-    (define-bytestructure-accessors my-struct
-      my-struct-unwrap my-struct-ref my-struct-set!)
+```scheme
+(define-bytestructure-accessors my-struct
+  my-struct-unwrap my-struct-ref my-struct-set!)
 
-    ;; foo.y
-    (my-struct-ref foo-bytevector y)
+;; foo.y
+(my-struct-ref foo-bytevector y)
 
-    ;; foo.y = 42;
-    (my-struct-set! foo-bytevector y 42)
+;; foo.y = 42;
+(my-struct-set! foo-bytevector y 42)
+```
 
 ##### bs:union
 
@@ -316,17 +344,19 @@ looked up at macro-expand time.
 Returns a descriptor for unions, also called a *union descriptor*.
 `Fields` has the same format as in `bs:struct`.
 
-    ;; typedef union { uint8_t x; uint16_t y; } my_union_t;
-    (define my-union (bs:union `((x ,uint8) (y ,uint16))))
+```
+;; typedef union { uint8_t x; uint16_t y; } my_union_t;
+(define my-union (bs:union `((x ,uint8) (y ,uint16))))
 
-    ;; my_union_t union = { .y = 42 };
-    (define union (bytestructure my-union '(y 42)))
+;; my_union_t union = { .y = 42 };
+(define union (bytestructure my-union '(y 42)))
 
-    ;; union.y
-    (bytestructure-ref union 'y)
+;; union.y
+(bytestructure-ref union 'y)
 
-    ;; union.y = 42;
-    (bytestructure-set! union 'y 42)
+;; union.y = 42;
+(bytestructure-set! union 'y 42)
+```
 
 Union descriptors are normally meant for indexing through, but also
 allow direct assignment.  The value provided for assignment must be a
@@ -334,8 +364,10 @@ two-element list, whose first element names the field whose descriptor
 should be used for the assignment, and the second element provides the
 value to be actually assigned.
 
-    ;; union.y = 42;
-    (bytestructure-set! union '(y 42))
+```scheme
+;; union.y = 42;
+(bytestructure-set! union '(y 42))
+```
 
 *Rationale:* This syntax isn't shorter than the normal way of
 assigning a value into the union, but is supported for reasons that
@@ -345,9 +377,11 @@ should become apparent after reading the specification of the
 One may also provide a bytevector, in which case as many bytes as
 the size of the bytestructure will be copied into it.
 
-    ;; The value of the y field will depend on endianness.
-    ;; Only the first 2 bytes from the bytevector will be copied.
-    (bytestructure-set! union #u8(0 1 2 3 4))
+```
+;; The value of the y field will depend on endianness.
+;; Only the first 2 bytes from the bytevector will be copied.
+(bytestructure-set! union #u8(0 1 2 3 4))
+```
 
 These assignment semantics may not be used with the macro API.
 
@@ -364,20 +398,24 @@ indicates that the bytes in a given bytevector are to be interpreted
 as a memory address.  The content descriptor is the descriptor for the
 bytes found at that memory address.
 
-    ;; uint8_t *ptr = 0xdeadbeef;
-    (define ptr (bytestructure (bs:pointer uint8) #xdeadbeef))
+```scheme
+;; uint8_t *ptr = 0xdeadbeef;
+(define ptr (bytestructure (bs:pointer uint8) #xdeadbeef))
+```
 
 As a special case, the `descriptor` argument may be a promise, which
 must evaluate to a descriptor when forced.  This is to allow creating
 self-referencing descriptors:
 
-    ;; typedef struct linked_uint8_list_s {
-    ;;   uint8_t head;
-    ;;   struct linked_uint8_list_s *tail;
-    ;; } *linked_uint8_list_t;
-    (define linked-uint8-list
-      (bs:pointer (delay (bs:struct `((head ,uint8)
-                                      (tail ,linked-uint8-list))))))
+```scheme
+;; typedef struct linked_uint8_list_s {
+;;   uint8_t head;
+;;   struct linked_uint8_list_s *tail;
+;; } *linked_uint8_list_t;
+(define linked-uint8-list
+  (bs:pointer (delay (bs:struct `((head ,uint8)
+                                  (tail ,linked-uint8-list))))))
+```
 
 The symbol `*` can be used as an index to dereference the pointer.
 (It's implicitly quoted when used in the macro API.)  An array of
@@ -386,55 +424,67 @@ the memory address of the pointer, are reified into a bytevector
 object, and bundled with the content descriptor, to yield a new
 bytestructure object.
 
-    ;; linked_uint8_list_t u8list;
-    (define u8list (bytestructure linked-uint8-list))
+```scheme
+;; linked_uint8_list_t u8list;
+(define u8list (bytestructure linked-uint8-list))
 
-    ;; (*u8list).head
-    (bytestructure-ref u8list '* 'head)
+;; (*u8list).head
+(bytestructure-ref u8list '* 'head)
 
-    ;; (*u8list).head = 42;
-    (bytestructure-set! u8list '* 'head 42)
+;; (*u8list).head = 42;
+(bytestructure-set! u8list '* 'head 42)
+```
 
 One may however also provide any other index, which will cause an
 implicit dereference.
 
-    ;; u8list->head
-    (bytestructure-ref u8list 'head)
+```scheme
+;; u8list->head
+(bytestructure-ref u8list 'head)
 
-    ;; u8list->head = 42;
-    (bytestructure-set! u8list 'head 42)
+;; u8list->head = 42;
+(bytestructure-set! u8list 'head 42)
+```
 
 Since pointers are also values themselves, pointer descriptors also
 have direct referencing and assignment semantics.  Referencing the
 pointer yields the numeric value of the address.
 
-    ;; linked_uint8_list_t u8lists[3];
-    (define u8lists (bytestructure (bs:vector 3 linked-uint8-list)))
+```scheme
+;; linked_uint8_list_t u8lists[3];
+(define u8lists (bytestructure (bs:vector 3 linked-uint8-list)))
 
-    ;; Returns the address stored in u8lists[1].
-    (bytestructure-ref u8lists 1)
+;; Returns the address stored in u8lists[1].
+(bytestructure-ref u8lists 1)
+```
 
 Assignment with a pointer descriptor allows a variety of values.
 Firstly, a numeric value (taken to be a memory address) may be given,
 which causes that value itself to be written.
 
-    ;; uint8_t (*u8v3-ptr)[3];
-    (define u8v3-ptr (bytestructure (bs:pointer (bs:vector 3 uint8))))
+```scheme
+;; uint8_t (*u8v3-ptr)[3];
+(define u8v3-ptr (bytestructure (bs:pointer (bs:vector 3 uint8))))
 
-    ;; u8v3-ptr = 0xdeadbeef;
-    (bytestructure-set! u8v3-ptr #xdeadbeef)
+;; u8v3-ptr = 0xdeadbeef;
+(bytestructure-set! u8v3-ptr #xdeadbeef)
+```
 
 A bytevector may be given, in which case the memory address of the
 first byte of the bytevector is written.
 
-    ;; Makes the pointer point to 'a-bytevector'.
-    (bytestructure-set! u8v3-ptr a-bytevector)
+```scheme
+;; Makes the pointer point to 'a-bytevector'.
+(bytestructure-set! u8v3-ptr a-bytevector)
+```
 
 Lastly, providing a bytestructure is equivalent to providing the
 bytevector of that bytestructure.
 
-    ;; Makes the pointer point to the bytevector of 'a-bytestructure'.
-    (bytestructure-set! u8v3-ptr a-bytestructure)
+```scheme
+;; Makes the pointer point to the bytevector of 'a-bytestructure'.
+(bytestructure-set! u8v3-ptr a-bytestructure)
+```
 
 These assignment semantics may be used with the macro API as well.
 
@@ -472,17 +522,19 @@ These descriptors cannot be indexed through as for instance vectors
 and structs can; they can only be used to directly reference or assign
 values.
 
-    ;; uint32_t x;
-    (define x (bytestructure uint32))
+```scheme
+;; uint32_t x;
+(define x (bytestructure uint32))
 
-    ;; x = 42;
-    (bytestructure-set! x 42)
+;; x = 42;
+(bytestructure-set! x 42)
 
-    ;; uint32_t xs[3];
-    (define xs (bytestructure (bs:vector 3 uint32)))
+;; uint32_t xs[3];
+(define xs (bytestructure (bs:vector 3 uint32)))
 
-    ;; xs[1] = 42;
-    (bytestructure-set! xs 1 42)
+;; xs[1] = 42;
+(bytestructure-set! xs 1 42)
+```
 
 
 #### The bytestructure data type
@@ -524,32 +576,40 @@ it with values.
 
 The following two expressions are equivalent:
 
-    (define bs (bytestructure descriptor))
+```scheme
+(define bs (bytestructure descriptor))
+```
 
-    (define bs (make-bytestructure
-                (make-bytevector (bytestructure-descriptor-size
-                                  descriptor))
-                0
-                descriptor))
+```scheme
+(define bs (make-bytestructure
+            (make-bytevector (bytestructure-descriptor-size
+                              descriptor))
+            0
+            descriptor))
+```
 
 The optional second argument is passed to `bytestructure-set!` to
 assign the given values to the bytestructure after creation, meaning
 the following two expressions are equivalent:
 
-    (define bs (bytestructure descriptor) values)
+```scheme
+(define bs (bytestructure descriptor) values)
 
-    (let ((bs (bytestructure descriptor)))
-      (bytestructure-set! bs values)
-      bs)
+(let ((bs (bytestructure descriptor)))
+  (bytestructure-set! bs values)
+  bs)
+```
 
 Since the setter procedures of compound descriptors tend to delegate
 the assignment of individual elements to their respective descriptors,
 one can easily initialize structures to arbitrary depth.
 
-    (define my-struct
-      (bs:struct `((x ,uint16) (y ,(bs:vector 3 uint8)))))
+```scheme
+(define my-struct
+  (bs:struct `((x ,uint16) (y ,(bs:vector 3 uint8)))))
 
-    (define bs (bytestructure my-struct '((x 0) (y #(0 1 2)))))
+(define bs (bytestructure my-struct '((x 0) (y #(0 1 2)))))
+```
 
 
 #### Referencing and assignment
@@ -601,9 +661,11 @@ This macro executes the following algorithm:
 *Note:* `bytestructure-unwrap` can be used with zero indices to
 destructure a bytestructure into its contents.
 
-    (let-values (((bytevector offset descriptor)
-                  (bytestructure-unwrap bytestructure)))
-      ...)
+```scheme
+(let-values (((bytevector offset descriptor)
+              (bytestructure-unwrap bytestructure)))
+  ...)
+```
 
 - `(bytestructure-unwrap* bytevector offset descriptor index ...)`
   *syntax*
@@ -616,11 +678,13 @@ descriptor of a given bytestructure.
 When a descriptor is not a dynamic descriptor, `bytestructure-unwrap*`
 may be given a bogus `bytevector` argument.
 
-    (bytestructure-unwrap* #f 0 uint8-v3-v5 2)
-    => #f, 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.
+```scheme
+(bytestructure-unwrap* #f 0 uint8-v3-v5 2)
+=> #f, 6, uint8-v3 ;; Two uint8-v3s were skipped, so offset 6.
 
-    (bytestructure-unwrap* #f 0 uint8-v3-v5 2 1)
-    => #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
+(bytestructure-unwrap* #f 0 uint8-v3-v5 2 1)
+=> #f, 7, uint8 ;; Two uint8-v3s and one uint8 was skipped.
+```
 
 - `(bytestructure-ref/dynamic bytestructure index ...)` *procedure*
 - `(bytestructure-set!/dynamic bytestructure index ... value)`
@@ -649,17 +713,19 @@ to yield a bytestructure descriptor.  The `unwrapper`, `getter`, and
 indexing, referencing, and assignment semantics of the given
 descriptor.
 
-    (define-bytestructure-accessors (bs:vector 5 (bs:vector 3 uint8))
-      uint8-v3-v5-unwrap uint8-v3-v5-ref uint8-v3-v5-set!)
+```scheme
+(define-bytestructure-accessors (bs:vector 5 (bs:vector 3 uint8))
+  uint8-v3-v5-unwrap uint8-v3-v5-ref uint8-v3-v5-set!)
 
-    (uint8-v3-v5-unwrap #f 0 3 2)  ;the #f is a bogus bytevector
-                                   ;the 0 is the initial offset
-    => 11 (3 * 3 + 2)
+(uint8-v3-v5-unwrap #f 0 3 2)  ;the #f is a bogus bytevector
+                               ;the 0 is the initial offset
+=> 11 (3 * 3 + 2)
 
-    (define bv (apply bytevector (iota 15)))
-    (uint8-v3-v5-ref bv 2 1) => 7
-    (uint8-v3-v5-set! bv 2 1 42)
-    (uint8-v3-v5-ref bv 2 1) => 42
+(define bv (apply bytevector (iota 15)))
+(uint8-v3-v5-ref bv 2 1) => 7
+(uint8-v3-v5-set! bv 2 1 42)
+(uint8-v3-v5-ref bv 2 1) => 42
+```
 
 - `(bytestructure-unwrap/syntax bytevector-syntax offset-syntax
   descriptor indices-syntax)` *procedure*
@@ -742,15 +808,17 @@ descriptor, then the `bytevector` and `offset` arguments must be
 provided, which will be passed to the `size` procedure of
 `descriptor`, with the macro-expand Boolean argument set to false.
 
-    (bytestructure-descriptor-size uint8-v3-v5)
-    => 15, because 3×5 8-bit integers in total.
+```scheme
+(bytestructure-descriptor-size uint8-v3-v5)
+=> 15, because 3×5 8-bit integers in total.
 
-    (bytestructure-descriptor-size a-dynamic-descriptor)
-    ;;; error
+(bytestructure-descriptor-size a-dynamic-descriptor)
+;;; error
 
-    (bytestructure-descriptor-size
-     a-dynamic-descriptor bytevector offset)
-    => 42
+(bytestructure-descriptor-size
+ a-dynamic-descriptor bytevector offset)
+=> 42
+```
 
 - `(bytestructure-descriptor-size/syntax descriptor)` *procedure*
 - `(bytestructure-descriptor-size/syntax descriptor bytevector-syntax
@@ -771,8 +839,7 @@ These procedures return the `alignment`, `unwrapper`, `getter`, and
 `setter` values respectively, with which `descriptor` was created.
 
 
-Performance
------------
+## Performance
 
 ### Macro API
 
@@ -782,23 +849,26 @@ phase.
 
 Plain bytevector reference:
 
-    > (define times (iota 1000000)) ;A million
-    > (define bv (make-bytevector 1))
-    > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
-    > ,time (for-each ref times)
-    ;; ~0.14s real time
-
+```scheme
+> (define times (iota 1000000)) ;A million
+> (define bv (make-bytevector 1))
+> (define-inlinable (ref x) (bytevector-u8-ref bv 0))
+> ,time (for-each ref times)
+;; ~0.14s real time
+```
 Bytestructure reference:
 
-    > (define bv (make-bytevector 1000))
-    > (define-bytestructure-accessors
-        (bs:vector 5 (bs:vector 5 (bs:struct `((x ,uint8)
-                                               (y ,uint8)
-                                               (z ,uint8)))))
-        bs-unwrap bs-ref bs-set!)
-    > (define-inlinable (ref x) (bs-ref bv 4 4 z))
-    > ,time (for-each ref times)
-    ;; ~0.14s real time
+```scheme
+> (define bv (make-bytevector 1000))
+> (define-bytestructure-accessors
+    (bs:vector 5 (bs:vector 5 (bs:struct `((x ,uint8)
+                                           (y ,uint8)
+                                           (z ,uint8)))))
+    bs-unwrap bs-ref bs-set!)
+> (define-inlinable (ref x) (bs-ref bv 4 4 z))
+> ,time (for-each ref times)
+;; ~0.14s real time
+```
 
 (Ignoring the jitter for both.)
 
@@ -825,18 +895,22 @@ to outside of your tight loops or other performance critical sections
 of your code.  E.g. if you were doing `(bytestructure-ref bs x y z)`
 within a loop, you can instead do
 
-    (let-values (((bytevector offset descriptor)
-                  (bytestructure-unwrap bs x y z)))
-      (loop
-        (bytestructure-ref* bytevector offset descriptor)))
+```scheme
+(let-values (((bytevector offset descriptor)
+              (bytestructure-unwrap bs x y z)))
+  (loop
+    (bytestructure-ref* bytevector offset descriptor)))
+```
 
 or if for instance the last index in that example, `z`, changes at
 every iteration of the loop, you can do
 
-    (let-values (((bytevector offset descriptor)
-                  (bytestructure-unwrap bs x y)))
-      (loop (for z in blah)
-        (bytestructure-ref* bytevector offset descriptor z)))
+```scheme
+(let-values (((bytevector offset descriptor)
+              (bytestructure-unwrap bs x y)))
+  (loop (for z in blah)
+    (bytestructure-ref* bytevector offset descriptor z)))
+```
 
 so at least you don't repeat the indexing of `x` and `y` at every
 iteration.
@@ -847,26 +921,32 @@ meant for a broad comparison against plain bytevector reference.)
 
 Plain bytevector reference:
 
-    > (define times (iota 1000000)) ;a million
-    > (define bv (make-bytevector 1))
-    > (define-inlinable (ref x) (bytevector-u8-ref bv 0))
-    > ,time (for-each ref times)
-    ;; 0.130245s real time
+```scheme
+> (define times (iota 1000000)) ;a million
+> (define bv (make-bytevector 1))
+> (define-inlinable (ref x) (bytevector-u8-ref bv 0))
+> ,time (for-each ref times)
+;; 0.130245s real time
+```
 
 Equivalent bytestructure reference:
 
-    > (define times (iota 1000000)) ;a million
-    > (define bs (bytestructure (bs:vector 1 uint8)))
-    > (define-inlinable (ref x) (bytestructure-ref bs 0))
-    > ,time (for-each ref times)
-    ;; 0.721888s real time
+```scheme
+> (define times (iota 1000000)) ;a million
+> (define bs (bytestructure (bs:vector 1 uint8)))
+> (define-inlinable (ref x) (bytestructure-ref bs 0))
+> ,time (for-each ref times)
+;; 0.721888s real time
+```
 
 Showcasing the effect of a deeper structure:
 
-    > (define times (iota 1000000)) ;a million
-    > (define bs (bytestructure (bs:vector 1
-                                   (bs:vector 1
-                                     (bs:vector 1 uint8)))))
-    > (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
-    > ,time (for-each ref times)
-    ;; 1.079202s real time
+```scheme
+> (define times (iota 1000000)) ;a million
+> (define bs (bytestructure (bs:vector 1
+                               (bs:vector 1
+                                 (bs:vector 1 uint8)))))
+> (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
+> ,time (for-each ref times)
+;; 1.079202s real time
+```
