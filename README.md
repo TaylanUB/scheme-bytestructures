@@ -1,5 +1,32 @@
 # Structured access to bytevector contents
 
+## Example
+
+```scheme
+;; define a scheme bytestructure for a C struct
+(define my-position-struct (bs:struct `((x ,int) (y ,int))))
+
+;; initialize an instance of `my-position-struct`
+(define position (bytestructure my-position-struct))
+
+;; bytestructure-set!
+(bytestructure-set! position 'x 42)
+(bytestructure-set! position 'y 101)
+
+;; bytestructure-ref
+(bytestructure-ref position 'x) ;; => 42
+
+;; retrieve the underlying bytevector
+(define bv (bytestructure-bytevector position)) ;; => #vu8(42 0 0 0 101 0 0 0)
+
+;; creating a bytestructure from an existing bytevector
+(define position2 (make-bytestructure bv 0 my-position-struct))
+```
+
+There is also a faster macro API.
+
+## Introduction
+
 This library offers a system imitating the type system of the C
 programming language, to be used on bytevectors.  C's type system
 works on raw memory, and ours works on bytevectors which are an
