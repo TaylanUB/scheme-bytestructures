@@ -1,11 +1,12 @@
 ;;; Compatibility shim for R6RS systems, because R6RS and R7RS have different
-;;; argument order for `bytevector-copy!'.
+;;; semantics for some procedures of the same name.  We use R7RS semantics
+;;; everywhere, so implement them in terms of R6RS.
 (library (bytestructures r6 bytevectors)
   (export
    endianness native-endianness bytevector?
    make-bytevector bytevector-length bytevector=? bytevector-fill!
    (rename (r7rs-bytevector-copy! bytevector-copy!))
-   bytevector-copy
+   (rename (r7rs-bytevector-copy bytevector-copy))
    uniform-array->bytevector
    bytevector-u8-ref bytevector-s8-ref
    bytevector-u8-set! bytevector-s8-set! bytevector->u8-list
@@ -40,8 +41,10 @@
    bytevector-ieee-double-native-ref
    bytevector-ieee-double-native-set!
 
-   string->utf8 string->utf16 string->utf32
-   utf8->string utf16->string utf32->string
+   (rename (r7rs-string->utf8 string->utf8))
+   (rename (r7rs-utf8->string utf8->string))
+   string->utf16 string->utf32
+   utf16->string utf32->string
    )
   (import
    (rnrs base)
@@ -54,4 +57,31 @@
       ((to at from start)
        (bytevector-copy! from start to at (- (bytevector-length from) start)))
       ((to at from start end)
-       (bytevector-copy! from start to at (- end start))))))
+       (bytevector-copy! from start to at (- end start)))))
+  (define r7rs-bytevector-copy
+    (case-lambda
+      ((bytevector)
+       (bytevector-copy bytevector))
+      ((bytevector start)
+       (r7rs-bytevector-copy bytevector start (bytevector-length bytevector)))
+      ((bytevector start end)
+       (let* ((size (- end start))
+              (bytevector* (make-bytevector size)))
+         (bytevector-copy! bytevector start bytevector* 0 size)
+         bytevector*))))
+  (define r7rs-string->utf8
+    (case-lambda
+      ((string)
+       (string->utf8 string))
+      ((string start)
+       (string->utf8 (substring string start (string-length string))))
+      ((string start end)
+       (string->utf8 (substring string start end)))))
+  (define r7rs-utf8->string
+    (case-lambda
+      ((bytevector)
+       (utf8->string bytevector))
+      ((bytevector start)
+       (utf8->string (r7rs-bytevector-copy bytevector start)))
+      ((bytevector start end)
+       (utf8->string (r7rs-bytevector-copy bytevector start end))))))
