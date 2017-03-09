@@ -19,11 +19,12 @@
 
 (import
  (bytestructures guile base)
- (bytestructures guile numeric)
  (bytestructures guile vector)
  (bytestructures guile struct)
  (bytestructures guile union)
- (bytestructures guile pointer))
+ (bytestructures guile pointer)
+ (bytestructures guile numeric)
+ (bytestructures guile string))
 (re-export
  make-bytestructure-descriptor
  bytestructure-descriptor?
@@ -86,4 +87,6 @@
  complex64 complex128
  complex64le complex128le
  complex64be complex128be
+
+ bs:string
  )

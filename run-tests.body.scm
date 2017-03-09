@@ -191,6 +191,25 @@
      (test-eqv "set" 456 (begin (setter bv y 456)
                                 (getter bv y))))))
 
+(test-group "string"
+  (test-assert "create" (bs:string 10 'utf8 #f #f))
+  (test-group "procedural"
+    (define bs (make-bytestructure (string->utf8 "1234567890")
+                                   0
+                                   (bs:string 10 'utf8 #f #f)))
+    (test-equal "ref" "1234567890" (bytestructure-ref bs))
+    (test-equal "set" "0987654321" (begin
+                                     (bytestructure-set! bs "0987654321")
+                                     (bytestructure-ref bs))))
+  (test-group "syntactic"
+    (define-bytestructure-accessors (bs:string 10 'utf8 #f #f)
+      unwrapper getter setter)
+    (define bv (string->utf8 "1234567890"))
+    (test-equal "ref" "1234567890" (getter bv))
+    (test-equal "set" "0987654321" (begin
+                                     (setter bv "0987654321")
+                                     (getter bv)))))
+
 (cond-expand
  (guile
   (test-group "pointer"
