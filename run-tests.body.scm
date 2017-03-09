@@ -176,8 +176,7 @@
 (test-group "union"
   (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
   (test-group "procedural"
-    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))
-                              '(y 321)))
+    (define bs (bytestructure (bs:union `((x ,uint8) (y ,uint16)))))
     (bytevector-u16-native-set! (bytestructure-bytevector bs) 0 321)
     (test-eqv "ref" 321 (bytestructure-ref bs 'y))
     (test-eqv "set" 456 (begin (bytestructure-set! bs 'y 456)
