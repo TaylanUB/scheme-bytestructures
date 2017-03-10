@@ -53,6 +53,11 @@
 (define utf32le 'utf32le)
 (define utf32be 'utf32be)
 
+(define (bytevector-zero! bv start end)
+  (do ((i start (+ i 1)))
+      ((= i end))
+    (bytevector-u8-set! bv i #x00)))
+
 (define (bs:string size encoding)
   (define alignment 1)
   (define (getter syntax? bytevector offset)
@@ -67,14 +72,21 @@
   (define (setter syntax? bytevector offset string)
     (if syntax?
         (quasisyntax
-         (bytevector-copy! (unsyntax bytevector)
-                           (unsyntax offset)                 
-                           (string->bytevector
-                            (unsyntax string)
-                            (unsyntax
-                             (datum->syntax (syntax utf8) encoding)))))
-        (bytevector-copy!
-         bytevector offset (string->bytevector string encoding))))
+         (let ((bv (string->bytevector
+                    (unsyntax string)
+                    (unsyntax
+                     (datum->syntax (syntax utf8) encoding)))))
+           (bytevector-copy! (unsyntax bytevector)
+                             (unsyntax offset)
+                             bv)
+           (bytevector-zero! (unsyntax bytevector)
+                             (+ (unsyntax offset) (bytevector-length bv))
+                             (+ (unsyntax offset) (unsyntax size)))))
+        (let ((bv (string->bytevector string encoding)))
+          (bytevector-copy! bytevector offset bv)
+          (bytevector-zero! bytevector
+                            (+ offset (bytevector-length bv))
+                            (+ offset size)))))
   (make-bytestructure-descriptor size alignment #f getter setter))
 
 ;;; string.scm ends here
