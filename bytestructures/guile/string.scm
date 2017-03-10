@@ -1,6 +1,6 @@
 (define-module (bytestructures guile string))
 (import
- (bytestructures r6 bytevectors)
+ (bytestructures guile bytevectors)
  (bytestructures guile utils)
  (bytestructures guile base))
 (include-from-path "bytestructures/body/string.scm")

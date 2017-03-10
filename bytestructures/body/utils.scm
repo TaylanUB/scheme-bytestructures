@@ -47,6 +47,7 @@
      ...)))
 
 (define-syntax-case-stubs
+  syntax
   quasisyntax
   unsyntax
   unsyntax-splicing

@@ -3,7 +3,7 @@
  (srfi :1)
  (srfi :9)
  (srfi :11)
- (bytestructures r6 bytevectors)
+ (bytestructures guile bytevectors)
  (bytestructures guile utils)
  (bytestructures guile base)
  (bytestructures guile bitfields))

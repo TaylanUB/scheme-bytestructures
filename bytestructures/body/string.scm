@@ -23,53 +23,58 @@
 
 ;;; Code:
 
-(define (bytevector->string
-         bytevector offset size encoding endianness endianness-mandatory?)
+(define (bytevector->string bytevector offset size encoding)
   (if (eq? encoding 'utf8)
       (utf8->string bytevector offset (+ offset size))
       (let ((bytevector (bytevector-copy bytevector offset (+ offset size))))
         (case encoding
-          ((utf16) (utf16->string bytevector endianness endianness-mandatory?))
-          ((utf32) (utf32->string bytevector endianness endianness-mandatory?))
+          ((utf16le) (utf16->string bytevector 'little #t))
+          ((utf16be) (utf16->string bytevector 'big #t))
+          ((utf32le) (utf32->string bytevector 'little #t))
+          ((utf32be) (utf32->string bytevector 'big #t))
           (else (error "Unknown string encoding." encoding))))))
 
-(define (string->bytevector string encoding endianness)
+(define (string->bytevector string encoding)
   (case encoding
     ((utf8) (string->utf8 string))
-    ((utf16) (string->utf16 string endianness))
-    ((utf32) (string->utf32 string endianness))))
+    ((utf16le) (string->utf16 string 'little))
+    ((utf16be) (string->utf16 string 'big))
+    ((utf32le) (string->utf32 string 'little))
+    ((utf32be) (string->utf32 string 'big))))
 
 ;;; Note: because macro output may not contain raw symbols, we cannot output
 ;;; (quote foo) for raw symbol foo either, so there's no way to inject symbol
-;;; literals into macro output.  Hence we use symbol->string and inject the code
-;;; (string->symbol "foo").
-(define (bs:string size encoding endianness endianness-mandatory?)
-  (let ((endianness (or endianness 'big)))
-    (define alignment 1)
-    (define encoding* (symbol->string encoding))
-    (define endianness* (symbol->string endianness))
-    (define (getter syntax? bytevector offset)
-      (if syntax?
-          (quasisyntax
-           (bytevector->string (unsyntax bytevector)
-                               (unsyntax offset)
-                               (unsyntax size)
-                               (string->symbol (unsyntax encoding*))
-                               (string->symbol (unsyntax endianness*))
-                               (unsyntax endianness-mandatory?)))
-          (bytevector->string
-           bytevector offset size encoding endianness endianness-mandatory?)))
-    (define (setter syntax? bytevector offset string)
-      (if syntax?
-          (quasisyntax
-           (bytevector-copy! (unsyntax bytevector)
-                             (unsyntax offset)                 
-                             (string->bytevector
-                              (unsyntax string)
-                              (string->symbol (unsyntax encoding*))
-                              (string->symbol (unsyntax endianness*)))))
-          (bytevector-copy!
-           bytevector offset (string->bytevector string encoding endianness))))
-    (make-bytestructure-descriptor size alignment #f getter setter)))
+;;; literals into macro output.  Hence we inject references to the following
+;;; variables instead.
+
+(define utf8 'utf8)
+(define utf16le 'utf16le)
+(define utf16be 'utf16be)
+(define utf32le 'utf32le)
+(define utf32be 'utf32be)
+
+(define (bs:string size encoding)
+  (define alignment 1)
+  (define (getter syntax? bytevector offset)
+    (if syntax?
+        (quasisyntax
+         (bytevector->string (unsyntax bytevector)
+                             (unsyntax offset)
+                             (unsyntax size)
+                             (unsyntax
+                              (datum->syntax (syntax utf8) encoding))))
+        (bytevector->string bytevector offset size encoding)))
+  (define (setter syntax? bytevector offset string)
+    (if syntax?
+        (quasisyntax
+         (bytevector-copy! (unsyntax bytevector)
+                           (unsyntax offset)                 
+                           (string->bytevector
+                            (unsyntax string)
+                            (unsyntax
+                             (datum->syntax (syntax utf8) encoding)))))
+        (bytevector-copy!
+         bytevector offset (string->bytevector string encoding))))
+  (make-bytestructure-descriptor size alignment #f getter setter))
 
 ;;; string.scm ends here

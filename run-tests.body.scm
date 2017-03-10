@@ -192,23 +192,54 @@
                                 (getter bv y))))))
 
 (test-group "string"
-  (test-assert "create" (bs:string 10 'utf8 #f #f))
-  (test-group "procedural"
-    (define bs (make-bytestructure (string->utf8 "1234567890")
-                                   0
-                                   (bs:string 10 'utf8 #f #f)))
-    (test-equal "ref" "1234567890" (bytestructure-ref bs))
-    (test-equal "set" "0987654321" (begin
-                                     (bytestructure-set! bs "0987654321")
-                                     (bytestructure-ref bs))))
-  (test-group "syntactic"
-    (define-bytestructure-accessors (bs:string 10 'utf8 #f #f)
-      unwrapper getter setter)
-    (define bv (string->utf8 "1234567890"))
-    (test-equal "ref" "1234567890" (getter bv))
-    (test-equal "set" "0987654321" (begin
-                                     (setter bv "0987654321")
-                                     (getter bv)))))
+  (test-group "utf8"
+    (test-assert "create" (bs:string 4 'utf8))
+    (test-group "procedural"
+      (define bs (make-bytestructure (string->utf8 "1234")
+                                     0
+                                     (bs:string 4 'utf8)))
+      (test-equal "ref" "1234" (bytestructure-ref bs))
+      (test-equal "set" "4321" (begin
+                                 (bytestructure-set! bs "4321")
+                                 (bytestructure-ref bs))))
+    (test-group "syntactic"
+      (define-bytestructure-accessors (bs:string 4 'utf8)
+        unwrapper getter setter)
+      (define bv (string->utf8 "1234"))
+      (test-equal "ref" "1234" (getter bv))
+      (test-equal "set" "4321" (begin
+                                 (setter bv "4321")
+                                 (getter bv)))))
+  (let ()
+    (define-syntax-rule
+      (test-string-encodings
+       (<name> <encoding> <endianness> <size> <string->utf>)
+       ...)
+      (begin
+        (test-group <name>
+          (test-assert "create" (bs:string <size> '<encoding>))
+          (test-group "procedural"
+            (define bs (make-bytestructure (<string->utf> "1234" '<endianness>)
+                                           0
+                                           (bs:string <size> '<encoding>)))
+            (test-equal "ref" "1234" (bytestructure-ref bs))
+            (test-equal "set" "4321" (begin
+                                       (bytestructure-set! bs "4321")
+                                       (bytestructure-ref bs))))
+          (test-group "syntactic"
+            (define-bytestructure-accessors (bs:string <size> '<encoding>)
+              unwrapper getter setter)
+            (define bv (<string->utf> "1234" '<endianness>))
+            (test-equal "ref" "1234" (getter bv))
+            (test-equal "set" "4321" (begin
+                                       (setter bv "4321")
+                                       (getter bv)))))
+        ...))
+    (test-string-encodings
+     ("utf16le" utf16le little 8 string->utf16)
+     ("utf16be" utf16be big 8 string->utf16)
+     ("utf32le" utf32le little 16 string->utf32)
+     ("utf32be" utf32be big 16 string->utf32))))
 
 (cond-expand
  (guile
