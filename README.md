@@ -564,6 +564,50 @@ values.
 ```
 
 
+#### String descriptors
+
+- `(bs:string size encoding)` *procedure*
+
+Returns a descriptor for a string occupying `size` bytes, encoded in
+`encoding` (a symbol).  Currently supported encodings:
+
+- `utf8`
+- `utf16le`
+- `utf16be`
+- `utf32le`
+- `utf32be`
+
+Byte-order marks are not supported (yet).
+
+```scheme
+(define x (bytestructure (bs:string 8 'utf16le)))
+
+(bytestructure-set! x "1234")
+
+(bytestructure-ref x)  ;=> "1234"
+```
+
+When writing a string into a bytevector via such a descriptor, the
+given string must fit into the given size after encoding.  If the
+string is shorter than the size, the remaining bytes of the bytevector
+are zeroed.
+
+```scheme
+(define x (bytestructure (bs:string 4 'utf8)))
+
+(bytestructure-set! x "12345")  ;error
+
+(bytestructure-set! x "123")
+(bytestructure-ref x)  ;=> "123\x00"
+```
+
+*Rationale:* The above is especially important to keep in mind when
+working with variable-width encodings like UTF-8 and UTF-16.  To avoid
+any hardships arising from this issue, one may make sure that the
+effective character set in use is limited to ASCII, or else use
+UTF-32.
+
+
 #### The bytestructure data type
 
 - `(make-bytestructure bytevector offset descriptor)` *procedure*
