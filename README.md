@@ -592,9 +592,10 @@ Byte-order marks are not supported (yet).
 ```
 
 When writing a string into a bytevector via such a descriptor, the
-given string must fit into the given size after encoding.  If the
-string is shorter than the size, the remaining bytes of the bytevector
-are zeroed.
+given string must fit into the given size after encoding, otherwise an
+error is raised.  If the string is shorter than the size, the
+remaining bytes of the bytevector are zeroed if the specified encoding
+is variable-width (UTF-8 and UTF-16), otherwise an error is raised.
 
 ```scheme
 (define x (bytestructure (bs:string 4 'utf8)))
@@ -604,11 +605,6 @@ are zeroed.
 (bytestructure-set! x "123")
 (bytestructure-ref x)  ;=> "123\x00"
 ```
-
-*Rationale:* The above is especially important to keep in mind when
-working with variable-width encodings like UTF-8 and UTF-16.  To avoid
-any hardships arising from this issue, one may use the ASCII or UTF-32
-encodings which are fixed-width.
 
 
 #### The bytestructure data type

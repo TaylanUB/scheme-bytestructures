@@ -201,9 +201,11 @@
       (test-equal "set" "4321" (begin
                                  (bytestructure-set! bs "4321")
                                  (bytestructure-ref bs)))
+      (test-error "too-long" #t (bytestructure-set! bs "12345"))
+      (test-error "too-short" #t (bytestructure-set! bs "123"))
       (set! bs (make-bytestructure (string->utf8 "äåãø") 0 bsd))
-      (test-error "ref-error" #t (bytestructure-ref bs))
-      (test-error "set-error" #t (bytestructure-set! bs "øãåä")))
+      (test-error "decoding-error" #t (bytestructure-ref bs))
+      (test-error "encoding-error" #t (bytestructure-set! bs "øãåä")))
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:string 4 'ascii)
         unwrapper getter setter)
@@ -212,19 +214,24 @@
       (test-equal "set" "4321" (begin
                                  (setter bv "4321")
                                  (getter bv)))
+      (test-error "too-long" #t (setter bv "12345"))
+      (test-error "too-short" #t (setter bv "123"))
       (set! bv (string->utf8 "äåãø"))
       (test-error "ref-error" #t (getter bv))
       (test-error "set-error" #t (setter bv "øãåä"))))
   (test-group "utf8"
     (test-assert "create" (bs:string 4 'utf8))
     (test-group "procedural"
-      (define bs (make-bytestructure (string->utf8 "1234")
-                                     0
-                                     (bs:string 4 'utf8)))
+      (define bsd (bs:string 4 'utf8))
+      (define bs (make-bytestructure (string->utf8 "1234") 0 bsd))
       (test-equal "ref" "1234" (bytestructure-ref bs))
       (test-equal "set" "4321" (begin
                                  (bytestructure-set! bs "4321")
-                                 (bytestructure-ref bs))))
+                                 (bytestructure-ref bs)))
+      (test-error "too-long" #t (bytestructure-set! bs "äåãø"))
+      (test-equal "123\x00" (begin
+                              (bytestructure-set! bs "123")
+                              (bytestructure-ref bs))))
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:string 4 'utf8)
         unwrapper getter setter)
@@ -232,11 +239,15 @@
       (test-equal "ref" "1234" (getter bv))
       (test-equal "set" "4321" (begin
                                  (setter bv "4321")
-                                 (getter bv)))))
+                                 (getter bv)))
+      (test-error "too-long" #t (setter bv "äåãø"))
+      (test-equal "123\x00" (begin
+                              (setter bv "123")
+                              (getter bv)))))
   (let ()
     (define-syntax-rule
       (test-string-encodings
-       (<name> <encoding> <endianness> <size> <string->utf>)
+       (<name> <encoding> <endianness> <size> <fixed-width?> <string->utf>)
        ...)
       (begin
         (test-group <name>
@@ -248,7 +259,13 @@
             (test-equal "ref" "1234" (bytestructure-ref bs))
             (test-equal "set" "4321" (begin
                                        (bytestructure-set! bs "4321")
-                                       (bytestructure-ref bs))))
+                                       (bytestructure-ref bs)))
+            (test-error "too-long" #t (bytestructure-set! bs "12345"))
+            (if <fixed-width?>
+                (test-error "too-short" #t (bytestructure-set! bs "123"))
+                (test-equal "123\x00" (begin
+                                        (bytestructure-set! bs "123")
+                                        (bytestructure-ref bs)))))
           (test-group "syntactic"
             (define-bytestructure-accessors (bs:string <size> '<encoding>)
               unwrapper getter setter)
@@ -256,13 +273,19 @@
             (test-equal "ref" "1234" (getter bv))
             (test-equal "set" "4321" (begin
                                        (setter bv "4321")
-                                       (getter bv)))))
+                                       (getter bv)))
+            (test-error "too-long" #t (setter bv "12345"))
+            (if <fixed-width?>
+                (test-error "too-short" #t (setter bv "123"))
+                (test-equal "123\x00" (begin
+                                        (setter bv "123")
+                                        (getter bv))))))
         ...))
     (test-string-encodings
-     ("utf16le" utf16le little 8 string->utf16)
-     ("utf16be" utf16be big 8 string->utf16)
-     ("utf32le" utf32le little 16 string->utf32)
-     ("utf32be" utf32be big 16 string->utf32))))
+     ("utf16le" utf16le little 8 #f string->utf16)
+     ("utf16be" utf16be big 8 #f string->utf16)
+     ("utf32le" utf32le little 16 #t string->utf32)
+     ("utf32be" utf32be big 16 #t string->utf32))))
 
 (cond-expand
  (guile

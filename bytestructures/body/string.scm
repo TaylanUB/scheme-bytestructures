@@ -69,6 +69,11 @@
 (define utf32le 'utf32le)
 (define utf32be 'utf32be)
 
+;;; Make sure this returns a boolean and not any other type of value, as the
+;;; output will be part of macro output.
+(define (fixed-width-encoding? encoding)
+  (not (not (memq encoding '(ascii utf32le utf32be)))))
+
 (define (bytevector-zero! bv start end)
   (do ((i start (+ i 1)))
       ((= i end))
@@ -88,21 +93,34 @@
   (define (setter syntax? bytevector offset string)
     (if syntax?
         (quasisyntax
-         (let ((bv (string->bytevector
-                    (unsyntax string)
-                    (unsyntax
-                     (datum->syntax (syntax utf8) encoding)))))
+         (let* ((bv (string->bytevector
+                     (unsyntax string)
+                     (unsyntax
+                      (datum->syntax (syntax utf8) encoding))))
+                (length (bytevector-length bv)))
+           (when (> length (unsyntax size))
+             (error "String too long." (unsyntax string)))
+           (when (and (unsyntax (fixed-width-encoding? encoding))
+                      (< length (unsyntax size)))
+             (error "String too short." (unsyntax string)))
            (bytevector-copy! (unsyntax bytevector)
                              (unsyntax offset)
                              bv)
-           (bytevector-zero! (unsyntax bytevector)
-                             (+ (unsyntax offset) (bytevector-length bv))
-                             (+ (unsyntax offset) (unsyntax size)))))
-        (let ((bv (string->bytevector string encoding)))
+           (when (not (unsyntax (fixed-width-encoding? encoding)))
+             (bytevector-zero! (unsyntax bytevector)
+                               (+ (unsyntax offset) (bytevector-length bv))
+                               (+ (unsyntax offset) (unsyntax size))))))
+        (let* ((bv (string->bytevector string encoding))
+               (length (bytevector-length bv)))
+          (when (> length size)
+            (error "String too long." string))
+          (when (and (fixed-width-encoding? encoding) (< length size))
+            (error "String too short." string))
           (bytevector-copy! bytevector offset bv)
-          (bytevector-zero! bytevector
-                            (+ offset (bytevector-length bv))
-                            (+ offset size)))))
+          (when (not (fixed-width-encoding? encoding))
+            (bytevector-zero! bytevector
+                              (+ offset (bytevector-length bv))
+                              (+ offset size))))))
   (make-bytestructure-descriptor size alignment #f getter setter))
 
 ;;; string.scm ends here
