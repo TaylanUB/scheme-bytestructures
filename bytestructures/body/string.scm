@@ -23,19 +23,34 @@
 
 ;;; Code:
 
+(define (ascii->string bytevector start end)
+  (let ((string (utf8->string bytevector start end)))
+    (when (not (= (string-length string) (bytevector-length bytevector)))
+      (error "Bytevector contains non-ASCII characters." bytevector))
+    string))
+
+(define (string->ascii string)
+  (let ((bytevector (string->utf8 string)))
+    (when (not (= (string-length string) (bytevector-length bytevector)))
+      (error "String contains non-ASCII characters." string))
+    bytevector))
+
 (define (bytevector->string bytevector offset size encoding)
-  (if (eq? encoding 'utf8)
-      (utf8->string bytevector offset (+ offset size))
-      (let ((bytevector (bytevector-copy bytevector offset (+ offset size))))
-        (case encoding
-          ((utf16le) (utf16->string bytevector 'little #t))
-          ((utf16be) (utf16->string bytevector 'big #t))
-          ((utf32le) (utf32->string bytevector 'little #t))
-          ((utf32be) (utf32->string bytevector 'big #t))
-          (else (error "Unknown string encoding." encoding))))))
+  (case encoding
+    ((ascii) (ascii->string bytevector offset (+ offset size)))
+    ((utf8) (utf8->string bytevector offset (+ offset size)))
+    (else
+     (let ((bytevector (bytevector-copy bytevector offset (+ offset size))))
+       (case encoding
+         ((utf16le) (utf16->string bytevector 'little #t))
+         ((utf16be) (utf16->string bytevector 'big #t))
+         ((utf32le) (utf32->string bytevector 'little #t))
+         ((utf32be) (utf32->string bytevector 'big #t))
+         (else (error "Unknown string encoding." encoding)))))))
 
 (define (string->bytevector string encoding)
   (case encoding
+    ((ascii) (string->ascii string))
     ((utf8) (string->utf8 string))
     ((utf16le) (string->utf16 string 'little))
     ((utf16be) (string->utf16 string 'big))
@@ -47,6 +62,7 @@
 ;;; literals into macro output.  Hence we inject references to the following
 ;;; variables instead.
 
+(define ascii 'ascii)
 (define utf8 'utf8)
 (define utf16le 'utf16le)
 (define utf16be 'utf16be)

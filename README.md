@@ -571,11 +571,15 @@ values.
 Returns a descriptor for a string occupying `size` bytes, encoded in
 `encoding` (a symbol).  Currently supported encodings:
 
+- `ascii`
 - `utf8`
 - `utf16le`
 - `utf16be`
 - `utf32le`
 - `utf32be`
+
+If the ASCII encoding is specified, an error is raised if a non-ASCII
+character is encountered during encoding or decoding.
 
 Byte-order marks are not supported (yet).
 
@@ -603,9 +607,8 @@ are zeroed.
 
 *Rationale:* The above is especially important to keep in mind when
 working with variable-width encodings like UTF-8 and UTF-16.  To avoid
-any hardships arising from this issue, one may make sure that the
-effective character set in use is limited to ASCII, or else use
-UTF-32.
+any hardships arising from this issue, one may use the ASCII or UTF-32
+encodings which are fixed-width.
 
 
 #### The bytestructure data type

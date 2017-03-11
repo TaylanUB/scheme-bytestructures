@@ -192,6 +192,29 @@
                                 (getter bv y))))))
 
 (test-group "string"
+  (test-group "ascii"
+    (test-assert "create" (bs:string 4 'ascii))
+    (test-group "procedural"
+      (define bsd (bs:string 4 'ascii))
+      (define bs (make-bytestructure (string->utf8 "1234") 0 bsd))
+      (test-equal "ref" "1234" (bytestructure-ref bs))
+      (test-equal "set" "4321" (begin
+                                 (bytestructure-set! bs "4321")
+                                 (bytestructure-ref bs)))
+      (set! bs (make-bytestructure (string->utf8 "äåãø") 0 bsd))
+      (test-error "ref-error" #t (bytestructure-ref bs))
+      (test-error "set-error" #t (bytestructure-set! bs "øãåä")))
+    (test-group "syntactic"
+      (define-bytestructure-accessors (bs:string 4 'ascii)
+        unwrapper getter setter)
+      (define bv (string->utf8 "1234"))
+      (test-equal "ref" "1234" (getter bv))
+      (test-equal "set" "4321" (begin
+                                 (setter bv "4321")
+                                 (getter bv)))
+      (set! bv (string->utf8 "äåãø"))
+      (test-error "ref-error" #t (getter bv))
+      (test-error "set-error" #t (setter bv "øãåä"))))
   (test-group "utf8"
     (test-assert "create" (bs:string 4 'utf8))
     (test-group "procedural"
