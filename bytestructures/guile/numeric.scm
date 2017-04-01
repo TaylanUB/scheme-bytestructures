@@ -11,6 +11,7 @@
  int unsigned-int
  long unsigned-long
  long-long unsigned-long-long
+ intptr_t uintptr_t
  size_t ssize_t ptrdiff_t
  float double
 

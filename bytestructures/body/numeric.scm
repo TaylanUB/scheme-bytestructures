@@ -226,31 +226,47 @@
 (define short int16)
 (define unsigned-short uint16)
 
-(define int int32)
-(define unsigned-int uint32)
+(define int (cond-expand
+             (lp32  int16)
+             (ilp64 int64)
+             (else  int32)))
+
+(define unsigned-int (cond-expand
+                      (lp32  uint16)
+                      (ilp64 uint64)
+                      (else  uint32)))
 
 (define long (cond-expand
-              (lp64 int64)
-              (else int32)))
+              (ilp64 int64)
+              (lp64  int64)
+              (else  int32)))
 
 (define unsigned-long (cond-expand
-                        (lp64 uint64)
-                        (else uint32)))
+                       (ilp64 uint64)
+                       (lp64  uint64)
+                       (else  uint32)))
 
 (define long-long int64)
 (define unsigned-long-long uint64)
 
-(define size_t (cond-expand
-                (ilp32 uint32)
-                (else uint64)))
+(define arch32bit? (cond-expand
+                    (lp32  #t)
+                    (ilp32 #t)
+                    (else  #f)))
 
-(define ssize_t (cond-expand
-                 (ilp32 int32)
-                 (else int64)))
+(define intptr_t (if arch32bit?
+                     int32
+                     int64))
 
-(define ptrdiff_t (cond-expand
-                   (ilp32 int32)
-                   (else int64)))
+(define uintptr_t (if arch32bit?
+                      uint32
+                      uint64))
+
+(define size_t uintptr_t)
+
+(define ssize_t intptr_t)
+
+(define ptrdiff_t intptr_t)
 
 (define float float32)
 (define double float64)
