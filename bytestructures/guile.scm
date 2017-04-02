@@ -7,7 +7,8 @@
  (bytestructures guile union)
  (bytestructures guile pointer)
  (bytestructures guile numeric)
- (bytestructures guile string))
+ (bytestructures guile string)
+ (bytestructures guile cstring-pointer))
 (re-export
  make-bytestructure-descriptor
  bytestructure-descriptor?
@@ -73,4 +74,6 @@
  complex64be complex128be
 
  bs:string
+
+ cstring-pointer
  )

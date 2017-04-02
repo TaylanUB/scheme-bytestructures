@@ -607,6 +607,34 @@ is variable-width (UTF-8 and UTF-16), otherwise an error is raised.
 ```
 
 
+#### Null-terminated C strings
+
+*Currently only supported on Guile.*
+
+The `cstring-pointer` descriptor can be used to represent a pointer to
+a null-terminated string.  A reference operation will return that
+string as a Scheme string.  The setter only takes addresses to
+existing C strings however, due to the difficulty of holding a
+reference to the associated pointer object in Scheme.
+
+```scheme
+(import (prefix (system foreign) ffi:))  ;use Guile FFI module
+
+(define bs (bytestructure cstring-pointer))
+
+;; This creates a null-terminated string "foobar\0" in memory, giving
+;; us a pointer object holding its address.
+(define ptr (ffi:string->pointer "foobar"))
+
+;; Write the address of "foobar\0" into the backing bytevector.
+(bytestructure-set! bs (ffi:pointer-address ptr))
+
+;; Get the null-terminated string whose address is found in the
+;; backing bytevector.
+(bytestructure-ref bs)  ;=> "foobar"
+```
+
+
 #### The bytestructure data type
 
 - `(make-bytestructure bytevector offset descriptor)` *procedure*
