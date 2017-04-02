@@ -1,22 +1,5 @@
 (define-module (bytestructures guile))
 
-;;; body/numeric.scm uses R7RS Appendix B cond-expand feature identifiers for
-;;; the C memory model of the platform; Guile doesn't provide these by default
-;;; yet so set the right one manually.
-(eval-when (expand load eval)
-  (import (prefix (system foreign) ffi:))
-  (define memory-model
-    (cond
-     ((= (ffi:sizeof '*) 4)
-      'ilp32)
-     ((= (ffi:sizeof ffi:long) 4)
-      'llp64)
-     ((= (ffi:sizeof ffi:long) 8)
-      'lp64)
-     (else
-      (error "Unsupported C memory model."))))
-  (cond-expand-provide (resolve-module '(guile)) (list memory-model)))
-
 (import
  (bytestructures guile base)
  (bytestructures guile vector)
