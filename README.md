@@ -426,13 +426,30 @@ as a memory address.  The content descriptor is the descriptor for the
 bytes found at that memory address.
 
 ```scheme
-;; uint8_t *ptr = 0xdeadbeef;
-(define ptr (bytestructure (bs:pointer uint8) #xdeadbeef))
+;; foo_struct *ptr = 0x12345678;
+(define ptr (bytestructure (bs:pointer foo-struct) #x12345678))
 ```
 
-As a special case, the `descriptor` argument may be a promise, which
-must evaluate to a descriptor when forced.  This is to allow creating
-self-referencing descriptors:
+For `void` pointers, opaque pointers, or any other kind of pointer
+where the content of the pointed-to memory address is unknown, a
+simple bogus type like `uint8` may be used.
+
+```scheme
+;; void *ptr;
+(define ptr (bytestructure (bs:pointer uint8)))
+```
+
+That being said, one may also simply use one of the numeric types
+`intptr_t` or `uintptr_t` instead of using `bs:pointer` at all.
+
+```scheme
+;; void *ptr;
+(define ptr (bytestructure uintptr_t))
+```
+
+As a special case, the `descriptor` argument to `bs:pointer` may be a
+promise, which must evaluate to a descriptor when forced.  This is to
+allow creating self-referencing descriptors:
 
 ```scheme
 ;; typedef struct linked_uint8_list_s {
