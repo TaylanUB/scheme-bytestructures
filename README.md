@@ -542,8 +542,8 @@ descriptors on big-endian platforms.
 
 The following are each equivalent as per `eqv?` to one of the above
 listed descriptors, depending on the platform on which the Scheme
-program is run: `[unsigned-](short,int,long,long-long)`, `size_t`,
-`ssize_t`, `ptrdiff_t`, `float`, `double`
+program is run: `[unsigned-](short,int,long,long-long)`,
+`[u]intptr_t`, `[s]size_t`, `ptrdiff_t`, `float`, `double`
 
 These descriptors cannot be indexed through as for instance vectors
 and structs can; they can only be used to directly reference or assign
