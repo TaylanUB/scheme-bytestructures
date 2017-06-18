@@ -443,7 +443,8 @@ That being said, one may also simply use one of the numeric types
 `intptr_t` or `uintptr_t` instead of using `bs:pointer` at all.
 
 ```scheme
-;; void *ptr;
+;; struct foo_s;  /* Incomplete struct type. */
+;; foo_s *ptr;  /* Opaque pointer. */
 (define ptr (bytestructure uintptr_t))
 ```
 
