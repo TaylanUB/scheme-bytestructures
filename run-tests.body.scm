@@ -289,11 +289,13 @@
 
 (cond-expand
  (guile
-  (test-group "pointer"
+  (let ()
+
     (define (protect-from-gc-upto-here obj)
       (with-output-to-file *null-device*
         (lambda ()
           (display (eq? #f obj)))))
+
     (define pointer-size (ffi:sizeof '*))
     (define bytevector-address-set!
       (case pointer-size
@@ -301,41 +303,64 @@
         ((2) bytevector-u16-native-set!)
         ((4) bytevector-u32-native-set!)
         ((8) bytevector-u64-native-set!)))
-    (test-assert "create" (bs:pointer uint16))
-    (test-group "procedural"
-      (define bs (bytestructure (bs:pointer uint16)))
-      (define bv1 (make-bytevector 2))
-      (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
-      (bytevector-address-set! (bytestructure-bytevector bs) 0 address)
-      (bytevector-u16-native-set! bv1 0 321)
-      (test-eqv "ref" 321 (bytestructure-ref bs '*))
-      (test-eqv "set" 456 (begin (bytestructure-set! bs '* 456)
-                                 (bytestructure-ref bs '*)))
-      (test-eqv "ref2" address (bytestructure-ref bs))
-      (protect-from-gc-upto-here bv1)
-      (let* ((bv2 (make-bytevector 2 123))
-             (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
-        (test-eqv "set2" address (begin (bytestructure-set! bs address)
-                                        (bytestructure-ref bs)))
-        (protect-from-gc-upto-here bv2)))
-    (test-group "syntactic"
-      (define-bytestructure-accessors (bs:pointer uint16)
-        unwrapper getter setter)
-      (define bv (make-bytevector pointer-size))
-      (define bv1 (make-bytevector 2))
-      (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
-      (bytevector-address-set! bv 0 address)
-      (bytevector-u16-native-set! bv1 0 321)
-      (test-eqv "ref" 321 (getter bv *))
-      (test-eqv "set" 456 (begin (setter bv * 456)
-                                 (getter bv *)))
-      (test-eqv "ref2" address (getter bv))
-      (protect-from-gc-upto-here bv1)
-      (let* ((bv2 (make-bytevector 2 123))
-             (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
-        (test-eqv "set2" address (begin (setter bv address)
-                                        (getter bv)))
-        (protect-from-gc-upto-here bv2)))))
+
+    (test-group "pointer"
+      (test-assert "create" (bs:pointer uint16))
+      (test-group "procedural"
+        (define bs (bytestructure (bs:pointer uint16)))
+        (define bv1 (make-bytevector 2))
+        (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
+        (bytevector-address-set! (bytestructure-bytevector bs) 0 address)
+        (bytevector-u16-native-set! bv1 0 321)
+        (test-eqv "ref" 321 (bytestructure-ref bs '*))
+        (test-eqv "set" 456 (begin (bytestructure-set! bs '* 456)
+                                   (bytestructure-ref bs '*)))
+        (test-eqv "ref2" address (bytestructure-ref bs))
+        (protect-from-gc-upto-here bv1)
+        (let* ((bv2 (make-bytevector 2 123))
+               (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
+          (test-eqv "set2" address (begin (bytestructure-set! bs address)
+                                          (bytestructure-ref bs)))
+          (protect-from-gc-upto-here bv2)))
+      (test-group "syntactic"
+        (define-bytestructure-accessors (bs:pointer uint16)
+          unwrapper getter setter)
+        (define bv (make-bytevector pointer-size))
+        (define bv1 (make-bytevector 2))
+        (define address (ffi:pointer-address (ffi:bytevector->pointer bv1)))
+        (bytevector-address-set! bv 0 address)
+        (bytevector-u16-native-set! bv1 0 321)
+        (test-eqv "ref" 321 (getter bv *))
+        (test-eqv "set" 456 (begin (setter bv * 456)
+                                   (getter bv *)))
+        (test-eqv "ref2" address (getter bv))
+        (protect-from-gc-upto-here bv1)
+        (let* ((bv2 (make-bytevector 2 123))
+               (address (ffi:pointer-address (ffi:bytevector->pointer bv2))))
+          (test-eqv "set2" address (begin (setter bv address)
+                                          (getter bv)))
+          (protect-from-gc-upto-here bv2))))
+
+    (test-group "cstring-pointer"
+      (let* ((cstr1-ptr (ffi:string->pointer "abc"))
+             (cstr2-ptr (ffi:string->pointer "cba"))
+             (cstr1-addr (ffi:pointer-address cstr1-ptr))
+             (cstr2-addr (ffi:pointer-address cstr2-ptr)))
+        (test-group "procedural"
+          (define bs (bytestructure cstring-pointer))
+          (bytevector-address-set! (bytestructure-bytevector bs) 0 cstr1-addr)
+          (test-equal "ref" "abc" (bytestructure-ref bs))
+          (test-equal "set" "cba" (begin (bytestructure-set! bs cstr2-addr)
+                                         (bytestructure-ref bs))))
+        (test-group "syntactic"
+          (define-bytestructure-accessors cstring-pointer
+            unwrapper getter setter)
+          (define bv (make-bytevector pointer-size))
+          (bytevector-address-set! bv 0 cstr1-addr)
+          (test-equal "ref" "abc" (getter bv))
+          (test-equal "set" "cba" (begin (setter bv cstr2-addr)
+                                         (getter bv))))))))
+
  (else
   ))
 
