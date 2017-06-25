@@ -1,5 +1,11 @@
 (define-module (bytestructures guile))
 
+;;; Note: cstring-pointer import/export hack: Guile 2.0.x has a problem when a
+;;; module has the same name as an identifier defined in it, and the identifier
+;;; is imported and re-exported.  To work around it, we import `cstring-pointer'
+;;; with a rename to `_cstring-pointer', define `cstring-pointer' explicitly in
+;;; this module, and export that.
+
 (import
  (bytestructures guile base)
  (bytestructures guile vector)
@@ -8,7 +14,8 @@
  (bytestructures guile pointer)
  (bytestructures guile numeric)
  (bytestructures guile string)
- (bytestructures guile cstring-pointer))
+ (rename (bytestructures guile cstring-pointer)
+         (cstring-pointer _cstring-pointer)))
 (re-export
  make-bytestructure-descriptor
  bytestructure-descriptor?
@@ -74,6 +81,8 @@
  complex64be complex128be
 
  bs:string
-
- cstring-pointer
  )
+
+(define cstring-pointer _cstring-pointer)
+
+(export cstring-pointer)
