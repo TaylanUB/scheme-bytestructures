@@ -2,6 +2,7 @@
 (import
  (srfi :9)
  (srfi :11)
+ (ice-9 format)
  (bytestructures guile bytevectors)
  (bytestructures guile utils))
 (include-from-path "bytestructures/body/base.scm")
