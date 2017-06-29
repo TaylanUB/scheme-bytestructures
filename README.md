@@ -995,8 +995,7 @@ When descriptors are statically apparent, an aggressively constant
 propagating and partial evaluating optimizer might be able to turn
 bytestructure references into direct bytevector references, yielding
 identical results to the macro API.  That is the most optimal outcome,
-but more realistic is that most of the work happens at run-time, which
-is the case in Guile 2.0.
+but more realistic is that most of the work happens at run-time.
 
 The offset calculation avoids allocation, which will make its speed
 predictable.  It takes linear time with regard to the depth of a
@@ -1032,37 +1031,44 @@ so at least you don't repeat the indexing of `x` and `y` at every
 iteration.
 
 
-Following are some benchmark figures from Guile.  (These are only
-meant for a broad comparison against plain bytevector reference.)
+Following are some benchmark figures from Guile 2.2.2 on an Intel i5.
+(These are only meant for a broad comparison against plain bytevector
+reference.)
+
+Prelude:
+
+```scheme
+(import
+  (bytestructures guile)
+  (rnrs bytevectors))
+(define million-times (iota 1000000))
+```
 
 Plain bytevector reference:
 
 ```scheme
-> (define times (iota 1000000)) ;a million
-> (define bv (make-bytevector 1))
-> (define-inlinable (ref x) (bytevector-u8-ref bv 0))
-> ,time (for-each ref times)
-;; 0.130245s real time
+(define bv (make-bytevector 1))
+(define-inlinable (ref x) (bytevector-u8-ref bv 0))
+,time (for-each ref million-times)
+;; ~0.06s real time
 ```
 
 Equivalent bytestructure reference:
 
 ```scheme
-> (define times (iota 1000000)) ;a million
-> (define bs (bytestructure (bs:vector 1 uint8)))
-> (define-inlinable (ref x) (bytestructure-ref bs 0))
-> ,time (for-each ref times)
-;; 0.721888s real time
+(define bs (bytestructure (bs:vector 1 uint8)))
+(define-inlinable (ref x) (bytestructure-ref bs 0))
+,time (for-each ref million-times)
+;; ~0.35s real time  (5.8 times of plain bytevector ref)
 ```
 
 Showcasing the effect of a deeper structure:
 
 ```scheme
-> (define times (iota 1000000)) ;a million
-> (define bs (bytestructure (bs:vector 1
-                               (bs:vector 1
-                                 (bs:vector 1 uint8)))))
-> (define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
-> ,time (for-each ref times)
-;; 1.079202s real time
+(define bs (bytestructure (bs:vector 1
+                             (bs:vector 1
+                               (bs:vector 1 uint8)))))
+(define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
+,time (for-each ref million-times)
+;; ~0.59s real time  (9.8 times of plain bytevector ref)
 ```
