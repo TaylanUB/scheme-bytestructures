@@ -430,22 +430,12 @@ bytes found at that memory address.
 (define ptr (bytestructure (bs:pointer foo-struct) #x12345678))
 ```
 
-For `void` pointers, opaque pointers, or any other kind of pointer
-where the content of the pointed-to memory address is unknown, a
-simple bogus type like `uint8` may be used.
+For void pointers, the symbol `void` may be used in place of a content
+descriptor:
 
 ```scheme
 ;; void *ptr;
-(define ptr (bytestructure (bs:pointer uint8)))
-```
-
-That being said, one may also simply use one of the numeric types
-`intptr_t` or `uintptr_t` instead of using `bs:pointer` at all.
-
-```scheme
-;; struct foo_s;  /* Incomplete struct type. */
-;; foo_s *ptr;  /* Opaque pointer. */
-(define ptr (bytestructure uintptr_t))
+(define ptr (bytestructure (bs:pointer 'void)))
 ```
 
 As a special case, the `descriptor` argument to `bs:pointer` may be a

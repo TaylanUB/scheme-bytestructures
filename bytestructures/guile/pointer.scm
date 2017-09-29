@@ -84,19 +84,21 @@
   (define (unwrapper syntax? bytevector offset index)
     (define (syntax-list id . elements)
       (datum->syntax id (map syntax->datum elements)))
-    (let* ((descriptor (get-descriptor))
-           (size (bytestructure-descriptor-size descriptor))
-           (bytevector* (if syntax?
-                            #`(pointer-ref #,bytevector #,offset #,size)
-                            (pointer-ref bytevector offset size)))
-           (index-datum (if syntax? (syntax->datum index) index)))
-      (if (eq? '* index-datum)
-          (values bytevector* 0 descriptor)
-          (if syntax?
-              (bytestructure-unwrap/syntax
-               bytevector* 0 descriptor (syntax-list index index))
-              (bytestructure-unwrap*
-               bytevector* 0 descriptor index)))))
+    (let ((descriptor (get-descriptor)))
+      (when (eq? 'void descriptor)
+        (error "Tried to follow void pointer."))
+      (let* ((size (bytestructure-descriptor-size descriptor))
+             (bytevector* (if syntax?
+                              #`(pointer-ref #,bytevector #,offset #,size)
+                              (pointer-ref bytevector offset size)))
+             (index-datum (if syntax? (syntax->datum index) index)))
+        (if (eq? '* index-datum)
+            (values bytevector* 0 descriptor)
+            (if syntax?
+                (bytestructure-unwrap/syntax
+                 bytevector* 0 descriptor (syntax-list index index))
+                (bytestructure-unwrap*
+                 bytevector* 0 descriptor index))))))
   (define (getter syntax? bytevector offset)
     (if syntax?
         #`(bytevector-address-ref #,bytevector #,offset)
