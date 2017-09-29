@@ -766,7 +766,7 @@ This macro executes the following algorithm:
 1. Extract the bytevector, offset, and descriptor of `bytestructure`.
    Let us call the triple of these values the *working set*.
 
-2. If no indices are left, return the working as three values.
+2. If no indices are left, return the working set as three values.
 
 3. Apply the `unwrapper` procedure of the descriptor to the
    bytevector, the offset, and the first index.  The return values
