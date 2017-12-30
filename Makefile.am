@@ -23,7 +23,7 @@ SOURCES =								\
 	bytestructures/guile/vector.scm					\
 	bytestructures/r6/bytevectors.scm
 
-EXTRA_DIST +=								\
+NOCOMP_SOURCES =							\
 	bytestructures/body/base.scm					\
 	bytestructures/body/base.syntactic.scm				\
 	bytestructures/body/bitfields.scm				\
@@ -42,7 +42,9 @@ EXTRA_DIST +=								\
 	bytestructures/r7/string.exports.sld				\
 	bytestructures/r7/struct.exports.sld				\
 	bytestructures/r7/union.exports.sld				\
-	bytestructures/r7/vector.exports.sld				\
+	bytestructures/r7/vector.exports.sld
+
+EXTRA_DIST +=								\
 	COPYING								\
 	README.md							\
 	pre-inst-env.in
