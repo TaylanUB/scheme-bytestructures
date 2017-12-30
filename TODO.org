@@ -1,5 +1,7 @@
 - Allow working with ports (or other open-ended byte sequences) as an
   alternative to bytevectors.
 
-- A utility that reads C header files and spits out descriptors, in
-  either object or source form, probably source.
+- See what to do with the "meta" field of descriptors.  Should it be
+  part of the public API?  Should it be removed and guile/ffi.scm
+  dropped?  Should we move to a different record system that allows
+  subtyping and obviates the need for the field?
