@@ -35,7 +35,7 @@
 (define (bs:vector length descriptor)
   (define element-size (bytestructure-descriptor-size descriptor))
   (define size (* length element-size))
-  (define alignment element-size)
+  (define alignment (bytestructure-descriptor-alignment descriptor))
   (define (unwrapper syntax? bytevector offset index)
     (values bytevector
             (if syntax?

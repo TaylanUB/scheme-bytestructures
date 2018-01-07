@@ -44,7 +44,10 @@
                                  (bytestructure-descriptor-size
                                   (field-content field)))
                                fields)))
-  (define alignment size)
+  (define alignment (apply max (map (lambda (field)
+                                      (bytestructure-descriptor-alignment
+                                       (field-content field)))
+                                    fields)))
   (define (unwrapper syntax? bytevector offset index)
     (let ((index (if syntax? (syntax->datum index) index)))
       (values bytevector
