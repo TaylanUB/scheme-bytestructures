@@ -699,7 +699,7 @@ assign the given values to the bytestructure after creation, meaning
 the following two expressions are equivalent:
 
 ```scheme
-(define bs (bytestructure descriptor) values)
+(define bs (bytestructure descriptor values))
 
 (let ((bs (bytestructure descriptor)))
   (bytestructure-set! bs values)
