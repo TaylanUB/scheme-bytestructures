@@ -728,6 +728,9 @@ descriptor.  Then, applies the `getter` of that descriptor to the
 bytevector and offset.  Or if the getter is `#f`, then a bytestructure
 encapsulating that bytevector, offset, and descriptor is returned.
 
+Note that this means that calling `bytestructure-ref` with zero index
+arguments will return a bytestructure identical to the one provided.
+
 - `(bytestructure-set! bytestructure index ... value)` *syntax*
 
 Traverses through `bytestructure` using `bytestructure-unwrap` with
