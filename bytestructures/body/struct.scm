@@ -194,8 +194,11 @@
          (make-struct-metadata simple-field-alist)))
      (make-bytestructure-descriptor size alignment unwrapper #f setter meta))))
 
-(define (debug-alignment pack fields)
-  (let* ((fields (construct-fields pack fields))
+(define debug-alignment
+  (case-lambda
+   ((fields) (debug-alignment #f fields))
+   ((pack fields)
+    (let* ((fields (construct-fields pack fields))
          (alignment (apply max (map field-alignment fields)))
          (size (let* ((field (last fields))
                       (end (+ (field-position field) (field-size field))))
@@ -210,6 +213,6 @@
                           pos (+ pos size) name size align)))
               fields)
     (format #t "} = ~a\n" (* 8 size))
-    (values)))
+    (values)))))
 
 ;;; struct.scm ends here
