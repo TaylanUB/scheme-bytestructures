@@ -129,7 +129,7 @@
                      <float-size> <float-getter> <float-setter>)
   (let ()
     (define size (* 2 <float-size>))
-    (define alignment <float-size>)
+    (define alignment (min <float-size> word-size))
     (define (getter syntax? bytevector offset)
       (if syntax?
           (quasisyntax
