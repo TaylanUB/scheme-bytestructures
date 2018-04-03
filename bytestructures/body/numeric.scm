@@ -30,6 +30,12 @@
    (ilp32 4)
    (else  8)))
 
+;; Note that we cap the alignment value at the CPU word size.  This is not
+;; correct for all types in the i386 and amd64 ABI specifications, but it's
+;; correct for all the types that we implement here so far.  Watch out if you
+;; add further numeric types in the future.
+;;
+;; Also see: make-complex-descriptor
 (define-syntax-rule (make-numeric-descriptor <size> <getter> <setter>)
   (let ()
     (define size <size>)
