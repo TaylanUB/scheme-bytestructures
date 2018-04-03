@@ -24,10 +24,16 @@
 
 ;;; Code:
 
+(define word-size
+  (cond-expand
+   (lp32  4)
+   (ilp32 4)
+   (else  8)))
+
 (define-syntax-rule (make-numeric-descriptor <size> <getter> <setter>)
   (let ()
     (define size <size>)
-    (define alignment <size>)
+    (define alignment (min <size> word-size))
     (define (getter syntax? bytevector offset)
       (if syntax?
           (quasisyntax
