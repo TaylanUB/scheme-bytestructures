@@ -40,14 +40,16 @@
 
 (define (bs:union %fields)
   (define fields (construct-fields %fields))
-  (define size (apply max (map (lambda (field)
-                                 (bytestructure-descriptor-size
-                                  (field-content field)))
-                               fields)))
   (define alignment (apply max (map (lambda (field)
                                       (bytestructure-descriptor-alignment
                                        (field-content field)))
                                     fields)))
+  (define size (let ((max-element
+                      (apply max (map (lambda (field)
+                                        (bytestructure-descriptor-size
+                                         (field-content field)))
+                                      fields))))
+                 (next-boundary max-element alignment)))
   (define (unwrapper syntax? bytevector offset index)
     (let ((index (if syntax? (syntax->datum index) index)))
       (values bytevector

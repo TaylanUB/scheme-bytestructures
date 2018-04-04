@@ -26,26 +26,6 @@
 
 ;;; Code:
 
-;;; Either remains at 'position' or rounds up to the next multiple of
-;;; 'alignment' depending on whether 'size' (if not greater than 'alignment')
-;;; would fit.  Returns three values: the chosen position, the start of the
-;;; alignment boundary of the chosen position, and the bit offset of the chosen
-;;; position from the start of the alignment boundary.
-(define (align position size alignment)
-  (let* ((integer (floor position))
-         (fraction (- position integer)))
-    (let-values (((prev-boundary-index offset) (floor/ integer alignment)))
-      (let* ((prev-boundary (* prev-boundary-index alignment))
-             (next-boundary (+ prev-boundary alignment)))
-        (if (< next-boundary (+ position (min size alignment)))
-            (values next-boundary next-boundary 0)
-            (values position prev-boundary (* 8 (+ offset fraction))))))))
-
-;;; Returns 'position' if it's already a multiple of 'alignment'; otherwise
-;;; returns the next multiple.
-(define (next-boundary position alignment)
-  (align position +inf.0 alignment))
-
 (define (pack-alignment pack alignment)
   (case pack
     ((#t) 1)

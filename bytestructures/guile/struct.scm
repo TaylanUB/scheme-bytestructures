@@ -7,5 +7,6 @@
  (bytestructures guile utils)
  (bytestructures guile base)
  (bytestructures guile bitfields))
+(include-from-path "bytestructures/body/align.scm")
 (include-from-path "bytestructures/body/struct.scm")
 (include-from-path "bytestructures/r7/struct.exports.sld")
