@@ -24,22 +24,28 @@
 
 ;;; Code:
 
-(define word-size
-  (cond-expand
-   (lp32  4)
-   (ilp32 4)
-   (else  8)))
+(define i8align 1)
 
-;; Note that we cap the alignment value at the CPU word size.  This is not
-;; correct for all types in the i386 and amd64 ABI specifications, but it's
-;; correct for all the types that we implement here so far.  Watch out if you
-;; add further numeric types in the future.
-;;
-;; Also see: make-complex-descriptor
-(define-syntax-rule (make-numeric-descriptor <size> <getter> <setter>)
+(define i16align 2)
+
+(define i32align 4)
+
+(define i64align
+  (cond-expand
+   (i386 4)
+   (else 8)))
+
+(define f32align 4)
+
+(define f64align
+  (cond-expand
+   (i386 4)
+   (else 8)))
+
+(define-syntax-rule (make-numeric-descriptor <size> <align> <getter> <setter>)
   (let ()
     (define size <size>)
-    (define alignment (min <size> word-size))
+    (define alignment <align>)
     (define (getter syntax? bytevector offset)
       (if syntax?
           (quasisyntax
@@ -53,89 +59,95 @@
     (make-bytestructure-descriptor size alignment #f getter setter)))
 
 (define-syntax-rule (define-numeric-descriptors <list>
-                      (<name> <size> <getter> <setter>)
+                      (<name> <size> <align> <getter> <setter>)
                       ...)
   (begin
     (define <name>
-      (make-numeric-descriptor <size> <getter> <setter>))
+      (make-numeric-descriptor <size> <align> <getter> <setter>))
     ...
     (define <list> (list (list <name> '<name> <getter> <setter>) ...))))
 
 (define-numeric-descriptors
   signed-integer-native-descriptors
-  (int8   1 bytevector-s8-ref bytevector-s8-set!)
-  (int16  2 bytevector-s16-native-ref bytevector-s16-native-set!)
-  (int32  4 bytevector-s32-native-ref bytevector-s32-native-set!)
-  (int64  8 bytevector-s64-native-ref bytevector-s64-native-set!))
+  (int8   1 i8align  bytevector-s8-ref bytevector-s8-set!)
+  (int16  2 i16align bytevector-s16-native-ref bytevector-s16-native-set!)
+  (int32  4 i32align bytevector-s32-native-ref bytevector-s32-native-set!)
+  (int64  8 i64align bytevector-s64-native-ref bytevector-s64-native-set!))
 
 (define-numeric-descriptors
   unsigned-integer-native-descriptors
-  (uint8  1 bytevector-u8-ref bytevector-u8-set!)
-  (uint16 2 bytevector-u16-native-ref bytevector-u16-native-set!)
-  (uint32 4 bytevector-u32-native-ref bytevector-u32-native-set!)
-  (uint64 8 bytevector-u64-native-ref bytevector-u64-native-set!))
+  (uint8  1 i8align bytevector-u8-ref bytevector-u8-set!)
+  (uint16 2 i16align bytevector-u16-native-ref bytevector-u16-native-set!)
+  (uint32 4 i32align bytevector-u32-native-ref bytevector-u32-native-set!)
+  (uint64 8 i64align bytevector-u64-native-ref bytevector-u64-native-set!))
 
 (define-numeric-descriptors
   float-native-descriptors
-  (float32
-   4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
-  (float64
-   8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!))
+  (float32 4 f32align
+           bytevector-ieee-single-native-ref
+           bytevector-ieee-single-native-set!)
+  (float64 8 f64align
+           bytevector-ieee-double-native-ref
+           bytevector-ieee-double-native-set!))
 
 (define-syntax-rule (define-with-endianness <list> <endianness>
-                      (<name> <size> <native-name> <getter> <setter>)
+                      (<name> <size> <align> <native-name> <getter> <setter>)
                       ...)
   (begin
     (define <name>
       (if (equal? <endianness> (native-endianness))
           <native-name>
-          (make-numeric-descriptor <size> <getter> <setter>)))
+          (make-numeric-descriptor <size> <align> <getter> <setter>)))
     ...
     (define <list> (list (list <name> '<name> <getter> <setter>) ...))))
 
 (define-with-endianness
   signed-integer-le-descriptors (endianness little)
-  (int16le 2 int16 bytevector-s16le-ref bytevector-s16le-set!)
-  (int32le 4 int32 bytevector-s32le-ref bytevector-s32le-set!)
-  (int64le 8 int64 bytevector-s64le-ref bytevector-s64le-set!))
+  (int16le 2 i16align int16 bytevector-s16le-ref bytevector-s16le-set!)
+  (int32le 4 i32align int32 bytevector-s32le-ref bytevector-s32le-set!)
+  (int64le 8 i64align int64 bytevector-s64le-ref bytevector-s64le-set!))
 
 (define-with-endianness
   signed-integer-be-descriptors (endianness big)
-  (int16be 2 int16 bytevector-s16be-ref bytevector-s16be-set!)
-  (int32be 4 int32 bytevector-s32be-ref bytevector-s32be-set!)
-  (int64be 8 int64 bytevector-s64be-ref bytevector-s64be-set!))
+  (int16be 2 i16align int16 bytevector-s16be-ref bytevector-s16be-set!)
+  (int32be 4 i32align int32 bytevector-s32be-ref bytevector-s32be-set!)
+  (int64be 8 i64align int64 bytevector-s64be-ref bytevector-s64be-set!))
 
 (define-with-endianness
   unsigned-integer-le-descriptors (endianness little)
-  (uint16le 2 uint16 bytevector-u16le-ref bytevector-u16le-set!)
-  (uint32le 4 uint32 bytevector-u32le-ref bytevector-u32le-set!)
-  (uint64le 8 uint64 bytevector-u64le-ref bytevector-u64le-set!))
+  (uint16le 2 i16align uint16 bytevector-u16le-ref bytevector-u16le-set!)
+  (uint32le 4 i32align uint32 bytevector-u32le-ref bytevector-u32le-set!)
+  (uint64le 8 i64align uint64 bytevector-u64le-ref bytevector-u64le-set!))
 
 (define-with-endianness
   unsigned-integer-be-descriptors (endianness big)
-  (uint16be 2 uint16 bytevector-u16be-ref bytevector-u16be-set!)
-  (uint32be 4 uint32 bytevector-u32be-ref bytevector-u32be-set!)
-  (uint64be 8 uint64 bytevector-u64be-ref bytevector-u64be-set!))
+  (uint16be 2 i16align uint16 bytevector-u16be-ref bytevector-u16be-set!)
+  (uint32be 4 i32align uint32 bytevector-u32be-ref bytevector-u32be-set!)
+  (uint64be 8 i64align uint64 bytevector-u64be-ref bytevector-u64be-set!))
 
 (define-with-endianness
   float-le-descriptors (endianness little)
-  (float32le
-   4 float32 bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!)
-  (float64le
-   8 float64 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
+  (float32le 4 f32align float32
+             bytevector-ieee-single-le-ref
+             bytevector-ieee-single-le-set!)
+  (float64le 8 f64align float64
+             bytevector-ieee-double-le-ref
+             bytevector-ieee-double-le-set!))
 
 (define-with-endianness
   float-be-descriptors (endianness big)
-  (float32be
-   4 float32 bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
-  (float64be
-   8 float64 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
+  (float32be 4 f32align float32
+             bytevector-ieee-single-be-ref
+             bytevector-ieee-single-be-set!)
+  (float64be 8 f64align float64
+             bytevector-ieee-double-be-ref
+             bytevector-ieee-double-be-set!))
 
 (define-syntax-rule (make-complex-descriptor
-                     <float-size> <float-getter> <float-setter>)
+                     <float-size> <float-align> <float-getter> <float-setter>)
   (let ()
     (define size (* 2 <float-size>))
-    (define alignment (min <float-size> word-size))
+    (define alignment <float-align>)
     (define (getter syntax? bytevector offset)
       (if syntax?
           (quasisyntax
@@ -166,48 +178,57 @@
     (make-bytestructure-descriptor size alignment #f getter setter)))
 
 (define-syntax-rule (define-complex-descriptors <list>
-                      (<name> <float-size> <float-getter> <float-setter>)
+                      (<name> <float-size> <float-align>
+                              <float-getter> <float-setter>)
                       ...)
   (begin
     (define <name>
-      (make-complex-descriptor <float-size> <float-getter> <float-setter>))
+      (make-complex-descriptor <float-size> <float-align>
+                               <float-getter> <float-setter>))
     ...
     (define <list> (list (list <name> '<name> <float-getter> <float-setter>)
                          ...))))
 
 (define-complex-descriptors
   complex-native-descriptors
-  (complex64
-   4 bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!)
-  (complex128
-   8 bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!))
+  (complex64  4 f32align
+              bytevector-ieee-single-native-ref
+              bytevector-ieee-single-native-set!)
+  (complex128 8 f64align
+              bytevector-ieee-double-native-ref
+              bytevector-ieee-double-native-set!))
 
 (define-syntax-rule (define-complex-with-endianness <list> <endianness>
-                      (<name> <float-size> <native-name>
+                      (<name> <float-size> <float-align> <native-name>
                               <float-getter> <float-setter>)
                       ...)
   (begin
     (define <name>
       (if (equal? <endianness> (native-endianness))
           <native-name>
-          (make-complex-descriptor <float-size> <float-getter> <float-setter>)))
+          (make-complex-descriptor <float-size> <float-align>
+                                   <float-getter> <float-setter>)))
     ...
     (define <list> (list (list <name> '<name> <float-getter> <float-setter>)
                          ...))))
 
 (define-complex-with-endianness
   complex-le-descriptors (endianness little)
-  (complex64le
-   4 complex64  bytevector-ieee-single-le-ref bytevector-ieee-single-le-set!)
-  (complex128le
-   8 complex128 bytevector-ieee-double-le-ref bytevector-ieee-double-le-set!))
+  (complex64le  4 f32align complex64
+                bytevector-ieee-single-le-ref
+                bytevector-ieee-single-le-set!)
+  (complex128le 8 f64align complex128
+                bytevector-ieee-double-le-ref
+                bytevector-ieee-double-le-set!))
 
 (define-complex-with-endianness
   complex-be-descriptors (endianness big)
-  (complex64be
-   4 complex64  bytevector-ieee-single-be-ref bytevector-ieee-single-be-set!)
-  (complex128be
-   8 complex128 bytevector-ieee-double-be-ref bytevector-ieee-double-be-set!))
+  (complex64be  4 f32align complex64
+                bytevector-ieee-single-be-ref
+                bytevector-ieee-single-be-set!)
+  (complex128be 8 f64align complex128
+                bytevector-ieee-double-be-ref
+                bytevector-ieee-double-be-set!))
 
 (define signed-integer-descriptors
   (append signed-integer-native-descriptors
