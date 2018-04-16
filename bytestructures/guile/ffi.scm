@@ -54,7 +54,7 @@
     (,float64 . ,ffi:double)))
 
 (define (bytestructure-descriptor->ffi-descriptor descriptor)
-  (define (convert descriptor top-level?)
+  (define (convert descriptor)
     (cond
      ((assq descriptor numeric-type-mapping)
       => (match-lambda ((key . val) val)))
@@ -62,16 +62,11 @@
       (let ((metadata (bytestructure-descriptor-metadata descriptor)))
         (cond
          ((vector-metadata? metadata)
-          (if top-level?
-              '*
-              (make-list
-               (vector-metadata-length metadata)
-               (convert (vector-metadata-element-descriptor metadata) #f))))
+          (make-list
+           (vector-metadata-length metadata)
+           (convert (vector-metadata-element-descriptor metadata))))
          ((struct-metadata? metadata)
-          (map (lambda (descriptor)
-                 (convert descriptor #f))
-               (map (match-lambda ((field-name . descriptor) descriptor))
-                    (struct-metadata-field-alist metadata))))
+          (map convert (map cdr (struct-metadata-field-alist metadata))))
          ((union-metadata? metadata)
           ;; TODO: Add support once Guile/libffi supports this.
           (error "Unions not supported." descriptor))
@@ -82,7 +77,13 @@
           (error "Bitfields not supported." descriptor))
          (else
           (error "Unsupported bytestructure descriptor." descriptor)))))))
-  (convert descriptor #t))
+  (cond
+   ((eq? descriptor 'void)
+    ffi:void)
+   ((vector-metadata? (bytestructure-descriptor-metadata descriptor))
+    '*)
+   (else
+    (convert descriptor))))
 
 (define (bs:pointer->proc ret-type func-ptr arg-types)
   (define (type->raw-type type)
