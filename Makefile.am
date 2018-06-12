@@ -24,6 +24,7 @@ SOURCES =								\
 	bytestructures/r6/bytevectors.scm
 
 NOCOMP_SOURCES =							\
+	bytestructures/body/align.scm					\
 	bytestructures/body/base.scm					\
 	bytestructures/body/base.syntactic.scm				\
 	bytestructures/body/bitfields.scm				\
