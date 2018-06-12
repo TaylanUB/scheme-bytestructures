@@ -43,7 +43,10 @@ NOCOMP_SOURCES =							\
 	bytestructures/r7/string.exports.sld				\
 	bytestructures/r7/struct.exports.sld				\
 	bytestructures/r7/union.exports.sld				\
-	bytestructures/r7/vector.exports.sld
+	bytestructures/r7/vector.exports.sld				\
+	run-tests.body.scm						\
+	run-tests.guile.scm						\
+	run-tests.r7.scm
 
 EXTRA_DIST +=								\
 	COPYING								\
