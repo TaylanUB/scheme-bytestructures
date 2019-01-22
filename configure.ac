@@ -1,4 +1,4 @@
-AC_INIT([bytestructures], [1.0.3], [], [], [https://github.com/TaylanUB/scheme-bytestructures/])
+AC_INIT([bytestructures], [1.0.4], [], [], [https://github.com/TaylanUB/scheme-bytestructures/])
 AC_CONFIG_SRCDIR(bytestructures)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests])
