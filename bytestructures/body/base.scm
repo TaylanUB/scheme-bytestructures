@@ -151,7 +151,7 @@
         (if (bytevector? value)
             (bytevector-copy! bytevector offset value 0
                               (bytestructure-descriptor-size
-                               bytevector offset descriptor))
+                               descriptor bytevector offset))
             (error "Cannot write value with this bytestructure descriptor."
                    value descriptor)))))
 
