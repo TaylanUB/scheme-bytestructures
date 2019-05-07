@@ -1,5 +1,9 @@
 (define-library (bytestructures r7 utils)
   (import (scheme base))
+  (cond-expand
+   ((library (rnrs syntax-case))
+    (import (rnrs syntax-case)))
+   (else))
   (export
    define-syntax-rule
    if-syntax-case
