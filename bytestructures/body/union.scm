@@ -49,7 +49,8 @@
                                         (bytestructure-descriptor-size
                                          (field-content field)))
                                       fields))))
-                 (next-boundary max-element alignment)))
+                 (let-values (((size . _) (next-boundary max-element alignment)))
+                   size)))
   (define (unwrapper syntax? bytevector offset index)
     (let ((index (if syntax? (syntax->datum index) index)))
       (values bytevector

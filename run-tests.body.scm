@@ -113,7 +113,7 @@
     (test-eqv "set" 456 (begin (bytestructure-set! bs 1 456)
                                (bytestructure-ref bs 1)))
     (test-eqv "init" 321
-      (let ((bs (bytestructure (bs:vector 3 uint16) #(321 123 321))))
+      (let ((bs (bytestructure (bs:vector 3 uint16) '#(321 123 321))))
         (bytestructure-ref bs 2))))
   (maybe-skip-syntax
    (test-group "syntactic"
@@ -136,7 +136,7 @@
                                  (bytestructure-ref bs 'y)))
       (test-eqv "init" 321
         (let ((bs (bytestructure (bs:struct `((x ,uint8) (y ,uint16)))
-                                 #(123 321))))
+                                 '#(123 321))))
           (bytestructure-ref bs 'y))))
     (maybe-skip-syntax
      (test-group "syntactic"
@@ -159,7 +159,7 @@
                                  (bytestructure-ref bs 'y)))
       (test-eqv "init" 321
         (let ((bs (bytestructure (bs:struct #t `((x ,uint8) (y ,uint16)))
-                                 #(123 321))))
+                                 '#(123 321))))
           (bytestructure-ref bs 'y))))
     (maybe-skip-syntax
      (test-group "syntactic"
@@ -229,9 +229,10 @@
                                  (bytestructure-set! bs "4321")
                                  (bytestructure-ref bs)))
       (test-error "too-long" #t (bytestructure-set! bs "äåãø"))
-      (test-equal "123\x00" (begin
-                              (bytestructure-set! bs "123")
-                              (bytestructure-ref bs))))
+      (test-equal (string-append "123" (string #\nul))
+                  (begin
+                    (bytestructure-set! bs "123")
+                    (bytestructure-ref bs))))
     (test-group "syntactic"
       (define-bytestructure-accessors (bs:string 4 'utf8)
         unwrapper getter setter)
@@ -241,9 +242,10 @@
                                  (setter bv "4321")
                                  (getter bv)))
       (test-error "too-long" #t (setter bv "äåãø"))
-      (test-equal "123\x00" (begin
-                              (setter bv "123")
-                              (getter bv)))))
+      (test-equal (string-append "123" (string #\nul))
+                  (begin
+                    (setter bv "123")
+                    (getter bv)))))
   (let ()
     (define-syntax-rule
       (test-string-encodings
@@ -263,9 +265,10 @@
             (test-error "too-long" #t (bytestructure-set! bs "12345"))
             (if <fixed-width?>
                 (test-error "too-short" #t (bytestructure-set! bs "123"))
-                (test-equal "123\x00" (begin
-                                        (bytestructure-set! bs "123")
-                                        (bytestructure-ref bs)))))
+                (test-equal (string-append "123" (string #\nul))
+                            (begin
+                              (bytestructure-set! bs "123")
+                              (bytestructure-ref bs)))))
           (test-group "syntactic"
             (define-bytestructure-accessors (bs:string <size> '<encoding>)
               unwrapper getter setter)
@@ -277,9 +280,10 @@
             (test-error "too-long" #t (setter bv "12345"))
             (if <fixed-width?>
                 (test-error "too-short" #t (setter bv "123"))
-                (test-equal "123\x00" (begin
-                                        (setter bv "123")
-                                        (getter bv))))))
+                (test-equal (string-append "123" (string #\nul))
+                            (begin
+                              (setter bv "123")
+                              (getter bv))))))
         ...))
     (test-string-encodings
      ("utf16le" utf16le little 8 #f string->utf16)
