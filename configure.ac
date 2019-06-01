@@ -6,7 +6,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests])
 dnl Enable silent rules by default.
 AM_SILENT_RULES([yes])
 
-GUILE_PKG([2.2 2.0])
+GUILE_PKG([3.0 2.2 2.0])
 GUILE_PROGS
 
 AC_CONFIG_FILES([Makefile])
