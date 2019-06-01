@@ -52,3 +52,10 @@ EXTRA_DIST +=								\
 	run-tests.body.scm						\
 	run-tests.guile.scm						\
 	run-tests.r7.scm
+
+check:
+	$(top_builddir)/pre-inst-env		\
+	  $(GUILE) --no-auto-compile		\
+	  $(top_srcdir)/run-tests.guile.scm
+
+.PHONY: check
