@@ -21,8 +21,24 @@
 ;; native or specific endianness, as made possible by the bytevector referencing
 ;; and assigning procedures in the (rnrs bytevectors) module.
 
+;; We use the strange cond-expand/runtime macro to make sure that certain checks
+;; for CPU architecture and data model are done at library-load-time and not
+;; compile time, since one might cross-compile the library.
+
 
 ;;; Code:
+
+(define base-environment
+  (environment '(scheme base)))
+
+(define-syntax cond-expand/runtime
+  (syntax-rules ()
+    ((_ (<cond> <expr>) ...)
+     (let ((const (eval '(cond-expand (<cond> '<expr>) ...)
+                        base-environment)))
+       (cond
+        ((equal? const '<expr>) <expr>)
+        ...)))))
 
 (define i8align 1)
 
@@ -31,14 +47,14 @@
 (define i32align 4)
 
 (define i64align
-  (cond-expand
+  (cond-expand/runtime
    (i386 4)
    (else 8)))
 
 (define f32align 4)
 
 (define f64align
-  (cond-expand
+  (cond-expand/runtime
    (i386 4)
    (else 8)))
 
@@ -259,22 +275,22 @@
 (define short int16)
 (define unsigned-short uint16)
 
-(define int (cond-expand
+(define int (cond-expand/runtime
              (lp32  int16)
              (ilp64 int64)
              (else  int32)))
 
-(define unsigned-int (cond-expand
+(define unsigned-int (cond-expand/runtime
                       (lp32  uint16)
                       (ilp64 uint64)
                       (else  uint32)))
 
-(define long (cond-expand
+(define long (cond-expand/runtime
               (ilp64 int64)
               (lp64  int64)
               (else  int32)))
 
-(define unsigned-long (cond-expand
+(define unsigned-long (cond-expand/runtime
                        (ilp64 uint64)
                        (lp64  uint64)
                        (else  uint32)))
@@ -282,7 +298,7 @@
 (define long-long int64)
 (define unsigned-long-long uint64)
 
-(define arch32bit? (cond-expand
+(define arch32bit? (cond-expand/runtime
                     (lp32  #t)
                     (ilp32 #t)
                     (else  #f)))

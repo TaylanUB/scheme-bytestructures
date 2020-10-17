@@ -2,6 +2,7 @@
   (import
    (scheme base)
    (scheme complex)
+   (scheme eval)
    (bytestructures r7 utils)
    (bytestructures r7 base)
    (bytestructures r7 bytevectors)

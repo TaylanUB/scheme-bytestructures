@@ -1,5 +1,6 @@
 (define-module (bytestructures guile numeric-all))
 (import
+ (scheme eval)
  (bytestructures guile bytevectors)
  (bytestructures guile utils)
  (bytestructures guile base)
