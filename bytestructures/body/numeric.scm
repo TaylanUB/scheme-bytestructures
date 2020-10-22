@@ -29,7 +29,12 @@
 ;;; Code:
 
 (define base-environment
-  (environment '(scheme base)))
+  (cond-expand
+   (guile-2
+    (environment '(guile)
+                 '(bytestructures guile numeric-data-model)))
+   (else
+    (environment '(scheme base)))))
 
 (define-syntax cond-expand/runtime
   (syntax-rules ()
