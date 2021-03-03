@@ -31,8 +31,7 @@
 (define base-environment
   (cond-expand
    (guile-2
-    (environment '(guile)
-                 '(bytestructures guile numeric-data-model)))
+    (current-module))
    (else
     (environment '(scheme base)))))
 
