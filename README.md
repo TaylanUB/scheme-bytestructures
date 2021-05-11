@@ -290,6 +290,10 @@ integer; it signifies that the field is a bit-field of that width.
 The descriptor of a bit-field must be one that decodes values to exact
 integers, such as for instance `uint8` or `int32`.
 
+Alternatively, a field spec may be of the form `(union *fields*)`
+where *fields* is again a list of field specs.  This feature
+corresponds to *anonymous unions* in the C11 standard.
+
 The width of a bit-field may be zero, which means padding should be
 inserted in its place until the next alignment boundary of the
 descriptor of that bit-field is reached.  A zero-width bit-field must

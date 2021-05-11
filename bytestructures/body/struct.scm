@@ -41,7 +41,7 @@
   (alignment field-alignment)
   (position field-position))
 
-(define (construct-field pack position name descriptor)
+(define (construct-normal-field pack position name descriptor)
   (let*-values
       (((size)
         (bytestructure-descriptor-size descriptor))
@@ -82,20 +82,57 @@
         (reverse fields)
         (let* ((field-spec (car field-specs))
                (field-specs (cdr field-specs))
-               (name (car field-spec))
-               (descriptor (cadr field-spec))
-               (bitfield? (not (null? (cddr field-spec))))
-               (width (if bitfield?
-                          (car (cddr field-spec))
-                          #f)))
-          (let-values
-              (((field next-position)
-                (if bitfield?
-                    (construct-bit-field pack position name descriptor width)
-                    (construct-field pack position name descriptor))))
-            (loop field-specs
-                  next-position
-                  (cons field fields)))))))
+               (name-or-type (car field-spec)))
+          (if (and (eq? name-or-type 'union)
+                   (pair? (cadr field-spec)))
+              (let-values (((next-position fields)
+                            (add-union-fields pack
+                                              position
+                                              (cadr field-spec)
+                                              fields)))
+                (loop field-specs
+                      next-position
+                      fields))
+              (let-values (((field next-position)
+                            (construct-field pack position field-spec)))
+                (loop field-specs
+                      next-position
+                      (cons field fields))))))))
+
+(define (add-union-fields pack position field-specs fields)
+  (define (field-spec-alignment field-spec)
+    (let ((descriptor (cadr field-spec)))
+      (bytestructure-descriptor-alignment descriptor)))
+  (define (field-spec-size field-spec)
+    (let ((descriptor (cadr field-spec)))
+      (bytestructure-descriptor-size descriptor)))
+  (let* ((alignment (apply max (map field-spec-alignment field-specs)))
+         (alignment (pack-alignment pack alignment))
+         (size (apply max (map field-spec-size field-specs)))
+         (position (align position size (pack-alignment pack alignment))))
+    (let loop ((field-specs field-specs)
+               (next-position position)
+               (fields fields))
+      (if (null? field-specs)
+          (values next-position fields)
+          (let ((field-spec (car field-specs))
+                (field-specs (cdr field-specs)))
+            (let-values (((field next-position)
+                          (construct-field pack position field-spec)))
+              (loop field-specs
+                    (max position next-position)
+                    (cons field fields))))))))
+
+(define (construct-field pack position field-spec)
+  (let* ((name (car field-spec))
+         (descriptor (cadr field-spec))
+         (bitfield? (not (null? (cddr field-spec))))
+         (width (if bitfield?
+                    (car (cddr field-spec))
+                    #f)))
+    (if bitfield?
+        (construct-bit-field pack position name descriptor width)
+        (construct-normal-field pack position name descriptor))))
 
 (define-record-type <struct-metadata>
   (make-struct-metadata field-alist)
@@ -113,8 +150,9 @@
                                 (cons (field-name field) field))
                               fields))
      (define alignment (apply max (map field-alignment fields)))
-     (define size (let* ((field (last %fields))
-                         (end (+ (field-position field) (field-size field))))
+     (define (field-end field)
+       (+ (field-position field) (field-size field)))
+     (define size (let ((end (apply max (map field-end %fields))))
                     (let-values (((size . _) (next-boundary end alignment)))
                       size)))
      (define (unwrapper syntax? bytevector offset index)

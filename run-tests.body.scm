@@ -171,7 +171,52 @@
          (bytevector-u16-native-set! bv 1 321))
        (test-eqv "ref" 321 (getter bv y))
        (test-eqv "set" 456 (begin (setter bv y 456)
-                                  (getter bv y)))))))
+                                  (getter bv y))))))
+
+  (test-group "anonymous-union"
+    (test-assert "create"
+      (bs:struct
+       `((x ,uint8)
+         (union
+          ((a ,uint16)
+           (b ,uint32))))))
+    (test-group "aligned"
+      (define bs
+        (bytestructure
+         (bs:struct
+          `((union
+             ((x ,uint8)
+              (y ,uint16)))
+            (union
+             ((a ,uint32)
+              (b ,uint64)))))))
+      (bytevector-u32-native-set! (bytestructure-bytevector bs) 8 321)
+      (test-eqv "ref1" 321 (bytestructure-ref bs 'a))
+      (bytevector-u64-native-set! (bytestructure-bytevector bs) 8 456)
+      (test-eqv "ref2" 456 (bytestructure-ref bs 'b))
+      (test-eqv "set1" 789 (begin (bytestructure-set! bs 'a 789)
+                                  (bytestructure-ref bs 'a)))
+      (test-eqv "set2" 987 (begin (bytestructure-set! bs 'b 987)
+                                  (bytestructure-ref bs 'b))))
+    (test-group "packed"
+      (define bs
+        (bytestructure
+         (bs:struct
+          #t
+          `((union
+             ((x ,uint8)
+              (y ,uint16)))
+            (union
+             ((a ,uint32)
+              (b ,uint64)))))))
+      (bytevector-u32-native-set! (bytestructure-bytevector bs) 2 321)
+      (test-eqv "ref1" 321 (bytestructure-ref bs 'a))
+      (bytevector-u64-native-set! (bytestructure-bytevector bs) 2 456)
+      (test-eqv "ref2" 456 (bytestructure-ref bs 'b))
+      (test-eqv "set1" 789 (begin (bytestructure-set! bs 'a 789)
+                                  (bytestructure-ref bs 'a)))
+      (test-eqv "set2" 987 (begin (bytestructure-set! bs 'b 987)
+                                  (bytestructure-ref bs 'b))))))
 
 (test-group "union"
   (test-assert "create" (bs:union `((x ,uint8) (y ,uint16))))
