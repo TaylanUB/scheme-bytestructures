@@ -1,6 +1,6 @@
 ;;; string.scm --- Strings in encodings supported by (rnrs bytevectors).
 
-;; Copyright © 2017 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2017 Taylan Kammer <taylan.kammer@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

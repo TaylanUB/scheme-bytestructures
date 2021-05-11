@@ -1,6 +1,6 @@
 ;;; align.scm --- Alignment calculation helpers.
 
-;; Copyright © 2018 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2018 Taylan Kammer <taylan.kammer@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

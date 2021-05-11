@@ -1,6 +1,6 @@
 ;;; ffi.scm --- Convert bytestructure descriptors to Guile/libffi types.
 
-;; Copyright © 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
+;; Copyright © 2016 Taylan Kammer <taylan.kammer@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
