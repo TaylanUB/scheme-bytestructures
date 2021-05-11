@@ -467,22 +467,25 @@ bytestructure object.
 ;; linked_uint8_list_t u8list;
 (define u8list (bytestructure linked-uint8-list))
 
-;; (*u8list).head
+;; u8list->head
 (bytestructure-ref u8list '* 'head)
 
-;; (*u8list).head = 42;
+;; u8list->head = 42;
 (bytestructure-set! u8list '* 'head 42)
 ```
 
-One may however also provide any other index, which will cause an
-implicit dereference.
+One may also provide an integer index, which will result in an offset
+being applied while creating the reified bytevector:
 
 ```scheme
-;; u8list->head
-(bytestructure-ref u8list 'head)
+;; uint8_t *u8array;
+(define u8array (bytestructure (bs:pointer uint8)))
 
-;; u8list->head = 42;
-(bytestructure-set! u8list 'head 42)
+;; u8array[5]
+(bytestructure-ref u8array 5)
+
+;; u8array[5] = 42
+(bytestructure-set! u8array 5 42)
 ```
 
 Since pointers are also values themselves, pointer descriptors also

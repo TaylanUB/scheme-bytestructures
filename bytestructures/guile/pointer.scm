@@ -51,9 +51,10 @@
     ((4) bytevector-u32-native-set!)
     ((8) bytevector-u64-native-set!)))
 
-(define (pointer-ref bytevector offset content-size)
-  (let ((address (bytevector-address-ref bytevector offset)))
-    (if (zero? address)
+(define (pointer-ref bytevector offset index content-size)
+  (let* ((base-address (bytevector-address-ref bytevector offset))
+         (address (+ base-address (* index content-size))))
+    (if (zero? base-address)
         (error "Tried to dereference null-pointer.")
         (ffi:pointer->bytevector (ffi:make-pointer address) content-size))))
 
@@ -88,17 +89,13 @@
       (when (eq? 'void descriptor)
         (error "Tried to follow void pointer."))
       (let* ((size (bytestructure-descriptor-size descriptor))
-             (bytevector* (if syntax?
-                              #`(pointer-ref #,bytevector #,offset #,size)
-                              (pointer-ref bytevector offset size)))
-             (index-datum (if syntax? (syntax->datum index) index)))
-        (if (eq? '* index-datum)
-            (values bytevector* 0 descriptor)
-            (if syntax?
-                (bytestructure-unwrap/syntax
-                 bytevector* 0 descriptor (syntax-list index index))
-                (bytestructure-unwrap*
-                 bytevector* 0 descriptor index))))))
+             (index-datum (if syntax? (syntax->datum index) index))
+             (index (if (eq? '* index-datum) 0 index-datum))
+             (bytevector*
+              (if syntax?
+                  #`(pointer-ref #,bytevector #,offset #,index #,size)
+                  (pointer-ref bytevector offset index size))))
+        (values bytevector* 0 descriptor))))
   (define (getter syntax? bytevector offset)
     (if syntax?
         #`(bytevector-address-ref #,bytevector #,offset)
