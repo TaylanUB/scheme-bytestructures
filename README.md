@@ -488,6 +488,14 @@ being applied while creating the reified bytevector:
 (bytestructure-set! u8array 5 42)
 ```
 
+**Note:** Since dereferencing a pointer involves the creation of a new
+bytevector object, it's a rather inefficient operation relative to
+what it achieves (following a pointer).  As such, you might want to
+minimize the use of pointer dereferences in performance-critical
+sections of code.  Note that using the macro API does **not** work
+around this issue, as the bytevector still needs to be created at
+run-time to access the data referenced by the pointer.
+
 Since pointers are also values themselves, pointer descriptors also
 have direct referencing and assignment semantics.  Referencing the
 pointer yields the numeric value of the address.
