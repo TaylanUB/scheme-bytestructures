@@ -1024,7 +1024,7 @@ Plain bytevector reference:
 ```scheme
 > (define times (iota 1000000)) ;A million
 > (define bv (make-bytevector 1))
-> (define-inlinable (ref x) (bytevector-u8-ref bv 0))
+> (define (ref x) (bytevector-u8-ref bv 0))
 > ,time (for-each ref times)
 ;; ~0.14s real time
 ```
@@ -1037,7 +1037,7 @@ Bytestructure reference:
                                            (y ,uint8)
                                            (z ,uint8)))))
     bs-unwrap bs-ref bs-set!)
-> (define-inlinable (ref x) (bs-ref bv 4 4 z))
+> (define (ref x) (bs-ref bv 4 4 z))
 > ,time (for-each ref times)
 ;; ~0.14s real time
 ```
@@ -1104,7 +1104,7 @@ Plain bytevector reference:
 
 ```scheme
 (define bv (make-bytevector 1))
-(define-inlinable (ref x) (bytevector-u8-ref bv 0))
+(define (ref x) (bytevector-u8-ref bv 0))
 ,time (for-each ref million-times)
 ;; ~0.06s real time
 ```
@@ -1113,7 +1113,7 @@ Equivalent bytestructure reference:
 
 ```scheme
 (define bs (bytestructure (bs:vector 1 uint8)))
-(define-inlinable (ref x) (bytestructure-ref bs 0))
+(define (ref x) (bytestructure-ref bs 0))
 ,time (for-each ref million-times)
 ;; ~0.35s real time  (5.8 times of plain bytevector ref)
 ```
@@ -1124,7 +1124,7 @@ Showcasing the effect of a deeper structure:
 (define bs (bytestructure (bs:vector 1
                              (bs:vector 1
                                (bs:vector 1 uint8)))))
-(define-inlinable (ref x) (bytestructure-ref bs 0 0 0))
+(define (ref x) (bytestructure-ref bs 0 0 0))
 ,time (for-each ref million-times)
 ;; ~0.59s real time  (9.8 times of plain bytevector ref)
 ```
