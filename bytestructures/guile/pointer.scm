@@ -64,11 +64,13 @@
     (bytevector-address-set! bytevector offset value))
    ((bytevector? value)
     (bytevector-address-set! bytevector offset
-                             (ffi:bytevector->pointer value)))
+                             (ffi:pointer-address
+                              (ffi:bytevector->pointer value))))
    ((bytestructure? value)
     (bytevector-address-set! bytevector offset
-                             (ffi:bytevector->pointer
-                              (bytestructure-bytevector value))))))
+                             (ffi:pointer-address
+                              (ffi:bytevector->pointer
+                               (bytestructure-bytevector value)))))))
 
 (define-record-type <pointer-metadata>
   (make-pointer-metadata content-descriptor)
