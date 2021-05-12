@@ -494,7 +494,55 @@ what it achieves (following a pointer).  As such, you might want to
 minimize the use of pointer dereferences in performance-critical
 sections of code.  Note that using the macro API does *not* work
 around this issue, as the bytevector still needs to be created at
-run-time to access the data referenced by the pointer.
+run-time to access the data referenced by the pointer.  To minimize
+the number of bytevector allocations, create one explicitly with the
+appropriate size.  Example with Guile:
+
+```scheme
+(import (bytestructures guile))
+(import (rnrs bytevectors))
+(import (prefix (system foreign) ffi:))
+
+;; struct string { size_t len; char *chars; }
+(define string-descriptor
+  (bs:struct `((len ,size_t) (chars ,(bs:pointer uint8)))))
+
+;; struct string my_string;
+(define my-string (bytestructure string-descriptor))
+
+;; my_string.len = 30;
+(bytestructure-set! my-string 'len 30)
+
+;; my_string.chars = malloc(30);
+(bytestructure-set! my-string 'chars (make-bytevector 30))
+
+;; Let's hope the bytevector doesn't get garbage collected!
+
+;; Slow code to take the sum of all chars:
+(let ((len (bytestructure-ref my-string 'len)))
+  (do ((i 0 (+ i 1))
+       (sum 0 (+ sum (bytestructure-ref my-string 'chars i))))
+      ((= i len) sum)))
+
+;; Fast code:
+(let* ((len (bytestructure-ref my-string 'len))
+       (addr (bytestructure-ref my-string 'chars))
+       (pointer (ffi:make-pointer addr))
+       (bv (ffi:pointer->bytevector pointer len)))
+  (do ((i 0 (+ i 1))
+       (sum 0 (+ sum (bytevector-u8-ref bv i))))
+      ((= i len) sum)))
+
+;; Or continue with bytestructures after following the pointer:
+(let* ((len (bytestructure-ref my-string 'len))
+       (addr (bytestructure-ref my-string 'chars))
+       (pointer (ffi:make-pointer addr))
+       (bv (ffi:pointer->bytevector pointer len))
+       (chars (make-bytestructure bv 0 (bs:vector len uint8))))
+  (do ((i 0 (+ i 1))
+       (sum 0 (+ sum (bytestructure-ref chars i))))
+      ((= i len) sum)))
+```
 
 Since pointers are also values themselves, pointer descriptors also
 have direct referencing and assignment semantics.  Referencing the
