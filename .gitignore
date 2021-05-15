@@ -1,5 +1,5 @@
 *.go
-*.srfi64.log
+tests.log
 Makefile
 Makefile.in
 aclocal.m4

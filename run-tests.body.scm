@@ -30,6 +30,8 @@
    (begin . <body>)
    (begin)))
 
+(test-runner-current (test-runner-simple "tests.log"))
+
 (test-begin "bytestructures")
 
 (test-group "numeric"
@@ -424,6 +426,8 @@
   ))
 
 (test-end "bytestructures")
+
+(test-exit)
 
 ;; Local Variables:
 ;; eval: (put (quote test-group) (quote scheme-indent-function) 1)
