@@ -81,6 +81,20 @@ follow." indices))))
         (bytestructure-unwrap/syntax
          #'<bytevector> #'<offset> descriptor #'<indices>)))))
 
+(define-syntax-rule (define-bytestructure-getter* <name> <descriptor>)
+  (define-syntax <name>
+    (let ((descriptor <descriptor>))
+      (syntax-case-lambda (_ <bytevector> <offset> . <indices>)
+        (bytestructure-ref/syntax
+         #'<bytevector> #'<offset> descriptor #'<indices>)))))
+
+(define-syntax-rule (define-bytestructure-setter* <name> <descriptor>)
+  (define-syntax <name>
+    (let ((descriptor <descriptor>))
+      (syntax-case-lambda (_ <bytevector> <offset> <index> (... ...) <value>)
+        (bytestructure-set!/syntax
+         #'<bytevector> #'<offset> descriptor #'(<index> (... ...)) #'<value>)))))
+
 (define-syntax-rule (define-bytestructure-getter <name> <descriptor>)
   (define-syntax <name>
     (let ((descriptor <descriptor>))
@@ -94,12 +108,20 @@ follow." indices))))
         (bytestructure-set!/syntax
          #'<bytevector> 0 descriptor #'(<index> (... ...)) #'<value>)))))
 
-(define-syntax-rule (define-bytestructure-accessors <descriptor>
-                      <unwrapper> <getter> <setter>)
-  (begin
-    (define-bytestructure-unwrapper <unwrapper> <descriptor>)
-    (define-bytestructure-getter <getter> <descriptor>)
-    (define-bytestructure-setter <setter> <descriptor>)))
+(define-syntax define-bytestructure-accessors
+  (syntax-rules ()
+    ((_ <descriptor> <unwrapper> <getter> <setter>)
+     (begin
+       (define-bytestructure-unwrapper <unwrapper> <descriptor>)
+       (define-bytestructure-getter <getter> <descriptor>)
+       (define-bytestructure-setter <setter> <descriptor>)))
+    ((_ <descriptor> <unwrapper> <getter> <setter> <getter*> <setter*>)
+     (begin
+       (define-bytestructure-unwrapper <unwrapper> <descriptor>)
+       (define-bytestructure-getter <getter> <descriptor>)
+       (define-bytestructure-setter <setter> <descriptor>)
+       (define-bytestructure-getter* <getter*> <descriptor>)
+       (define-bytestructure-setter* <setter*> <descriptor>)))))
 
 ;; Local Variables:
 ;; eval: (put (quote syntax-case-lambda) (quote scheme-indent-function) 1)

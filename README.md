@@ -877,27 +877,54 @@ so that the bulk of the work involved in offset calculation can be
 offloaded to the macro-expand phase.
 
 - `(define-bytestructure-accessors descriptor unwrapper getter
-  setter)` *syntax*
+  setter getter* setter*)` *syntax*
 
 The `descriptor` expression is evaluated during the macro-expand phase
 to yield a bytestructure descriptor.  The `unwrapper`, `getter`, and
 `setter` identifiers are bound to a triple of macros implementing the
-indexing, referencing, and assignment semantics of the given
-descriptor.
+indexing, referencing, and assignment semantics of the descriptor.
+The `getter*` and `setter*` variants allow an initial offset argument,
+whereas the plain variants implicitly use 0 as the base offset.
 
 ```scheme
 (define-bytestructure-accessors (bs:vector 5 (bs:vector 3 uint8))
-  uint8-v3-v5-unwrap uint8-v3-v5-ref uint8-v3-v5-set!)
+  uint8-v3-v5-unwrap
+  uint8-v3-v5-ref
+  uint8-v3-v5-set!
+  uint8-v3-v5-ref*
+  uint8-v3-v5-set!*)
 
 (uint8-v3-v5-unwrap #f 0 3 2)  ;the #f is a bogus bytevector
                                ;the 0 is the initial offset
 => 11 (3 * 3 + 2)
 
+;; bv = uint8_t[15]{ 0, 1, 2, ... 14 };
 (define bv (apply bytevector (iota 15)))
+
+;; ((uint8_t[5][3]) bv)[2][1]
 (uint8-v3-v5-ref bv 2 1) => 7
+
+;; ((uint8_t[5][3]) bv)[2][1] = 42
 (uint8-v3-v5-set! bv 2 1 42)
+
+;; ((uint8_t[5][3]) bv)[2][1]
 (uint8-v3-v5-ref bv 2 1) => 42
+
+;; bv2 = uint8_t[20]{ 0, 1, 2, ... 19 };
+(define bv2 (apply bytevector (iota 20)))
+
+;; ((uint8_t[5][3]) (bv2 + 5))[2][1]
+(uint8-v3-v5-ref* bv2 5 2 1) => 12
+
+;; ((uint8_t[5][3]) (bv2 + 5))[2][1] = 42
+(uint8-v3-v5-set!* bv2 5 2 1 42)
+
+;; ((uint8_t[5][3]) (bv2 + 5))[2][1]
+(uint8-v3-v5-ref* bv2 5 2 1) => 42
 ```
+
+The macro API internally uses the following procedures during the
+macro-expand phase to generate the desired output syntax:
 
 - `(bytestructure-unwrap/syntax bytevector-syntax offset-syntax
   descriptor indices-syntax)` *procedure*
