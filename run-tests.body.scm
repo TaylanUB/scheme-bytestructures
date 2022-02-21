@@ -30,8 +30,6 @@
    (begin . <body>)
    (begin)))
 
-(test-runner-current (test-runner-simple "tests.log"))
-
 (test-begin "bytestructures")
 
 (test-group "numeric"
@@ -425,9 +423,15 @@
  (else
   ))
 
+;; Do this before test-end since it removes the auto-inserted test runner.
+(define success
+  (let ((runner (test-runner-current)))
+    (and (zero? (test-runner-xpass-count runner))
+         (zero? (test-runner-fail-count runner)))))
+
 (test-end "bytestructures")
 
-(test-exit)
+(exit (if success 0 1))
 
 ;; Local Variables:
 ;; eval: (put (quote test-group) (quote scheme-indent-function) 1)
