@@ -180,6 +180,7 @@
          (union
           ((a ,uint16)
            (b ,uint32))))))
+    ;; Don't use 64-bit ints; their alignment differs between platforms.
     (test-group "aligned"
       (define bs
         (bytestructure
@@ -188,11 +189,12 @@
              ((x ,uint8)
               (y ,uint16)))
             (union
-             ((a ,uint32)
-              (b ,uint64)))))))
-      (bytevector-u32-native-set! (bytestructure-bytevector bs) 8 321)
+             ((a ,uint16)
+              (b ,uint32)))))))
+      (test-eqv "size" 8 (bytevector-length (bytestructure-bytevector bs)))
+      (bytevector-u16-native-set! (bytestructure-bytevector bs) 4 321)
       (test-eqv "ref1" 321 (bytestructure-ref bs 'a))
-      (bytevector-u64-native-set! (bytestructure-bytevector bs) 8 456)
+      (bytevector-u32-native-set! (bytestructure-bytevector bs) 4 456)
       (test-eqv "ref2" 456 (bytestructure-ref bs 'b))
       (test-eqv "set1" 789 (begin (bytestructure-set! bs 'a 789)
                                   (bytestructure-ref bs 'a)))
@@ -207,11 +209,12 @@
              ((x ,uint8)
               (y ,uint16)))
             (union
-             ((a ,uint32)
-              (b ,uint64)))))))
-      (bytevector-u32-native-set! (bytestructure-bytevector bs) 2 321)
+             ((a ,uint16)
+              (b ,uint32)))))))
+      (test-eqv "size" 6 (bytevector-length (bytestructure-bytevector bs)))
+      (bytevector-u16-native-set! (bytestructure-bytevector bs) 2 321)
       (test-eqv "ref1" 321 (bytestructure-ref bs 'a))
-      (bytevector-u64-native-set! (bytestructure-bytevector bs) 2 456)
+      (bytevector-u32-native-set! (bytestructure-bytevector bs) 2 456)
       (test-eqv "ref2" 456 (bytestructure-ref bs 'b))
       (test-eqv "set1" 789 (begin (bytestructure-set! bs 'a 789)
                                   (bytestructure-ref bs 'a)))
