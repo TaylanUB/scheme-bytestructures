@@ -107,7 +107,6 @@
     (let ((descriptor (cadr field-spec)))
       (bytestructure-descriptor-size descriptor)))
   (let* ((alignment (apply max (map field-spec-alignment field-specs)))
-         (alignment (pack-alignment pack alignment))
          (size (apply max (map field-spec-size field-specs)))
          (position (align position size (pack-alignment pack alignment))))
     (let loop ((field-specs field-specs)
