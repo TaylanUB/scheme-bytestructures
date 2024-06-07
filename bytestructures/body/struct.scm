@@ -109,7 +109,7 @@
   (let* ((alignment (apply max (map field-spec-alignment field-specs)))
          (alignment (pack-alignment pack alignment))
          (size (apply max (map field-spec-size field-specs)))
-         (position (align position size (pack-alignment pack alignment))))
+         (position (align position size alignment)))
     (let loop ((field-specs field-specs)
                (next-position position)
                (fields fields))
